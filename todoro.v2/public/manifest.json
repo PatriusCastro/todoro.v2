@@ -1,0 +1,15 @@
+{
+  "name": "FocusFlow - Pomodoro Timer",
+  "short_name": "FocusFlow",
+  "description": "A beautiful Pomodoro timer for deep focus sessions",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#111111",
+  "theme_color": "#2940D3",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" }
+  ]
+}
