@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { type Task, type Subtask } from "../tasks/TaskCard"
-import { type Priority, getPriority } from "../../lib/theme"
+import { type Task, type Subtask } from "@/components/tasks/TaskCard"
+import { type Priority, getPriority } from "@/lib/theme"
 
 interface TaskModalProps {
   task?: Task; onSave: (task: Task) => void
@@ -138,20 +138,23 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
         {/* Date picker */}
         <div className="flex flex-col gap-2">
           <span className="text-xs font-bold text-sub uppercase tracking-wider">Due Date</span>
-          <button onClick={() => setShowCal(v => !v)}
-            className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors
+          <div role="button" tabIndex={0} onClick={() => setShowCal(v => !v)}
+            onKeyDown={e => e.key === "Enter" && setShowCal(v => !v)}
+            className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3 cursor-pointer transition-colors select-none
               ${dueDate ? "border-accent/40 bg-accent/5" : "border-border bg-surface2"}`}>
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className={dueDate ? "text-accent" : "text-sub"}>
               <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
-            <span className={`text-sm font-semibold ${dueDate ? "text-tx" : "text-sub"}`}>{dateDisplay}</span>
+            <span className={`text-sm font-semibold flex-1 ${dueDate ? "text-tx" : "text-sub"}`}>{dateDisplay}</span>
             {dueDate && (
-              <button onMouseDown={e => { e.stopPropagation(); setDueDate(""); setDueTime("") }}
-                className="ml-auto text-sub hover:text-tx">
+              <span role="button" tabIndex={0}
+                onClick={e => { e.stopPropagation(); setDueDate(""); setDueTime("") }}
+                onKeyDown={e => e.key === "Enter" && (setDueDate(""), setDueTime(""))}
+                className="ml-auto text-sub hover:text-tx cursor-pointer">
                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
+              </span>
             )}
-          </button>
+          </div>
           {showCal && <MiniCalendar selected={dueDate} onSelect={d => { setDueDate(d); setShowCal(false) }} />}
 
           {/* Time (optional) */}

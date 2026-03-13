@@ -94,7 +94,7 @@ export default function HomePage({
         ))}
       </div>
 
-      {/* Timer + Task — 2-col on md+ */}
+      {/* Timer */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Timer card */}
@@ -191,7 +191,6 @@ export default function HomePage({
             </div>
           </div>
 
-          {/* Up next */}
           <div className="flex flex-col gap-2">
             <span className="text-xs font-semibold text-sub">Up next</span>
             {tasks.filter(t => !t.done && t.id !== activeTask.id).slice(0, 2).map(t => (

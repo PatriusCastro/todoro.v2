@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { getPriority, type Priority } from "../../lib/theme"
+import { getPriority, type Priority } from "@/lib/theme"
 
 export interface Subtask { id: string; title: string; done: boolean }
 export interface Task {
@@ -22,8 +22,10 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
   const dot = getPriority(task.priority)
   const doneCount = task.subtasks.filter(s => s.done).length
 
-  const handleToggle = (e: React.MouseEvent) => {
-    e.preventDefault(); e.stopPropagation(); onToggle?.(task.id)
+  // Only the text body area is clickable for navigation/expand — buttons handle their own clicks
+  const handleRowClick = () => {
+    if (onClick) onClick(task)
+    else if (!compact && task.subtasks.length > 0) setExpanded(v => !v)
   }
 
   return (
@@ -31,17 +33,18 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
       ${isActive ? "border-accent bg-accent/5" : "border-border bg-surface hover:border-accent/40"}
       ${task.done ? "opacity-60" : ""}`}>
 
-      <div onClick={() => onClick ? onClick(task) : (!compact && task.subtasks.length > 0 && setExpanded(e => !e))}
-        className={`flex items-center gap-3 cursor-pointer select-none ${compact ? "px-3 py-3" : "px-4 py-4"}`}>
+      <div className={`flex items-center gap-3 select-none ${compact ? "px-3 py-3" : "px-4 py-4"}`}>
 
-        {/* Checkbox */}
-        <button onMouseDown={handleToggle}
-          className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all duration-200 z-10
+        {/* Checkbox — standalone, no parent click */}
+        <button
+          onClick={e => { e.stopPropagation(); onToggle?.(task.id) }}
+          className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all duration-200
             ${task.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
           {task.done && <svg width="10" height="10" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>}
         </button>
 
-        <div className="flex-1 min-w-0">
+        {/* Clickable body — title + meta */}
+        <div className="flex-1 min-w-0 cursor-pointer" onClick={handleRowClick}>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dot }} />
             <span className={`text-sm font-semibold truncate ${task.done ? "line-through text-sub" : "text-tx"}`}>{task.title}</span>
@@ -52,9 +55,10 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
           </div>
         </div>
 
+        {/* Action buttons — each stops propagation independently */}
         <div className="flex items-center gap-1 shrink-0">
           {onEdit && (
-            <button onMouseDown={e => { e.stopPropagation(); onEdit(task) }}
+            <button onClick={e => { e.stopPropagation(); onEdit(task) }}
               className="p-1.5 rounded-lg text-sub hover:text-accent hover:bg-accent/10 transition-all duration-150">
               <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -63,7 +67,7 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
             </button>
           )}
           {!compact && task.subtasks.length > 0 && (
-            <button onMouseDown={e => { e.stopPropagation(); setExpanded(v => !v) }}
+            <button onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}
               className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-all duration-150">
               <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
                 style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
@@ -78,7 +82,7 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
         <div className="px-4 pb-4 flex flex-col gap-2 border-t border-border pt-3 ml-12">
           {task.subtasks.map(sub => (
             <div key={sub.id} className="flex items-center gap-3">
-              <button onMouseDown={e => { e.stopPropagation(); onToggleSub?.(task.id, sub.id) }}
+              <button onClick={e => { e.stopPropagation(); onToggleSub?.(task.id, sub.id) }}
                 className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center transition-all duration-200
                   ${sub.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
                 {sub.done && <svg width="8" height="8" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>}
