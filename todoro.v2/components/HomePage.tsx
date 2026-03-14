@@ -2,7 +2,7 @@
 
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import { type Mode } from "../components/timer/ModeSelector"
-import { colors } from "../lib/theme"
+import { colors, getPriority } from "../lib/theme"
 
 type Phase = "focus" | "break" | "longbreak"
 
@@ -29,6 +29,17 @@ function phaseColor(phase: Phase) {
   return phase === "focus" ? colors.accent : "#51CF66"
 }
 
+function formatTime(ts: number) {
+  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+}
+
+function getSubtitle(running: boolean, phase: Phase, sessions: number, totalSessions: number) {
+  if (sessions >= totalSessions)      return "Goal reached today!"
+  if (running && phase === "focus")   return "Stay focused."
+  if (running && phase !== "focus")   return "Take it easy."
+  return "Ready to focus?"
+}
+
 export default function HomePage({
   time, phase, mode, focusMins, breakMins, longBreakMins, running, progress,
   sessions, totalSessions, cycleCount, onTimerToggle, onNavToTimer,
@@ -39,13 +50,15 @@ export default function HomePage({
   const seconds  = time % 60
   const currentBreakMins = phase === "longbreak" ? longBreakMins : breakMins
   const maxTime  = phase === "focus" ? focusMins * 60 : currentBreakMins * 60
-  const firstName = userName.split(" ")[0] || "there"
-  const ringColor = phaseColor(phase)
-  const label     = phaseLabel(phase)
+  const firstName  = userName.split(" ")[0] || "there"
+  const ringColor  = phaseColor(phase)
+  const label      = phaseLabel(phase)
+  const goalHit    = sessions >= totalSessions
+  const subtitle   = getSubtitle(running, phase, sessions, totalSessions)
 
   const size = 200; const cx = size / 2; const r = cx - 16; const C = 2 * Math.PI * r
 
-  const pendingTasks = tasks.filter(t => !t.done)
+  const pendingTasks = tasks.filter(t => !t.done && t.id !== activeTask.id)
 
   return (
     <div className="flex flex-col gap-6">
@@ -58,7 +71,10 @@ export default function HomePage({
             {firstName}
             {running && <span className="ml-2 text-sm font-semibold text-priority-low align-middle">· focusing</span>}
           </h1>
-          <p className="text-sm text-sub mt-0.5">Ready to focus?</p>
+          <p className={`text-sm mt-0.5 transition-colors duration-300
+            ${goalHit ? "text-priority-low font-semibold" : "text-sub"}`}>
+            {subtitle}
+          </p>
         </div>
         <div className="relative">
           <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center text-accent font-black text-sm border border-accent/20">
@@ -71,15 +87,20 @@ export default function HomePage({
       </div>
 
       {/* Today's Goal */}
-      <div className="rounded-2xl border border-border bg-surface px-5 py-4 flex flex-col gap-3">
+      <div className={`rounded-2xl border bg-surface px-5 py-4 flex flex-col gap-3 transition-colors duration-300
+        ${goalHit ? "border-priority-low/40 bg-priority-low/5" : "border-border"}`}>
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-sub uppercase tracking-widest">Today's Goal</span>
-          <span className="text-xs text-sub">{sessions} / {totalSessions} sessions</span>
+          <span className={`text-xs font-semibold ${goalHit ? "text-priority-low" : "text-sub"}`}>
+            {sessions} / {totalSessions} sessions
+          </span>
         </div>
         <div className="flex items-center gap-1.5">
           {Array.from({ length: totalSessions }).map((_, i) => (
-            <div key={i} className={`h-2 flex-1 rounded-full transition-all duration-300
-              ${i < sessions ? "bg-accent" : "bg-ring"}`} />
+            <div key={i} className={`h-2 flex-1 rounded-full transition-all duration-500
+              ${i < sessions
+                ? goalHit ? "bg-priority-low" : "bg-accent"
+                : "bg-ring"}`} />
           ))}
         </div>
         <div className="flex items-center gap-4">
@@ -98,83 +119,98 @@ export default function HomePage({
         </div>
       </div>
 
-      {/* Current Task */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-xs font-bold text-sub uppercase tracking-widest">Current Task</span>
+      {/* Timer card */}
+      <div className="rounded-2xl border border-border bg-surface overflow-hidden">
+
+        {/* Active task header */}
+        <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs font-bold text-sub uppercase tracking-widest shrink-0">Now</span>
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(activeTask.priority) }} />
+            <span className="text-sm font-semibold text-tx truncate">{activeTask.title}</span>
+          </div>
           <button onClick={onNavToTasks}
-            className="text-xs text-sub hover:text-accent transition-colors flex items-center gap-0.5">
-            All tasks
+            className="text-xs text-sub hover:text-accent transition-colors flex items-center gap-0.5 shrink-0 ml-3">
+            Tasks
             <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </div>
-        <TaskCard task={activeTask} onToggle={onToggleTask} onToggleSub={onToggleSub} compact isActive />
+
+        {/* Session bar inside card */}
         {activeTask.estimatedSessions > 0 && (
-          <div className="flex items-center gap-2 px-1">
-            <div className="flex items-center gap-1 flex-1">
+          <div className="px-5 pt-3 flex items-center gap-2">
+            <div className="flex gap-1 flex-1">
               {Array.from({ length: activeTask.estimatedSessions }).map((_, i) => (
                 <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300
                   ${i < activeTask.completedSessions ? "bg-accent" : "bg-ring"}`} />
               ))}
             </div>
             <span className="text-[11px] text-sub shrink-0">
-              {activeTask.completedSessions}/{activeTask.estimatedSessions} sessions
+              {activeTask.completedSessions}/{activeTask.estimatedSessions}
             </span>
           </div>
         )}
-      </div>
 
-      {/* Timer card */}
-      <div className="rounded-2xl border border-border bg-surface px-5 py-5 flex flex-col items-center gap-4">
-        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold
-          ${phase === "focus" ? "bg-accent/10 text-accent" : "bg-priority-low/10 text-priority-low"}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${running ? "animate-pulse" : ""}`}
-            style={{ background: ringColor }} />
-          {label} · {phase === "focus" ? focusMins : currentBreakMins} min
-        </div>
+        <div className="px-5 py-4 flex flex-col items-center gap-4">
 
-        <div className="relative cursor-pointer" style={{ width: size, height: size }} onClick={onNavToTimer}>
-          <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-            <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--ring)" strokeWidth={11} />
-            <circle cx={cx} cy={cx} r={r} fill="none" stroke={ringColor} strokeWidth={8}
-              strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - progress)}
-              style={{ transition: "stroke-dashoffset 1s linear" }} />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
-            <span className="text-4xl font-black text-tx tabular-nums leading-none tracking-tight">
-              {minutes}:{seconds.toString().padStart(2, "0")}
-            </span>
-            <span className="text-[11px] text-sub">
-              {phase === "focus" ? `session ${sessions + 1}` : "take a break"}
-            </span>
+          {/* Phase badge */}
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold
+            ${phase === "focus" ? "bg-accent/10 text-accent" : "bg-priority-low/10 text-priority-low"}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${running ? "animate-pulse" : ""}`}
+              style={{ background: ringColor }} />
+            {label} · {phase === "focus" ? focusMins : currentBreakMins} min
           </div>
-        </div>
 
-        <button onClick={onTimerToggle}
-          className={`w-full py-3 rounded-xl text-white text-sm font-black active:scale-95 transition-all duration-150
-            ${phase === "focus" ? "bg-accent hover:bg-accent-hover" : "bg-priority-low hover:bg-[#42c956]"}`}>
-          <span className="flex items-center justify-center gap-2">
-            {running
-              ? <><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause</>
-              : <><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  {phase === "focus" ? "Start Focus" : phase === "longbreak" ? "Start Long Break" : "Start Break"}</>
-            }
-          </span>
-        </button>
+          {/* Ring */}
+          <div className="relative cursor-pointer group" style={{ width: size, height: size }}
+            onClick={onNavToTimer} title="Open timer">
+            <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+              <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--ring)" strokeWidth={11} />
+              <circle cx={cx} cy={cx} r={r} fill="none" stroke={ringColor} strokeWidth={8}
+                strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - progress)}
+                style={{ transition: "stroke-dashoffset 1s linear" }} />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+              <span className="text-4xl font-black text-tx tabular-nums leading-none tracking-tight">
+                {minutes}:{seconds.toString().padStart(2, "0")}
+              </span>
+              <span className="text-[11px] text-sub">
+                {phase === "focus" ? `session ${sessions + 1}` : "take a break"}
+              </span>
+              <span className="text-[10px] text-sub/50 group-hover:text-sub transition-colors mt-0.5">
+                tap to expand
+              </span>
+            </div>
+          </div>
+
+          {/* Start button */}
+          <button onClick={onTimerToggle}
+            className={`w-full py-3 rounded-xl text-white text-sm font-black active:scale-95 transition-all duration-150
+              ${phase === "focus" ? "bg-accent hover:bg-accent-hover" : "bg-priority-low hover:bg-[#42c956]"}`}>
+            <span className="flex items-center justify-center gap-2">
+              {running
+                ? <><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause</>
+                : <><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    {phase === "focus" ? "Start Focus" : phase === "longbreak" ? "Start Long Break" : "Start Break"}</>
+              }
+            </span>
+          </button>
+
+        </div>
       </div>
 
       {/* Today's session log */}
       {todayHistory.length > 0 && (
         <div className="flex flex-col gap-2">
           <span className="text-xs font-bold text-sub uppercase tracking-widest px-1">Today's Sessions</span>
-          <div className="rounded-2xl border border-border bg-surface px-5 py-3 flex flex-col gap-2">
+          <div className="rounded-2xl border border-border bg-surface px-5 py-3 flex flex-col gap-2.5">
             {todayHistory.map((s, i) => (
               <div key={i} className="flex items-center gap-2">
                 <svg width="12" height="12" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" viewBox="0 0 24 24">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
                 <span className="text-xs text-tx font-medium truncate flex-1">{s.taskTitle}</span>
-                <span className="text-[11px] text-sub shrink-0">{s.focusMins}m</span>
+                <span className="text-[11px] text-sub shrink-0">{s.focusMins}m · {formatTime(s.at)}</span>
               </div>
             ))}
           </div>
@@ -182,11 +218,12 @@ export default function HomePage({
       )}
 
       {/* Up next */}
-      {pendingTasks.filter(t => t.id !== activeTask.id).length > 0 && (
+      {pendingTasks.length > 0 && (
         <div className="flex flex-col gap-2">
           <span className="text-xs font-bold text-sub uppercase tracking-widest px-1">Up Next</span>
-          {pendingTasks.filter(t => t.id !== activeTask.id).slice(0, 2).map(t => (
-            <TaskCard key={t.id} task={t} onToggle={onToggleTask} onClick={() => onSetActive(t)} compact />
+          {pendingTasks.slice(0, 2).map(t => (
+            <TaskCard key={t.id} task={t} onToggle={onToggleTask}
+              onClick={running && phase === "focus" ? undefined : () => onSetActive(t)} compact />
           ))}
         </div>
       )}

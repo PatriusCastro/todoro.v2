@@ -86,7 +86,7 @@ function computeStreak(history: SessionRecord[]): number {
 
 export default function Home() {
   const [tab,       setTab]       = useState<Tab>("home")
-  const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Kath"))
+  const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Hello"))
   const [dark,      setDark]      = useState(() => load("todoro:dark",      true))
   const [sound,     setSound]     = useState(() => load("todoro:sound",     true))
   const [dailyGoal, setDailyGoal] = useState(() => load("todoro:dailyGoal", 5))
@@ -99,7 +99,6 @@ export default function Home() {
   const [time,    setTime]    = useState(focusMins * 60)
   const [running, setRunning] = useState(false)
 
-  const [sessions,    setSessions]    = useState(0)
   const [cycleCount,  setCycleCount]  = useState(0)
   const [totalPoints, setTotalPoints] = useState(() => load("todoro:points", 0))
 
@@ -110,7 +109,8 @@ export default function Home() {
   const todayHistory = allHistory.filter(
     s => new Date(s.at).toISOString().slice(0, 10) === todayKey()
   )
-  const streak = computeStreak(allHistory)
+  const sessions = todayHistory.length
+  const streak   = computeStreak(allHistory)
 
   const [tasks,      setTasks]      = useState<Task[]>(() => load("todoro:tasks", INITIAL_TASKS))
   const [activeTask, setActiveTask] = useState<Task>(() => {
@@ -168,7 +168,6 @@ export default function Home() {
     if (phase === "focus") {
       if (completed) {
         const nextCycle = cycleCount + 1
-        setSessions(s => s + 1)
         setCycleCount(nextCycle)
         setTotalPoints(p => p + 5)
         setAllHistory(h => [...h, {

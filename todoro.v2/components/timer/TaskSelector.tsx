@@ -16,6 +16,8 @@ export default function TaskSelector({ tasks, active, running, onChange, onStop 
   const [open,    setOpen]    = useState(false)
   const [pending, setPending] = useState<Task | null>(null)
 
+  const pendingTasks = tasks.filter(t => !t.done)
+
   const handleSelect = (task: Task) => {
     setOpen(false)
     if (task.id === active.id) return
@@ -44,7 +46,7 @@ export default function TaskSelector({ tasks, active, running, onChange, onStop 
 
         {open && (
           <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-xl border border-border bg-surface shadow-[0_8px_32px_rgba(0,0,0,0.3)] overflow-hidden">
-            {tasks.map(task => (
+            {pendingTasks.map(task => (
               <button key={task.id} onClick={() => handleSelect(task)}
                 className={`w-full flex items-center gap-2 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface2
                   ${task.id === active.id ? "bg-accent/10" : ""}`}>
@@ -70,9 +72,7 @@ export default function TaskSelector({ tasks, active, running, onChange, onStop 
 
             <div>
               <h3 className="text-sm font-black text-tx">Switch task?</h3>
-              <p className="text-xs text-sub mt-1">
-                Your current focus session will end.
-              </p>
+              <p className="text-xs text-sub mt-1">Your current focus session will end.</p>
             </div>
 
             <div className="rounded-xl bg-surface2 border border-border px-4 py-3 flex flex-col gap-1">
