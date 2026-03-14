@@ -1,13 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { getPriority, type Priority } from "@/lib/theme"
+import { getPriority, type Priority } from "../../lib/theme"
 
 export interface Subtask { id: string; title: string; done: boolean }
 export interface Task {
   id: string; title: string; priority: Priority
   dueDate?: string; dueTime?: string; dueLabel: string
   done: boolean; subtasks: Subtask[]
+  estimatedSessions: number
+  completedSessions: number
 }
 
 interface TaskCardProps {
@@ -21,6 +23,9 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
   const [expanded, setExpanded] = useState(false)
   const dot = getPriority(task.priority)
   const doneCount = task.subtasks.filter(s => s.done).length
+  const sessionProgress = task.estimatedSessions > 0
+    ? Math.min(task.completedSessions / task.estimatedSessions, 1)
+    : 0
 
   const handleRowClick = () => {
     if (onClick) onClick(task)
@@ -34,7 +39,6 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
 
       <div className={`flex items-center gap-3 select-none ${compact ? "px-3 py-3" : "px-4 py-4"}`}>
 
-        {/* Checkbox */}
         <button
           onClick={e => { e.stopPropagation(); onToggle?.(task.id) }}
           className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all duration-200
@@ -42,7 +46,6 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
           {task.done && <svg width="10" height="10" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>}
         </button>
 
-        {/* Clickable body */}
         <div className="flex-1 min-w-0 cursor-pointer" onClick={handleRowClick}>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dot }} />
@@ -51,10 +54,21 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="text-[11px] text-sub">{task.dueLabel}</span>
             {task.subtasks.length > 0 && <span className="text-[11px] text-sub">· {doneCount}/{task.subtasks.length} subtasks</span>}
+            {task.estimatedSessions > 0 && (
+              <span className="text-[11px] text-sub">· {task.completedSessions}/{task.estimatedSessions} sessions</span>
+            )}
           </div>
+
+          {!compact && task.estimatedSessions > 0 && (
+            <div className="mt-2 flex items-center gap-1.5">
+              {Array.from({ length: task.estimatedSessions }).map((_, i) => (
+                <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300
+                  ${i < task.completedSessions ? "bg-accent" : "bg-ring"}`} />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Action buttons */}
         <div className="flex items-center gap-1 shrink-0">
           {onEdit && (
             <button onClick={e => { e.stopPropagation(); onEdit(task) }}

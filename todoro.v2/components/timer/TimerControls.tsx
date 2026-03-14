@@ -1,13 +1,20 @@
 "use client"
 
-type Phase = "focus" | "break"
+type Phase = "focus" | "break" | "longbreak"
 
 interface TimerControlsProps {
   running: boolean; phase: Phase
   onToggle: () => void; onReset: () => void; onSkip: () => void
 }
 
+function skipLabel(phase: Phase) {
+  if (phase === "focus")     return "Skip to break"
+  if (phase === "longbreak") return "Skip to focus"
+  return "Skip to focus"
+}
+
 export default function TimerControls({ running, phase, onToggle, onReset, onSkip }: TimerControlsProps) {
+  const isBreak = phase !== "focus"
   return (
     <div className="flex items-center justify-center gap-4">
       <IconBtn onClick={onReset} label="Reset">
@@ -19,16 +26,17 @@ export default function TimerControls({ running, phase, onToggle, onReset, onSki
       <button onClick={onToggle}
         className={`flex items-center gap-2 px-8 py-3 rounded-full text-white text-sm font-black min-w-27.5 justify-center
           active:scale-95 transition-all duration-150
-          ${phase === "focus"
-            ? "bg-accent shadow-[0_4px_20px_rgba(108,99,255,0.4)] hover:bg-accent-hover"
-            : "bg-priority-low shadow-[0_4px_20px_rgba(81,207,102,0.3)] hover:bg-[#42c956]"}`}>
+          ${!isBreak
+            ? "bg-accent hover:bg-accent-hover"
+            : "bg-priority-low hover:bg-[#42c956]"}`}>
         {running
           ? <><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause</>
-          : <><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg> {phase === "focus" ? "Start" : "Rest"}</>
+          : <><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              {phase === "focus" ? "Start" : phase === "longbreak" ? "Long Rest" : "Rest"}</>
         }
       </button>
 
-      <IconBtn onClick={onSkip} label={`Skip to ${phase === "focus" ? "break" : "focus"}`}>
+      <IconBtn onClick={onSkip} label={skipLabel(phase)}>
         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>
         </svg>

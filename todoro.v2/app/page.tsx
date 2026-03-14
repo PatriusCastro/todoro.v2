@@ -11,14 +11,32 @@ import { type Task } from "../components/tasks/TaskCard"
 import { useWakeLock } from "../hooks/useWakeLock"
 
 type Tab   = "home" | "tasks" | "timer" | "settings"
-type Phase = "focus" | "break"
+type Phase = "focus" | "break" | "longbreak"
 
 function uid() { return Math.random().toString(36).slice(2) }
 
+const LONG_BREAK_INTERVAL = 4
+const LONG_BREAK_MINS     = 15
+
 const INITIAL_TASKS: Task[] = [
-  { id: "1", title: "Try your first focus session", priority: "high", dueDate: new Date().toISOString().slice(0,10), dueTime: "", dueLabel: "Due today",   done: false, subtasks: [{ id: uid(), title: "Pick a task to work on", done: false }, { id: uid(), title: "Hit Start and stay focused", done: false }] },
-  { id: "2", title: "Explore the Timer page",       priority: "mid",  dueDate: "", dueTime: "", dueLabel: "No due date", done: false, subtasks: [{ id: uid(), title: "Try Focus view mode", done: false }] },
-  { id: "3", title: "Customize your settings",      priority: "low",  dueDate: "", dueTime: "", dueLabel: "No due date", done: false, subtasks: [] },
+  {
+    id: "1", title: "Try your first focus session", priority: "high",
+    dueDate: new Date().toISOString().slice(0,10), dueTime: "", dueLabel: "Due today",
+    done: false, estimatedSessions: 2, completedSessions: 0,
+    subtasks: [{ id: uid(), title: "Pick a task to work on", done: false }, { id: uid(), title: "Hit Start and stay focused", done: false }],
+  },
+  {
+    id: "2", title: "Explore the Timer page", priority: "mid",
+    dueDate: "", dueTime: "", dueLabel: "No due date",
+    done: false, estimatedSessions: 1, completedSessions: 0,
+    subtasks: [{ id: uid(), title: "Try Focus view mode", done: false }],
+  },
+  {
+    id: "3", title: "Customize your settings", priority: "low",
+    dueDate: "", dueTime: "", dueLabel: "No due date",
+    done: false, estimatedSessions: 0, completedSessions: 0,
+    subtasks: [],
+  },
 ]
 
 function getGreeting() {
@@ -35,31 +53,29 @@ export default function Home() {
   const [sound,       setSound]       = useState(true)
   const [dailyGoal,   setDailyGoal]   = useState(5)
 
-  /* Timer mode & custom durations */
   const [mode,        setMode]        = useState<Mode>("25/5")
   const [focusMins,   setFocusMins]   = useState(25)
   const [breakMins,   setBreakMins]   = useState(5)
 
-  /* Timer state */
   const [phase,       setPhase]       = useState<Phase>("focus")
   const [time,        setTime]        = useState(focusMins * 60)
   const [running,     setRunning]     = useState(false)
 
-  /* Stats */
-  const [sessions,    setSessions]    = useState(0)
-  const [totalPoints, setTotalPoints] = useState(23)
-  const [streak]                      = useState(3)
+  const [sessions,       setSessions]       = useState(0)
+  const [cycleCount,     setCycleCount]     = useState(0)
+  const [totalPoints,    setTotalPoints]    = useState(23)
+  const [streak]                            = useState(3)
+  const [sessionHistory, setSessionHistory] = useState<{ taskId: string; at: number }[]>([])
 
-  /* Tasks */
-  const [tasks,       setTasks]       = useState<Task[]>(INITIAL_TASKS)
-  const [activeTask,  setActiveTask]  = useState<Task>(INITIAL_TASKS[0])
+  const [tasks,      setTasks]      = useState<Task[]>(INITIAL_TASKS)
+  const [activeTask, setActiveTask] = useState<Task>(INITIAL_TASKS[0])
 
   const audioCtxRef = useRef<AudioContext | null>(null)
 
-  const maxTime  = phase === "focus" ? focusMins * 60 : breakMins * 60
+  const currentBreakMins = phase === "longbreak" ? LONG_BREAK_MINS : breakMins
+  const maxTime  = phase === "focus" ? focusMins * 60 : currentBreakMins * 60
   const progress = maxTime > 0 ? (maxTime - time) / maxTime : 0
 
-  /* Keep activeTask in sync */
   useEffect(() => {
     const updated = tasks.find(t => t.id === activeTask.id)
     if (updated) setActiveTask(updated)
@@ -88,15 +104,29 @@ export default function Home() {
   const advancePhase = useCallback((completed: boolean) => {
     setRunning(false)
     if (phase === "focus") {
-      if (completed) { setSessions(s => s + 1); setTotalPoints(p => p + 5); playChime(false) }
-      setPhase("break")
-      setTime(breakMins * 60)
+      if (completed) {
+        const nextCycle = cycleCount + 1
+        setSessions(s => s + 1)
+        setCycleCount(nextCycle)
+        setTotalPoints(p => p + 5)
+        setSessionHistory(h => [...h, { taskId: activeTask.id, at: Date.now() }])
+        setTasks(ts => ts.map(t => t.id === activeTask.id
+          ? { ...t, completedSessions: t.completedSessions + 1 }
+          : t))
+        playChime(false)
+        if (nextCycle % LONG_BREAK_INTERVAL === 0) {
+          setPhase("longbreak"); setTime(LONG_BREAK_MINS * 60)
+        } else {
+          setPhase("break"); setTime(breakMins * 60)
+        }
+      } else {
+        setPhase("break"); setTime(breakMins * 60)
+      }
     } else {
       if (completed) playChime(true)
-      setPhase("focus")
-      setTime(focusMins * 60)
+      setPhase("focus"); setTime(focusMins * 60)
     }
-  }, [phase, focusMins, breakMins, playChime])
+  }, [phase, cycleCount, focusMins, breakMins, activeTask, playChime])
 
   const advanceRef  = useRef(advancePhase)
   const hasAdvanced = useRef(false)
@@ -108,10 +138,7 @@ export default function Home() {
     const id = setInterval(() => {
       setTime(t => {
         if (t <= 1) {
-          if (!hasAdvanced.current) {
-            hasAdvanced.current = true
-            advanceRef.current(true)
-          }
+          if (!hasAdvanced.current) { hasAdvanced.current = true; advanceRef.current(true) }
           return 0
         }
         return t - 1
@@ -120,13 +147,12 @@ export default function Home() {
     return () => clearInterval(id)
   }, [running])
 
-  /* Reset time when mode/duration changes */
   const handleModeChange = (m: Mode, fm: number, bm: number) => {
     setMode(m); setFocusMins(fm); setBreakMins(bm)
     setRunning(false); setPhase("focus"); setTime(fm * 60)
   }
 
-  const handleReset  = () => { setRunning(false); setTime(phase === "focus" ? focusMins * 60 : breakMins * 60) }
+  const handleReset  = () => { setRunning(false); setTime(phase === "focus" ? focusMins * 60 : currentBreakMins * 60) }
   const handleSkip   = () => advanceRef.current(false)
   const handleToggle = () => setRunning(r => !r)
 
@@ -147,7 +173,10 @@ export default function Home() {
     if (activeTask.id === id) setActiveTask(remaining[0] ?? INITIAL_TASKS[0])
   }
 
-  const timerProps = { time, phase, mode, focusMins, breakMins, running, progress, sessions, totalSessions: dailyGoal }
+  const timerProps = {
+    time, phase, mode, focusMins, breakMins, longBreakMins: LONG_BREAK_MINS,
+    running, progress, sessions, totalSessions: dailyGoal, cycleCount,
+  }
 
   return (
     <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running}>

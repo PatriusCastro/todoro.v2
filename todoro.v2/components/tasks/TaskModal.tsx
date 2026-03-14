@@ -82,13 +82,14 @@ function formatDueLabel(date: string, time: string) {
 }
 
 export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModalProps) {
-  const [title,    setTitle]    = useState(task?.title    ?? "")
-  const [priority, setPriority] = useState<Priority>(task?.priority ?? "none")
-  const [dueDate,  setDueDate]  = useState(task?.dueDate  ?? "")
-  const [dueTime,  setDueTime]  = useState(task?.dueTime  ?? "")
-  const [subtasks, setSubtasks] = useState<Subtask[]>(task?.subtasks ?? [])
-  const [subInput, setSubInput] = useState("")
-  const [showCal,  setShowCal]  = useState(false)
+  const [title,              setTitle]              = useState(task?.title    ?? "")
+  const [priority,           setPriority]           = useState<Priority>(task?.priority ?? "none")
+  const [dueDate,            setDueDate]            = useState(task?.dueDate  ?? "")
+  const [dueTime,            setDueTime]            = useState(task?.dueTime  ?? "")
+  const [subtasks,           setSubtasks]           = useState<Subtask[]>(task?.subtasks ?? [])
+  const [subInput,           setSubInput]           = useState("")
+  const [showCal,            setShowCal]            = useState(false)
+  const [estimatedSessions,  setEstimatedSessions]  = useState(task?.estimatedSessions ?? 0)
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
@@ -101,7 +102,13 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
 
   const handleSave = () => {
     if (!title.trim()) return
-    onSave({ id: task?.id ?? uid(), title: title.trim(), priority, dueDate, dueTime, dueLabel: formatDueLabel(dueDate, dueTime), done: task?.done ?? false, subtasks })
+    onSave({
+      id: task?.id ?? uid(),
+      title: title.trim(), priority, dueDate, dueTime,
+      dueLabel: formatDueLabel(dueDate, dueTime),
+      done: task?.done ?? false, subtasks,
+      estimatedSessions, completedSessions: task?.completedSessions ?? 0,
+    })
     onClose()
   }
 
@@ -119,11 +126,9 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
           </button>
         </div>
 
-        {/* Title */}
         <input value={title} onChange={e => setTitle(e.target.value)} placeholder="What needs to be done?" autoFocus
           className="w-full bg-surface2 border border-border rounded-2xl px-4 py-3 text-sm font-semibold text-tx placeholder:text-sub outline-none focus:border-accent transition-colors" />
 
-        {/* Priority */}
         <div className="flex gap-2">
           {PRIORITIES.map(p => (
             <button key={p} onClick={() => setPriority(p)}
@@ -133,6 +138,21 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
               {LABELS[p]}
             </button>
           ))}
+        </div>
+
+        {/* Session estimate */}
+        <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface2 px-4 py-3">
+          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-sub shrink-0">
+            <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>
+          </svg>
+          <span className="flex-1 text-sm font-medium text-tx">Estimated sessions</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setEstimatedSessions(n => Math.max(0, n - 1))} disabled={estimatedSessions <= 0}
+              className="w-7 h-7 rounded-xl border border-border text-sub flex items-center justify-center font-bold hover:border-accent/50 hover:text-tx disabled:opacity-30 transition-all">−</button>
+            <span className="text-sm font-black text-tx w-6 text-center tabular-nums">{estimatedSessions}</span>
+            <button onClick={() => setEstimatedSessions(n => Math.min(20, n + 1))} disabled={estimatedSessions >= 20}
+              className="w-7 h-7 rounded-xl border border-border text-sub flex items-center justify-center font-bold hover:border-accent/50 hover:text-tx disabled:opacity-30 transition-all">+</button>
+          </div>
         </div>
 
         {/* Date picker */}
@@ -157,7 +177,6 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
           </div>
           {showCal && <MiniCalendar selected={dueDate} onSelect={d => { setDueDate(d); setShowCal(false) }} />}
 
-          {/* Time (optional) */}
           {dueDate && (
             <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface2 px-4 py-3">
               <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-sub shrink-0">
@@ -190,7 +209,6 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-2 pt-1">
           {onDelete && task && (
             <button onMouseDown={() => { onDelete(task.id); onClose() }}

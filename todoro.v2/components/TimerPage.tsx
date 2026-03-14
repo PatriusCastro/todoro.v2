@@ -9,13 +9,13 @@ import { useTimerKeys } from "../hooks/useTimerKeys"
 import { useIsDesktop } from "../hooks/useMediaQuery"
 import { type Task } from "../components/tasks/TaskCard"
 
-type Phase = "focus" | "break"
+type Phase = "focus" | "break" | "longbreak"
 
 interface TimerPageProps {
   time: number; phase: Phase; mode: Mode
-  focusMins: number; breakMins: number
+  focusMins: number; breakMins: number; longBreakMins: number
   running: boolean; progress: number
-  sessions: number; totalSessions: number
+  sessions: number; totalSessions: number; cycleCount: number
   tasks: Task[]; activeTask: Task
   onToggle: () => void; onReset: () => void; onSkip: () => void
   onModeChange: (mode: Mode, fm: number, bm: number) => void
@@ -23,33 +23,52 @@ interface TimerPageProps {
   onToggleSub: (taskId: string, subId: string) => void
 }
 
+function getPhaseLabel(phase: Phase) {
+  if (phase === "focus")     return "Focus"
+  if (phase === "longbreak") return "Long Break"
+  return "Break"
+}
+
+function getPhaseColor(phase: Phase) {
+  return phase === "focus" ? undefined : "#51CF66"
+}
+
 export default function TimerPage({
-  time, phase, mode, focusMins, breakMins, running, progress,
-  sessions, totalSessions, tasks, activeTask,
+  time, phase, mode, focusMins, breakMins, longBreakMins, running, progress,
+  sessions, totalSessions, cycleCount, tasks, activeTask,
   onToggle, onReset, onSkip, onModeChange, onTaskChange, onToggleSub,
 }: TimerPageProps) {
-  const isDesktop   = useIsDesktop()
+  const isDesktop = useIsDesktop()
   const [focused, setFocused] = useState(false)
   useTimerKeys({ onToggle, onReset, onSkip })
 
-  const minutes    = Math.floor(time / 60)
-  const seconds    = time % 60
-  const maxTime    = phase === "focus" ? focusMins * 60 : breakMins * 60
+  const minutes  = Math.floor(time / 60)
+  const seconds  = time % 60
+  const currentBreakMins = phase === "longbreak" ? longBreakMins : breakMins
+  const maxTime  = phase === "focus" ? focusMins * 60 : currentBreakMins * 60
   const spentSecs  = maxTime - time
   const spentLabel = `${Math.floor(spentSecs / 60)}:${(spentSecs % 60).toString().padStart(2, "0")} elapsed`
-  const phaseLabel = phase === "focus" ? "Focus" : "Break"
-  const ringColor  = phase === "focus" ? undefined : "#51CF66"
+  const phaseLabel = getPhaseLabel(phase)
+  const ringColor  = getPhaseColor(phase)
 
-  /* Focus view */
+  const phaseBg  = phase === "focus" ? "bg-accent/10 text-accent border-accent/20" : "bg-priority-low/10 text-priority-low border-priority-low/20"
+  const phaseDot = phase === "focus" ? "bg-accent" : "bg-priority-low"
+
+  const nextLongBreakIn = 4 - (cycleCount % 4)
+
   if (focused) return (
     <div className="flex flex-col items-center justify-center min-h-[75dvh] gap-8">
       <div className="text-center">
-        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-3
-          ${phase === "focus" ? "bg-accent/10 text-accent" : "bg-priority-low/10 text-priority-low"}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${phase === "focus" ? "bg-accent" : "bg-priority-low"} ${running ? "animate-pulse" : ""}`} />
+        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-3 border ${phaseBg}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${phaseDot} ${running ? "animate-pulse" : ""}`} />
           {phaseLabel}
         </div>
         <p className="text-sm font-semibold text-tx">{activeTask.title}</p>
+        {phase === "focus" && activeTask.estimatedSessions > 0 && (
+          <p className="text-xs text-sub mt-1">
+            {activeTask.completedSessions}/{activeTask.estimatedSessions} sessions for this task
+          </p>
+        )}
       </div>
 
       <TimerRing minutes={minutes} seconds={seconds} progress={progress}
@@ -88,7 +107,11 @@ export default function TimerPage({
         <div>
           <h1 className="text-2xl md:text-3xl font-black text-tx">Timer</h1>
           <p className="text-sm text-sub mt-0.5">
-            {phase === "focus" ? `Session ${sessions + 1} of ${totalSessions}` : "Take a break — you earned it"}
+            {phase === "focus"
+              ? `Session ${sessions + 1} of ${totalSessions} · long break in ${nextLongBreakIn}`
+              : phase === "longbreak"
+                ? "Long break — great work on 4 sessions!"
+                : "Short break — you earned it"}
           </p>
         </div>
         <button onClick={() => setFocused(true)}
@@ -102,13 +125,13 @@ export default function TimerPage({
 
       <div className="flex flex-col lg:flex-row lg:items-center lg:gap-16">
         <div className="flex flex-col items-center gap-3 shrink-0">
-          {/* Phase badge */}
-          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold
-            ${phase === "focus" ? "bg-accent/10 text-accent border border-accent/20" : "bg-priority-low/10 text-priority-low border border-priority-low/20"}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${phase === "focus" ? "bg-accent" : "bg-priority-low"} ${running ? "animate-pulse" : ""}`} />
-            {phase === "focus" ? "Focus time" : "Break time"}
+          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold border ${phaseBg}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${phaseDot} ${running ? "animate-pulse" : ""}`} />
+            {phaseLabel}
             <span className="text-sub font-normal">·</span>
-            <span className="font-normal text-sub">{phase === "focus" ? focusMins : breakMins} min</span>
+            <span className="font-normal text-sub">
+              {phase === "focus" ? focusMins : phase === "longbreak" ? longBreakMins : breakMins} min
+            </span>
           </div>
           <TimerRing minutes={minutes} seconds={seconds} progress={progress}
             label={phaseLabel} spentLabel={spentLabel}
@@ -120,12 +143,11 @@ export default function TimerPage({
           <ModeSelector active={mode} customFocus={focusMins} customBreak={breakMins} onChange={onModeChange} />
           <TimerControls running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip} phase={phase} />
 
-          {/* Session dots */}
           <div className="flex items-center justify-center gap-2 flex-wrap">
             {Array.from({ length: totalSessions }).map((_, i) => (
               <div key={i} className={`rounded-full transition-all duration-300
                 ${i < sessions
-                  ? "w-3 h-3 bg-accent shadow-[0_0_6px_rgba(108,99,255,0.5)]"
+                  ? "w-3 h-3 bg-accent"
                   : i === sessions && phase === "focus"
                     ? "w-3 h-3 border-2 border-accent"
                     : "w-2 h-2 bg-border"}`} />
@@ -150,15 +172,34 @@ export default function TimerPage({
       <div className="rounded-2xl border border-border bg-surface px-5 py-4 flex flex-col gap-3">
         <div className="flex justify-between text-xs font-semibold text-sub">
           <span>
-            {phase === "focus" ? `Focus — ${focusMins} min` : `Break — ${breakMins} min`}
+            {phase === "focus"
+              ? `Focus — ${focusMins} min`
+              : phase === "longbreak"
+                ? `Long Break — ${longBreakMins} min`
+                : `Break — ${breakMins} min`}
           </span>
           <span>{Math.round(progress * 100)}%</span>
         </div>
         <div className="h-2 rounded-full bg-ring overflow-hidden">
           <div className={`h-full rounded-full transition-all duration-1000 ease-linear
-            ${phase === "focus" ? "bg-accent shadow-[0_0_6px_rgba(108,99,255,0.4)]" : "bg-priority-low shadow-[0_0_6px_rgba(81,207,102,0.4)]"}`}
+            ${phase === "focus" ? "bg-accent" : "bg-priority-low"}`}
             style={{ width: `${progress * 100}%` }} />
         </div>
+
+        {phase === "focus" && activeTask.estimatedSessions > 0 && (
+          <div className="border-t border-border pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-sub">{activeTask.title}</p>
+              <span className="text-xs text-sub">{activeTask.completedSessions}/{activeTask.estimatedSessions} sessions</span>
+            </div>
+            <div className="flex gap-1">
+              {Array.from({ length: activeTask.estimatedSessions }).map((_, i) => (
+                <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300
+                  ${i < activeTask.completedSessions ? "bg-accent" : "bg-ring"}`} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {phase === "focus" && activeTask.subtasks.length > 0 && (
           <div className="border-t border-border pt-3 flex flex-col gap-2">
