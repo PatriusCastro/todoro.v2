@@ -81,7 +81,7 @@ export default function TimerPage({
               ${sub.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
             {sub.done && <svg width="8" height="8" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>}
           </button>
-          <span className={`text-xs ${sub.done ? "line-through text-sub" : "text-tx"}`}>{sub.title}</span>
+          <span title={sub.title} className={`text-xs truncate flex-1 min-w-0 ${sub.done ? "line-through text-sub" : "text-tx"}`}>{sub.title}</span>
         </div>
       ))}
     </>

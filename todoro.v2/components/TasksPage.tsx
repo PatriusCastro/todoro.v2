@@ -17,11 +17,15 @@ const PRIORITIES: { key: Priority; label: string }[] = [
   { key: "low",  label: "Low"  }, { key: "none", label: "None" },
 ]
 
-export default function TasksPage({ tasks, activeTask, running, onSave, onDelete, onToggle, onToggleSub, onSetActive, onNavToTimer }: TasksPageProps) {
+export default function TasksPage({
+  tasks, activeTask, running, onSave, onDelete,
+  onToggle, onToggleSub, onSetActive, onNavToTimer,
+}: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Priority | "all">("all")
   const [modalTask, setModalTask] = useState<Task | undefined>()
   const [showModal, setShowModal] = useState(false)
+  const [showToast, setShowToast] = useState(false)
 
   const filtered = tasks.filter(t =>
     t.title.toLowerCase().includes(search.toLowerCase()) &&
@@ -31,8 +35,28 @@ export default function TasksPage({ tasks, activeTask, running, onSave, onDelete
   const done    = filtered.filter(t =>  t.done)
   const pending = filtered.filter(t => !t.done)
 
+  const handleTaskClick = (task: Task) => {
+    if (running) {
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 3000)
+      return
+    }
+    onSetActive(task)
+    onNavToTimer()
+  }
+
   return (
     <div className="flex flex-col gap-5">
+
+      {/* Focus-lock toast */}
+      <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-200 transition-all duration-300
+        ${showToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"}`}>
+        <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-surface border border-border shadow-[0_8px_32px_rgba(0,0,0,0.3)] whitespace-nowrap">
+          <span className="w-2 h-2 rounded-full bg-priority-low animate-pulse shrink-0" />
+          <span className="text-sm font-semibold text-tx">Focus session in progress</span>
+          <span className="text-sm text-sub">— finish or pause first</span>
+        </div>
+      </div>
 
       <div className="flex items-start justify-between">
         <div>
@@ -46,6 +70,16 @@ export default function TasksPage({ tasks, activeTask, running, onSave, onDelete
         </button>
       </div>
 
+      {/* Focus-lock banner */}
+      {running && (
+        <div className="flex items-center gap-3 rounded-xl bg-priority-low/5 border border-priority-low/20 px-4 py-3">
+          <span className="w-2 h-2 rounded-full bg-priority-low animate-pulse shrink-0" />
+          <p className="text-xs font-semibold text-tx flex-1">
+            Focus session active — task switching is disabled until you pause or finish.
+          </p>
+        </div>
+      )}
+
       {/* Search */}
       <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
         <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-sub shrink-0">
@@ -53,9 +87,11 @@ export default function TasksPage({ tasks, activeTask, running, onSave, onDelete
         </svg>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks…"
           className="bg-transparent outline-none text-sm text-tx placeholder:text-sub flex-1" />
-        {search && <button onClick={() => setSearch("")} className="text-sub hover:text-tx">
-          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>}
+        {search && (
+          <button onClick={() => setSearch("")} className="text-sub hover:text-tx">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        )}
       </div>
 
       {/* Priority filter */}
@@ -85,7 +121,7 @@ export default function TasksPage({ tasks, activeTask, running, onSave, onDelete
               onToggle={onToggle} onToggleSub={onToggleSub}
               onEdit={t => { setModalTask(t); setShowModal(true) }}
               isActive={task.id === activeTask.id}
-              onClick={running ? undefined : (t => { onSetActive(t); onNavToTimer() })} />
+              onClick={handleTaskClick} />
           ))}
         </div>
       )}

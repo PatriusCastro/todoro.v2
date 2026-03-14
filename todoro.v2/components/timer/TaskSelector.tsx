@@ -36,7 +36,7 @@ export default function TaskSelector({ tasks, active, running, onChange, onStop 
           className="w-full flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3 hover:border-accent/40 transition-colors duration-200">
           <div className="flex items-center gap-2 min-w-0">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(active.priority) }} />
-            <span className="text-sm font-semibold text-tx truncate">{active.title}</span>
+            <span title={active.title} className="text-sm font-semibold text-tx truncate">{active.title}</span>
           </div>
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
             className={`text-sub shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}>

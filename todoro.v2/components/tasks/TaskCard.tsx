@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { getPriority, type Priority } from "../../lib/theme"
+import { getPriority, type Priority } from "@/lib/theme"
 
 export interface Subtask { id: string; title: string; done: boolean }
 export interface Task {
@@ -23,12 +23,13 @@ export default function TaskCard({
   task, onToggle, onToggleSub, onClick, onEdit,
   compact = false, isActive = false,
 }: TaskCardProps) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded,      setExpanded]      = useState(false)
+  const [titleExpanded, setTitleExpanded] = useState(false)
 
-  const dot          = getPriority(task.priority)
-  const doneCount    = task.subtasks.filter(s => s.done).length
-  const hasDetails   = task.subtasks.length > 0 || task.estimatedSessions > 0
-  const expandable   = !compact && hasDetails
+  const dot        = getPriority(task.priority)
+  const doneCount  = task.subtasks.filter(s => s.done).length
+  const hasDetails = task.subtasks.length > 0 || task.estimatedSessions > 0
+  const expandable = !compact && hasDetails
 
   const handleRowClick = () => {
     if (onClick) onClick(task)
@@ -54,7 +55,10 @@ export default function TaskCard({
         <div className="flex-1 min-w-0 cursor-pointer" onClick={handleRowClick}>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dot }} />
-            <span className={`text-sm font-semibold truncate ${task.done ? "line-through text-sub" : "text-tx"}`}>
+            <span
+              onClick={e => { e.stopPropagation(); setTitleExpanded(v => !v) }}
+              className={`text-sm font-semibold ${task.done ? "line-through text-sub" : "text-tx"}
+                ${titleExpanded ? "wrap-break-word whitespace-normal" : "truncate"}`}>
               {task.title}
             </span>
           </div>
@@ -113,18 +117,34 @@ export default function TaskCard({
           )}
 
           {task.subtasks.map(sub => (
-            <div key={sub.id} className="flex items-center gap-3">
-              <button onClick={e => { e.stopPropagation(); onToggleSub?.(task.id, sub.id) }}
-                className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center transition-all duration-200
-                  ${sub.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
-                {sub.done && <svg width="8" height="8" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>}
-              </button>
-              <span className={`text-xs ${sub.done ? "line-through text-sub" : "text-tx"}`}>{sub.title}</span>
-            </div>
+            <SubtaskRow key={sub.id} sub={sub} taskId={task.id} onToggleSub={onToggleSub} />
           ))}
 
         </div>
       )}
+    </div>
+  )
+}
+
+function SubtaskRow({ sub, taskId, onToggleSub }: {
+  sub: { id: string; title: string; done: boolean }
+  taskId: string
+  onToggleSub?: (taskId: string, subId: string) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div className="flex items-center gap-3">
+      <button onClick={e => { e.stopPropagation(); onToggleSub?.(taskId, sub.id) }}
+        className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center transition-all duration-200
+          ${sub.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
+        {sub.done && <svg width="8" height="8" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>}
+      </button>
+      <span
+        onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}
+        className={`text-xs flex-1 min-w-0 cursor-pointer ${sub.done ? "line-through text-sub" : "text-tx"}
+          ${expanded ? "wrap-break-word whitespace-normal" : "truncate"}`}>
+        {sub.title}
+      </span>
     </div>
   )
 }

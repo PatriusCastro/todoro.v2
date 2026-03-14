@@ -194,7 +194,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
           <span className="text-xs font-bold text-sub uppercase tracking-wider">Subtasks</span>
           {subtasks.map(sub => (
             <div key={sub.id} className="flex items-center gap-3 bg-surface2 rounded-xl px-3 py-2.5 border border-border">
-              <span className="flex-1 text-sm text-tx">{sub.title}</span>
+              <span className="flex-1 text-sm text-tx truncate min-w-0">{sub.title}</span>
               <button onMouseDown={() => removeSub(sub.id)} className="text-sub hover:text-priority-high transition-colors">
                 <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>

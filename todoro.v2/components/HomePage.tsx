@@ -135,7 +135,7 @@ export default function HomePage({
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-bold text-sub uppercase tracking-widest shrink-0">Now</span>
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(activeTask.priority) }} />
-            <span className="text-sm font-semibold text-tx truncate">{activeTask.title}</span>
+            <span title={activeTask.title} className="text-sm font-semibold text-tx truncate">{activeTask.title}</span>
           </div>
           <button onClick={onNavToTasks}
             className="text-xs text-sub hover:text-accent transition-colors flex items-center gap-0.5 shrink-0 ml-3">
