@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { breakpoints } from "@/lib/theme"
+import { breakpoints } from "../lib/theme"
 
 export function useMediaQuery(minWidth: number) {
   const [matches, setMatches] = useState(false)

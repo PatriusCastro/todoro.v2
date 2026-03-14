@@ -16,9 +16,9 @@ type Phase = "focus" | "break"
 function uid() { return Math.random().toString(36).slice(2) }
 
 const INITIAL_TASKS: Task[] = [
-  { id: "1", title: "Capstone-ng-VetSync", priority: "high", dueDate: new Date().toISOString().slice(0,10), dueTime: "", dueLabel: "Due today",     done: false, subtasks: [{ id: uid(), title: "Research phase", done: true }, { id: uid(), title: "Write report", done: false }] },
-  { id: "2", title: "Todoro Figma UI",     priority: "low",  dueDate: "",                                    dueTime: "", dueLabel: "No due date",   done: false, subtasks: [{ id: uid(), title: "Wireframes",     done: false }] },
-  { id: "3", title: "Business Plan",       priority: "mid",  dueDate: "",                                    dueTime: "", dueLabel: "Due next week", done: false, subtasks: [] },
+  { id: "1", title: "Try your first focus session", priority: "high", dueDate: new Date().toISOString().slice(0,10), dueTime: "", dueLabel: "Due today",   done: false, subtasks: [{ id: uid(), title: "Pick a task to work on", done: false }, { id: uid(), title: "Hit Start and stay focused", done: false }] },
+  { id: "2", title: "Explore the Timer page",       priority: "mid",  dueDate: "", dueTime: "", dueLabel: "No due date", done: false, subtasks: [{ id: uid(), title: "Try Focus view mode", done: false }] },
+  { id: "3", title: "Customize your settings",      priority: "low",  dueDate: "", dueTime: "", dueLabel: "No due date", done: false, subtasks: [] },
 ]
 
 function getGreeting() {
@@ -46,7 +46,7 @@ export default function Home() {
   const [running,     setRunning]     = useState(false)
 
   /* Stats */
-  const [sessions,    setSessions]    = useState(0)   // completed focus sessions today
+  const [sessions,    setSessions]    = useState(0)
   const [totalPoints, setTotalPoints] = useState(23)
   const [streak]                      = useState(3)
 
@@ -59,7 +59,7 @@ export default function Home() {
   const maxTime  = phase === "focus" ? focusMins * 60 : breakMins * 60
   const progress = maxTime > 0 ? (maxTime - time) / maxTime : 0
 
-  /* Keep activeTask in sync when tasks array updates */
+  /* Keep activeTask in sync */
   useEffect(() => {
     const updated = tasks.find(t => t.id === activeTask.id)
     if (updated) setActiveTask(updated)
@@ -85,37 +85,40 @@ export default function Home() {
     } catch {}
   }, [sound])
 
-  /* Advance to next phase — called on natural completion OR skip */
   const advancePhase = useCallback((completed: boolean) => {
     setRunning(false)
     if (phase === "focus") {
-      /* Focus ended → go to break */
-      if (completed) {
-        setSessions(s => s + 1)
-        setTotalPoints(p => p + 5)
-        playChime(false) /* descending = break time */
-      }
+      if (completed) { setSessions(s => s + 1); setTotalPoints(p => p + 5); playChime(false) }
       setPhase("break")
       setTime(breakMins * 60)
     } else {
-      /* Break ended → go back to focus */
-      if (completed) playChime(true) /* ascending = focus time */
+      if (completed) playChime(true)
       setPhase("focus")
       setTime(focusMins * 60)
     }
   }, [phase, focusMins, breakMins, playChime])
 
-  /* Countdown */
+  const advanceRef  = useRef(advancePhase)
+  const hasAdvanced = useRef(false)
+  useEffect(() => { advanceRef.current = advancePhase }, [advancePhase])
+
   useEffect(() => {
     if (!running) return
+    hasAdvanced.current = false
     const id = setInterval(() => {
       setTime(t => {
-        if (t <= 1) { advancePhase(true); return 0 }
+        if (t <= 1) {
+          if (!hasAdvanced.current) {
+            hasAdvanced.current = true
+            advanceRef.current(true)
+          }
+          return 0
+        }
         return t - 1
       })
     }, 1000)
     return () => clearInterval(id)
-  }, [running, advancePhase])
+  }, [running])
 
   /* Reset time when mode/duration changes */
   const handleModeChange = (m: Mode, fm: number, bm: number) => {
@@ -124,7 +127,7 @@ export default function Home() {
   }
 
   const handleReset  = () => { setRunning(false); setTime(phase === "focus" ? focusMins * 60 : breakMins * 60) }
-  const handleSkip   = () => advancePhase(false)
+  const handleSkip   = () => advanceRef.current(false)
   const handleToggle = () => setRunning(r => !r)
 
   const handleToggleTask = (id: string) =>

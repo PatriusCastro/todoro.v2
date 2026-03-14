@@ -29,7 +29,7 @@ export default function HomePage({
   const maxTime   = phase === "focus" ? focusMins * 60 : breakMins * 60
   const spent     = maxTime - time
   const spentFmt  = `${Math.floor(spent / 60)}:${(spent % 60).toString().padStart(2, "0")}`
-  const firstName = userName.split(" ")[0]
+  const firstName = userName.split(" ")[0] || "there"
   const ringColor = phase === "focus" ? colors.accent : "#51CF66"
   const ringGlow  = phase === "focus" ? colors.accentGlow : "rgba(81,207,102,0.35)"
 
@@ -40,7 +40,7 @@ export default function HomePage({
     {
       label: "Streak", value: streak, unit: "days",
       icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
-      color: "#FF9500",
+      color: "#FFBA00",
     },
     {
       label: "Today's Goal", value: `${sessions}/${totalSessions}`, unit: "sessions",
@@ -50,12 +50,12 @@ export default function HomePage({
     {
       label: "Points", value: totalPoints, unit: "pts",
       icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
-      color: "#FFB347",
+      color: "#FFBA00",
     },
     {
       label: "Mode", value: mode === "custom" ? "Custom" : mode, unit: `${focusMins}/${breakMins} min`,
       icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>,
-      color: "#8888AA",
+      color: "#EEEEEE",
     },
   ]
 
@@ -87,7 +87,7 @@ export default function HomePage({
               <span style={{ color }} className="opacity-70">{icon}</span>
             </div>
             <div className="flex items-baseline gap-1">
-              <span className={`text-xl font-black ${accent ? "text-accent" : "text-tx"}`}>{value}</span>
+              <span className="text-xl font-black text-tx">{value}</span>
               <span className="text-[11px] text-sub">{unit}</span>
             </div>
           </div>
@@ -135,10 +135,10 @@ export default function HomePage({
           </div>
 
           <button onClick={e => { e.stopPropagation(); onTimerToggle() }}
-            className={`w-full py-2.5 rounded-xl text-white text-sm font-black active:scale-95 transition-all duration-150
+            className={`w-full border py-2.5 rounded-xl text-white text-sm font-black active:scale-95 transition-all duration-150
               ${phase === "focus"
-                ? "bg-accent shadow-[0_4px_16px_rgba(108,99,255,0.35)] hover:bg-accent-hover"
-                : "bg-priority-low shadow-[0_4px_16px_rgba(81,207,102,0.3)] hover:bg-[#42c956]"}`}>
+                ? "border-accent hover:bg-accent-hover"
+                : "border-priority-low hover:bg-[#42c956]"}`}>
             {running
               ? <span className="flex items-center justify-center gap-2">
                   <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>

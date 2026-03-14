@@ -22,7 +22,6 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
   const dot = getPriority(task.priority)
   const doneCount = task.subtasks.filter(s => s.done).length
 
-  // Only the text body area is clickable for navigation/expand — buttons handle their own clicks
   const handleRowClick = () => {
     if (onClick) onClick(task)
     else if (!compact && task.subtasks.length > 0) setExpanded(v => !v)
@@ -35,7 +34,7 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
 
       <div className={`flex items-center gap-3 select-none ${compact ? "px-3 py-3" : "px-4 py-4"}`}>
 
-        {/* Checkbox — standalone, no parent click */}
+        {/* Checkbox */}
         <button
           onClick={e => { e.stopPropagation(); onToggle?.(task.id) }}
           className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all duration-200
@@ -43,7 +42,7 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
           {task.done && <svg width="10" height="10" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>}
         </button>
 
-        {/* Clickable body — title + meta */}
+        {/* Clickable body */}
         <div className="flex-1 min-w-0 cursor-pointer" onClick={handleRowClick}>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dot }} />
@@ -55,7 +54,7 @@ export default function TaskCard({ task, onToggle, onToggleSub, onClick, onEdit,
           </div>
         </div>
 
-        {/* Action buttons — each stops propagation independently */}
+        {/* Action buttons */}
         <div className="flex items-center gap-1 shrink-0">
           {onEdit && (
             <button onClick={e => { e.stopPropagation(); onEdit(task) }}

@@ -19,13 +19,13 @@ const NAV: { id: Tab; label: string }[] = [
 
 export default function AppShell({ children, activeTab, onTabChange, dark, userName, streak, running }: AppShellProps) {
   const isTablet  = useIsTablet()
-  const initials  = userName.slice(0, 2).toUpperCase()
+  const initials = userName ? userName.slice(0, 2).toUpperCase() : "–"
 
   return (
     <div className={dark ? "dark" : ""}>
       <div className="min-h-dvh bg-bg text-tx flex flex-col">
 
-        {/* Top nav — tablet and up */}
+        {/* Top nav */}
         {isTablet && (
           <header className="fixed top-0 inset-x-0 z-50 h-14 bg-surface/80 backdrop-blur-xl border-b border-border flex items-center px-6 gap-6">
             {/* Logo */}
@@ -39,7 +39,7 @@ export default function AppShell({ children, activeTab, onTabChange, dark, userN
             </div>
 
             {/* Nav links */}
-            <nav className="flex items-center gap-1 flex-1">
+            <nav className="flex items-center justify-center gap-1 flex-1">
               {NAV.map(({ id, label }) => {
                 const active = activeTab === id
                 return (

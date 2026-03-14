@@ -40,7 +40,7 @@ export default function TimerPage({
   const phaseLabel = phase === "focus" ? "Focus" : "Break"
   const ringColor  = phase === "focus" ? undefined : "#51CF66"
 
-  /* Focus (distraction-free) view */
+  /* Focus view */
   if (focused) return (
     <div className="flex flex-col items-center justify-center min-h-[75dvh] gap-8">
       <div className="text-center">

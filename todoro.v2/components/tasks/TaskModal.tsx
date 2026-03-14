@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { type Task, type Subtask } from "@/components/tasks/TaskCard"
-import { type Priority, getPriority } from "@/lib/theme"
+import { type Task, type Subtask } from "../tasks/TaskCard"
+import { type Priority, getPriority } from "../../lib/theme"
 
 interface TaskModalProps {
   task?: Task; onSave: (task: Task) => void
