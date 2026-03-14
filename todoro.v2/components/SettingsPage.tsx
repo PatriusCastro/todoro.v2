@@ -1,13 +1,31 @@
 "use client"
 
+import { useRef } from "react"
+
 interface SettingsPageProps {
-  userName: string; onUserName: (v: string) => void
-  dark: boolean; onDark: (v: boolean) => void
-  sound: boolean; onSound: (v: boolean) => void
-  dailyGoal: number; onDailyGoal: (v: number) => void
+  userName:   string; onUserName:  (v: string) => void
+  dark:       boolean; onDark:     (v: boolean) => void
+  sound:      boolean; onSound:    (v: boolean) => void
+  dailyGoal:  number;  onDailyGoal:(v: number) => void
+  avatarUrl:  string;  onAvatarUrl:(v: string) => void
 }
 
-export default function SettingsPage({ userName, onUserName, dark, onDark, sound, onSound, dailyGoal, onDailyGoal }: SettingsPageProps) {
+export default function SettingsPage({
+  userName, onUserName, dark, onDark, sound, onSound, dailyGoal, onDailyGoal,
+  avatarUrl, onAvatarUrl,
+}: SettingsPageProps) {
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => onAvatarUrl(ev.target?.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  const initials = userName ? userName.slice(0, 2).toUpperCase() : "–"
+
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -16,6 +34,37 @@ export default function SettingsPage({ userName, onUserName, dark, onDark, sound
       </div>
 
       <Section label="Profile">
+        {/* Avatar upload */}
+        <div className="flex items-center gap-4 px-4 py-4">
+          <div className="relative shrink-0">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-border bg-accent/10 flex items-center justify-center">
+              {avatarUrl
+                ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+                : <span className="text-xl font-black text-accent">{initials}</span>
+              }
+            </div>
+            <button onClick={() => fileRef.current?.click()}
+              className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-accent border-2 border-surface flex items-center justify-center hover:bg-accent-hover transition-colors">
+              <svg width="10" height="10" fill="none" stroke="white" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+          </div>
+          <div className="flex flex-col gap-1 flex-1 min-w-0">
+            <span className="text-xs font-bold text-sub uppercase tracking-wide">Photo</span>
+            <span className="text-xs text-sub">Tap the icon to upload</span>
+            {avatarUrl && (
+              <button onClick={() => onAvatarUrl("")}
+                className="text-xs text-priority-high hover:underline text-left w-fit">
+                Remove photo
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Name */}
         <div className="flex items-center gap-3 px-4 py-4">
           <Icon><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>
           <span className="flex-1 text-sm font-medium text-tx">Your Name</span>
@@ -41,9 +90,9 @@ export default function SettingsPage({ userName, onUserName, dark, onDark, sound
       </Section>
 
       <Section label="About">
-        <InfoRow label="App"        value="Todoro" />
-        <InfoRow label="Version"    value="2.0.0" />
-        <InfoRow label="Stack"      value="Next.js + PWA" />
+        <InfoRow label="App"     value="Todoro" />
+        <InfoRow label="Version" value="2.0.0" />
+        <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
     </div>
   )

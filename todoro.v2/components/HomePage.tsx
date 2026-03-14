@@ -16,6 +16,7 @@ interface HomePageProps {
   onToggleTask: (id: string) => void; onToggleSub: (tId: string, sId: string) => void
   onNavToTasks: () => void; onSetActive: (t: Task) => void
   streak: number; totalPoints: number; greeting: string; userName: string
+  avatarUrl: string; onNavToSettings: () => void
   todayHistory: { taskId: string; taskTitle: string; focusMins: number; at: number }[]
 }
 
@@ -44,7 +45,8 @@ export default function HomePage({
   time, phase, mode, focusMins, breakMins, longBreakMins, running, progress,
   sessions, totalSessions, cycleCount, onTimerToggle, onNavToTimer,
   tasks, activeTask, onToggleTask, onToggleSub,
-  onNavToTasks, onSetActive, streak, totalPoints, greeting, userName, todayHistory,
+  onNavToTasks, onSetActive, streak, totalPoints, greeting, userName,
+  avatarUrl, onNavToSettings, todayHistory,
 }: HomePageProps) {
   const minutes  = Math.floor(time / 60)
   const seconds  = time % 60
@@ -76,14 +78,20 @@ export default function HomePage({
             {subtitle}
           </p>
         </div>
-        <div className="relative">
-          <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center text-accent font-black text-sm border border-accent/20">
-            {firstName.slice(0, 2).toUpperCase()}
+        <button onClick={onNavToSettings} className="relative shrink-0">
+          <div className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-colors
+            ${running ? "border-priority-low" : "border-accent/20"}`}>
+            {avatarUrl
+              ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+              : <div className="w-full h-full bg-accent/15 flex items-center justify-center text-accent font-black text-sm">
+                  {firstName.slice(0, 2).toUpperCase()}
+                </div>
+            }
           </div>
           {running && (
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-priority-low border-2 border-bg" />
           )}
-        </div>
+        </button>
       </div>
 
       {/* Today's Goal */}
@@ -199,7 +207,6 @@ export default function HomePage({
         </div>
       </div>
 
-      
       {/* Up next */}
       {pendingTasks.length > 0 && (
         <div className="flex flex-col gap-2">

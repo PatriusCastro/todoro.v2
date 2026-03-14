@@ -86,10 +86,11 @@ function computeStreak(history: SessionRecord[]): number {
 
 export default function Home() {
   const [tab,       setTab]       = useState<Tab>("home")
-  const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Hello"))
+  const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Kath"))
   const [dark,      setDark]      = useState(() => load("todoro:dark",      true))
   const [sound,     setSound]     = useState(() => load("todoro:sound",     true))
   const [dailyGoal, setDailyGoal] = useState(() => load("todoro:dailyGoal", 5))
+  const [avatarUrl, setAvatarUrl] = useState(() => load("todoro:avatarUrl", ""))
 
   const [mode,      setMode]      = useState<Mode>(()   => load("todoro:mode",      "25/5"))
   const [focusMins, setFocusMins] = useState<number>(() => load("todoro:focusMins", 25))
@@ -135,6 +136,7 @@ export default function Home() {
   useEffect(() => { save("todoro:dark",      dark)        }, [dark])
   useEffect(() => { save("todoro:sound",     sound)       }, [sound])
   useEffect(() => { save("todoro:dailyGoal", dailyGoal)   }, [dailyGoal])
+  useEffect(() => { save("todoro:avatarUrl", avatarUrl)   }, [avatarUrl])
   useEffect(() => { save("todoro:mode",      mode)        }, [mode])
   useEffect(() => { save("todoro:focusMins", focusMins)   }, [focusMins])
   useEffect(() => { save("todoro:breakMins", breakMins)   }, [breakMins])
@@ -247,7 +249,7 @@ export default function Home() {
   }
 
   return (
-    <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running}>
+    <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} avatarUrl={avatarUrl}>
 
       {tab === "home" && (
         <HomePage {...timerProps}
@@ -256,6 +258,7 @@ export default function Home() {
           onToggleTask={handleToggleTask} onToggleSub={handleToggleSub}
           onNavToTasks={() => setTab("tasks")} onSetActive={setActiveTask}
           streak={streak} totalPoints={totalPoints} todayHistory={todayHistory}
+          avatarUrl={avatarUrl} onNavToSettings={() => setTab("settings")}
           greeting={getGreeting()} userName={userName} />
       )}
 
@@ -279,7 +282,8 @@ export default function Home() {
           userName={userName}   onUserName={setUserName}
           dark={dark}           onDark={setDark}
           sound={sound}         onSound={setSound}
-          dailyGoal={dailyGoal} onDailyGoal={setDailyGoal} />
+          dailyGoal={dailyGoal} onDailyGoal={setDailyGoal}
+          avatarUrl={avatarUrl} onAvatarUrl={setAvatarUrl} />
       )}
 
     </AppShell>

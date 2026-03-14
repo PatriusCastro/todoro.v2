@@ -5,30 +5,59 @@ import { useIsTablet } from "../hooks/useMediaQuery"
 type Tab = "home" | "tasks" | "timer" | "settings"
 
 interface AppShellProps {
-  children: React.ReactNode; activeTab: Tab
-  onTabChange: (tab: Tab) => void; dark: boolean
-  userName: string; streak: number; running: boolean
+  children:    React.ReactNode
+  activeTab:   Tab
+  onTabChange: (tab: Tab) => void
+  dark:        boolean
+  userName:    string
+  streak:      number
+  running:     boolean
+  avatarUrl?:  string
 }
 
 const NAV: { id: Tab; label: string }[] = [
+  { id: "home",  label: "Home"  },
+  { id: "tasks", label: "Tasks" },
+  { id: "timer", label: "Timer" },
+]
+
+const NAV_DESKTOP: { id: Tab; label: string }[] = [
   { id: "home",     label: "Home"     },
   { id: "tasks",    label: "Tasks"    },
   { id: "timer",    label: "Timer"    },
   { id: "settings", label: "Settings" },
 ]
 
-export default function AppShell({ children, activeTab, onTabChange, dark, userName, streak, running }: AppShellProps) {
+export default function AppShell({
+  children, activeTab, onTabChange, dark,
+  userName, streak, running, avatarUrl,
+}: AppShellProps) {
   const isTablet = useIsTablet()
   const initials = userName ? userName.slice(0, 2).toUpperCase() : "–"
+
+  const Avatar = ({ size = 8 }: { size?: number }) => (
+    <div
+      className={`w-${size} h-${size} rounded-xl overflow-hidden shrink-0 border-2 transition-colors
+        ${running ? "border-priority-low" : "border-accent/20"}`}>
+      {avatarUrl
+        ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+        : <div className="w-full h-full bg-accent/15 flex items-center justify-center text-accent font-black text-xs">
+            {initials}
+          </div>
+      }
+    </div>
+  )
 
   return (
     <div className={dark ? "dark" : ""}>
       <div className="min-h-dvh bg-bg text-tx flex flex-col">
 
-        {/* Top nav — tablet+ */}
+        {/* ── Desktop / Tablet top nav ── */}
         {isTablet && (
-          <header className="fixed top-0 inset-x-0 z-50 h-14 bg-surface/80 backdrop-blur-xl border-b border-border flex items-center px-6 gap-6">
-            <div className="flex items-center gap-2.5 shrink-0">
+          <header className="fixed top-0 inset-x-0 z-50 h-14 bg-surface/90 backdrop-blur-xl border-b border-border flex items-center px-5 gap-4">
+
+            {/* Logo */}
+            <div className="flex items-center gap-2 shrink-0">
               <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2.5">
                   <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>
@@ -37,59 +66,89 @@ export default function AppShell({ children, activeTab, onTabChange, dark, userN
               <span className="font-black text-sm tracking-tight text-tx">Todoro</span>
             </div>
 
+            {/* Nav pills */}
             <nav className="flex items-center justify-center gap-1 flex-1">
-              {NAV.map(({ id, label }) => {
+              {NAV_DESKTOP.map(({ id, label }) => {
                 const active = activeTab === id
                 return (
                   <button key={id} onClick={() => onTabChange(id)}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200
+                    className={`relative px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200
                       ${active ? "bg-accent text-white" : "text-sub hover:text-tx hover:bg-surface2"}`}>
                     {label}
+                    {id === "timer" && running && (
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-priority-low border-2 border-surface" />
+                    )}
                   </button>
                 )
               })}
             </nav>
 
+            {/* Right side */}
             <div className="flex items-center gap-3 shrink-0">
               {running && (
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-priority-low/10 border border-priority-low/30">
+                <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-priority-low/10 border border-priority-low/30">
                   <span className="w-1.5 h-1.5 rounded-full bg-priority-low animate-pulse" />
                   <span className="text-xs font-semibold text-priority-low">Focusing</span>
                 </div>
               )}
-              <div className="flex items-center gap-2">
-                <div className="text-right hidden lg:block">
-                  <p className="text-xs font-bold text-tx leading-none">{userName}</p>
-                  <p className="text-[10px] text-sub">{streak} day streak</p>
+              <button onClick={() => onTabChange("settings")}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <div className="hidden lg:flex flex-col items-end">
+                  <span className="text-xs font-bold text-tx leading-none">{userName}</span>
+                  <span className="text-[10px] text-sub">{streak} day streak</span>
                 </div>
-                <div className="w-8 h-8 rounded-xl bg-accent/15 flex items-center justify-center text-accent text-xs font-black border border-accent/20">
-                  {initials}
-                </div>
-              </div>
+                <Avatar size={8} />
+              </button>
             </div>
           </header>
         )}
 
-        {/* Content */}
+        {/* ── Content ── */}
         <main className={`flex-1 overflow-y-auto ${isTablet ? "pt-14" : "pb-16"}`}>
           <div className="w-full max-w-2xl mx-auto px-4 md:px-6 py-6">
             {children}
           </div>
         </main>
 
-        {/* Bottom nav — mobile only */}
+        {/* ── Mobile bottom nav ── */}
         {!isTablet && (
-          <nav className="fixed bottom-0 inset-x-0 z-50 flex justify-around items-center h-16 bg-surface/90 backdrop-blur-xl border-t border-border pb-[env(safe-area-inset-bottom)]">
+          <nav className="fixed bottom-0 inset-x-0 z-50 bg-surface/95 backdrop-blur-xl border-t border-border pb-[env(safe-area-inset-bottom)]">
+            <div className="flex justify-around items-center h-16">
             {NAV.map(({ id, label }) => {
-              const active = activeTab === id
-              return (
-                <button key={id} onClick={() => onTabChange(id)}
-                  className={`flex flex-col items-center gap-1 px-4 py-1 transition-colors duration-200 ${active ? "text-accent" : "text-sub"}`}>
-                  <NavIcon id={id} active={active} />
-                  <span className="text-[10px] font-semibold">{label}</span>
-                </button>
-              )
-            })}
+                const active = activeTab === id
+                return (
+                  <button key={id} onClick={() => onTabChange(id)}
+                    className={`relative flex flex-col items-center gap-1 px-3 py-1 transition-colors duration-200
+                      ${active ? "text-accent" : "text-sub"}`}>
+                    <NavIcon id={id} active={active} />
+                    <span className="text-[10px] font-semibold">{label}</span>
+                    {/* Running dot on Timer tab */}
+                    {id === "timer" && running && (
+                      <span className="absolute top-0.5 right-2 w-2 h-2 rounded-full bg-priority-low border-2 border-surface" />
+                    )}
+                  </button>
+                )
+              })}
+
+              {/* Avatar shortcut to settings */}
+              <button onClick={() => onTabChange("settings")}
+                className={`relative flex flex-col items-center gap-1 px-3 py-1 transition-colors duration-200
+                  ${activeTab === "settings" ? "text-accent" : "text-sub"}`}>
+                <div className={`w-6 h-6 rounded-lg overflow-hidden border-2 transition-colors
+                  ${activeTab === "settings" ? "border-accent" : "border-border"}`}>
+                  {avatarUrl
+                    ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full bg-accent/15 flex items-center justify-center text-accent font-black text-[9px]">
+                        {initials}
+                      </div>
+                  }
+                </div>
+                <span className="text-[10px] font-semibold">Me</span>
+                {running && (
+                  <span className="absolute top-0.5 right-2 w-2 h-2 rounded-full bg-priority-low border-2 border-surface" />
+                )}
+              </button>
+            </div>
           </nav>
         )}
 
