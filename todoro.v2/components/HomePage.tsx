@@ -16,6 +16,7 @@ interface HomePageProps {
   onToggleTask: (id: string) => void; onToggleSub: (tId: string, sId: string) => void
   onNavToTasks: () => void; onSetActive: (t: Task) => void
   streak: number; totalPoints: number; greeting: string; userName: string
+  todayHistory: { taskId: string; taskTitle: string; focusMins: number; at: number }[]
 }
 
 function phaseLabel(phase: Phase) {
@@ -32,7 +33,7 @@ export default function HomePage({
   time, phase, mode, focusMins, breakMins, longBreakMins, running, progress,
   sessions, totalSessions, cycleCount, onTimerToggle, onNavToTimer,
   tasks, activeTask, onToggleTask, onToggleSub,
-  onNavToTasks, onSetActive, streak, totalPoints, greeting, userName,
+  onNavToTasks, onSetActive, streak, totalPoints, greeting, userName, todayHistory,
 }: HomePageProps) {
   const minutes  = Math.floor(time / 60)
   const seconds  = time % 60
@@ -163,16 +164,17 @@ export default function HomePage({
       </div>
 
       {/* Today's session log */}
-      {sessions > 0 && (
+      {todayHistory.length > 0 && (
         <div className="flex flex-col gap-2">
           <span className="text-xs font-bold text-sub uppercase tracking-widest px-1">Today's Sessions</span>
           <div className="rounded-2xl border border-border bg-surface px-5 py-3 flex flex-col gap-2">
-            {Array.from({ length: sessions }).map((_, i) => (
+            {todayHistory.map((s, i) => (
               <div key={i} className="flex items-center gap-2">
                 <svg width="12" height="12" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" viewBox="0 0 24 24">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
-                <span className="text-xs text-sub">Focus {focusMins}m</span>
+                <span className="text-xs text-tx font-medium truncate flex-1">{s.taskTitle}</span>
+                <span className="text-[11px] text-sub shrink-0">{s.focusMins}m</span>
               </div>
             ))}
           </div>

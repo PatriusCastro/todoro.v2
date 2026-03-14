@@ -1,7 +1,7 @@
 {
-  "name": "FocusFlow - Pomodoro Timer",
-  "short_name": "FocusFlow",
-  "description": "A beautiful Pomodoro timer for deep focus sessions",
+  "name": "Todoro",
+  "short_name": "Todoro",
+  "description": "A Pomodoro timer and task manager for deep focus sessions.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

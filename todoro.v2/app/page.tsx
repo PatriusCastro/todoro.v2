@@ -6,12 +6,20 @@ import HomePage     from "../components/HomePage"
 import TimerPage    from "../components/TimerPage"
 import TasksPage    from "../components/TasksPage"
 import SettingsPage from "../components/SettingsPage"
-import { type Mode, PRESET_MODES } from "../components/timer/ModeSelector"
+import { type Mode } from "../components/timer/ModeSelector"
 import { type Task } from "../components/tasks/TaskCard"
 import { useWakeLock } from "../hooks/useWakeLock"
+import { useDocumentTitle } from "../hooks/useDocumentTitle"
 
 type Tab   = "home" | "tasks" | "timer" | "settings"
 type Phase = "focus" | "break" | "longbreak"
+
+export interface SessionRecord {
+  taskId:    string
+  taskTitle: string
+  focusMins: number
+  at:        number
+}
 
 function uid() { return Math.random().toString(36).slice(2) }
 
@@ -21,9 +29,12 @@ const LONG_BREAK_MINS     = 15
 const INITIAL_TASKS: Task[] = [
   {
     id: "1", title: "Try your first focus session", priority: "high",
-    dueDate: new Date().toISOString().slice(0,10), dueTime: "", dueLabel: "Due today",
+    dueDate: new Date().toISOString().slice(0, 10), dueTime: "", dueLabel: "Due today",
     done: false, estimatedSessions: 2, completedSessions: 0,
-    subtasks: [{ id: uid(), title: "Pick a task to work on", done: false }, { id: uid(), title: "Hit Start and stay focused", done: false }],
+    subtasks: [
+      { id: uid(), title: "Pick a task to work on",     done: false },
+      { id: uid(), title: "Hit Start and stay focused",  done: false },
+    ],
   },
   {
     id: "2", title: "Explore the Timer page", priority: "mid",
@@ -46,29 +57,66 @@ function getGreeting() {
   return "Good evening"
 }
 
+function todayKey() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function load<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as T) : fallback
+  } catch { return fallback }
+}
+
+function save(key: string, value: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
+}
+
+function computeStreak(history: SessionRecord[]): number {
+  if (history.length === 0) return 0
+  const days = new Set(history.map(s => new Date(s.at).toISOString().slice(0, 10)))
+  let streak = 0
+  const d = new Date()
+  while (days.has(d.toISOString().slice(0, 10))) {
+    streak++
+    d.setDate(d.getDate() - 1)
+  }
+  return streak
+}
+
 export default function Home() {
-  const [tab,         setTab]         = useState<Tab>("home")
-  const [userName,    setUserName]    = useState("Kath")
-  const [dark,        setDark]        = useState(true)
-  const [sound,       setSound]       = useState(true)
-  const [dailyGoal,   setDailyGoal]   = useState(5)
+  const [tab,       setTab]       = useState<Tab>("home")
+  const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Kath"))
+  const [dark,      setDark]      = useState(() => load("todoro:dark",      true))
+  const [sound,     setSound]     = useState(() => load("todoro:sound",     true))
+  const [dailyGoal, setDailyGoal] = useState(() => load("todoro:dailyGoal", 5))
 
-  const [mode,        setMode]        = useState<Mode>("25/5")
-  const [focusMins,   setFocusMins]   = useState(25)
-  const [breakMins,   setBreakMins]   = useState(5)
+  const [mode,      setMode]      = useState<Mode>(()   => load("todoro:mode",      "25/5"))
+  const [focusMins, setFocusMins] = useState<number>(() => load("todoro:focusMins", 25))
+  const [breakMins, setBreakMins] = useState<number>(() => load("todoro:breakMins", 5))
 
-  const [phase,       setPhase]       = useState<Phase>("focus")
-  const [time,        setTime]        = useState(focusMins * 60)
-  const [running,     setRunning]     = useState(false)
+  const [phase,   setPhase]   = useState<Phase>("focus")
+  const [time,    setTime]    = useState(focusMins * 60)
+  const [running, setRunning] = useState(false)
 
-  const [sessions,       setSessions]       = useState(0)
-  const [cycleCount,     setCycleCount]     = useState(0)
-  const [totalPoints,    setTotalPoints]    = useState(23)
-  const [streak]                            = useState(3)
-  const [sessionHistory, setSessionHistory] = useState<{ taskId: string; at: number }[]>([])
+  const [sessions,    setSessions]    = useState(0)
+  const [cycleCount,  setCycleCount]  = useState(0)
+  const [totalPoints, setTotalPoints] = useState(() => load("todoro:points", 0))
 
-  const [tasks,      setTasks]      = useState<Task[]>(INITIAL_TASKS)
-  const [activeTask, setActiveTask] = useState<Task>(INITIAL_TASKS[0])
+  const [allHistory, setAllHistory] = useState<SessionRecord[]>(
+    () => load("todoro:history", [])
+  )
+
+  const todayHistory = allHistory.filter(
+    s => new Date(s.at).toISOString().slice(0, 10) === todayKey()
+  )
+  const streak = computeStreak(allHistory)
+
+  const [tasks,      setTasks]      = useState<Task[]>(() => load("todoro:tasks", INITIAL_TASKS))
+  const [activeTask, setActiveTask] = useState<Task>(() => {
+    const saved = load<Task[]>("todoro:tasks", INITIAL_TASKS)
+    return saved[0] ?? INITIAL_TASKS[0]
+  })
 
   const audioCtxRef = useRef<AudioContext | null>(null)
 
@@ -76,12 +124,26 @@ export default function Home() {
   const maxTime  = phase === "focus" ? focusMins * 60 : currentBreakMins * 60
   const progress = maxTime > 0 ? (maxTime - time) / maxTime : 0
 
+  /* Keep activeTask in sync with tasks state */
   useEffect(() => {
     const updated = tasks.find(t => t.id === activeTask.id)
     if (updated) setActiveTask(updated)
   }, [tasks])
 
+  /* Persist settings & data */
+  useEffect(() => { save("todoro:userName",  userName)    }, [userName])
+  useEffect(() => { save("todoro:dark",      dark)        }, [dark])
+  useEffect(() => { save("todoro:sound",     sound)       }, [sound])
+  useEffect(() => { save("todoro:dailyGoal", dailyGoal)   }, [dailyGoal])
+  useEffect(() => { save("todoro:mode",      mode)        }, [mode])
+  useEffect(() => { save("todoro:focusMins", focusMins)   }, [focusMins])
+  useEffect(() => { save("todoro:breakMins", breakMins)   }, [breakMins])
+  useEffect(() => { save("todoro:tasks",     tasks)       }, [tasks])
+  useEffect(() => { save("todoro:points",    totalPoints) }, [totalPoints])
+  useEffect(() => { save("todoro:history",   allHistory)  }, [allHistory])
+
   useWakeLock(running)
+  useDocumentTitle(time, phase, running)
 
   const playChime = useCallback((isFocus: boolean) => {
     if (!sound) return
@@ -109,7 +171,12 @@ export default function Home() {
         setSessions(s => s + 1)
         setCycleCount(nextCycle)
         setTotalPoints(p => p + 5)
-        setSessionHistory(h => [...h, { taskId: activeTask.id, at: Date.now() }])
+        setAllHistory(h => [...h, {
+          taskId:    activeTask.id,
+          taskTitle: activeTask.title,
+          focusMins,
+          at:        Date.now(),
+        }])
         setTasks(ts => ts.map(t => t.id === activeTask.id
           ? { ...t, completedSessions: t.completedSessions + 1 }
           : t))
@@ -165,7 +232,9 @@ export default function Home() {
     }))
 
   const handleSaveTask = (task: Task) =>
-    setTasks(ts => ts.some(t => t.id === task.id) ? ts.map(t => t.id === task.id ? task : t) : [...ts, task])
+    setTasks(ts => ts.some(t => t.id === task.id)
+      ? ts.map(t => t.id === task.id ? task : t)
+      : [...ts, task])
 
   const handleDeleteTask = (id: string) => {
     setTasks(ts => ts.filter(t => t.id !== id))
@@ -187,7 +256,7 @@ export default function Home() {
           tasks={tasks} activeTask={activeTask}
           onToggleTask={handleToggleTask} onToggleSub={handleToggleSub}
           onNavToTasks={() => setTab("tasks")} onSetActive={setActiveTask}
-          streak={streak} totalPoints={totalPoints}
+          streak={streak} totalPoints={totalPoints} todayHistory={todayHistory}
           greeting={getGreeting()} userName={userName} />
       )}
 
