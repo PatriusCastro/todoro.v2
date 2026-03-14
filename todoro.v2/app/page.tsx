@@ -268,7 +268,7 @@ export default function Home() {
       )}
 
       {tab === "tasks" && (
-        <TasksPage tasks={tasks} activeTask={activeTask}
+        <TasksPage tasks={tasks} activeTask={activeTask} running={running}
           onSave={handleSaveTask} onDelete={handleDeleteTask}
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
           onSetActive={setActiveTask} onNavToTimer={() => setTab("timer")} />

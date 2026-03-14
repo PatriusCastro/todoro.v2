@@ -199,6 +199,18 @@ export default function HomePage({
         </div>
       </div>
 
+      
+      {/* Up next */}
+      {pendingTasks.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-bold text-sub uppercase tracking-widest px-1">Up Next</span>
+          {pendingTasks.slice(0, 2).map(t => (
+            <TaskCard key={t.id} task={t} onToggle={onToggleTask}
+              onClick={running && phase === "focus" ? undefined : () => onSetActive(t)} compact />
+          ))}
+        </div>
+      )}
+
       {/* Today's session log */}
       {todayHistory.length > 0 && (
         <div className="flex flex-col gap-2">
@@ -214,17 +226,6 @@ export default function HomePage({
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Up next */}
-      {pendingTasks.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-bold text-sub uppercase tracking-widest px-1">Up Next</span>
-          {pendingTasks.slice(0, 2).map(t => (
-            <TaskCard key={t.id} task={t} onToggle={onToggleTask}
-              onClick={running && phase === "focus" ? undefined : () => onSetActive(t)} compact />
-          ))}
         </div>
       )}
 

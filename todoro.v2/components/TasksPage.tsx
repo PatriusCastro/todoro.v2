@@ -6,7 +6,7 @@ import TaskModal from "../components/tasks/TaskModal"
 import { type Priority, getPriority } from "../lib/theme"
 
 interface TasksPageProps {
-  tasks: Task[]; activeTask: Task
+  tasks: Task[]; activeTask: Task; running: boolean
   onSave: (t: Task) => void; onDelete: (id: string) => void
   onToggle: (id: string) => void; onToggleSub: (tId: string, sId: string) => void
   onSetActive: (t: Task) => void; onNavToTimer: () => void
@@ -17,7 +17,7 @@ const PRIORITIES: { key: Priority; label: string }[] = [
   { key: "low",  label: "Low"  }, { key: "none", label: "None" },
 ]
 
-export default function TasksPage({ tasks, activeTask, onSave, onDelete, onToggle, onToggleSub, onSetActive, onNavToTimer }: TasksPageProps) {
+export default function TasksPage({ tasks, activeTask, running, onSave, onDelete, onToggle, onToggleSub, onSetActive, onNavToTimer }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Priority | "all">("all")
   const [modalTask, setModalTask] = useState<Task | undefined>()
@@ -85,7 +85,7 @@ export default function TasksPage({ tasks, activeTask, onSave, onDelete, onToggl
               onToggle={onToggle} onToggleSub={onToggleSub}
               onEdit={t => { setModalTask(t); setShowModal(true) }}
               isActive={task.id === activeTask.id}
-              onClick={t => { onSetActive(t); onNavToTimer() }} />
+              onClick={running ? undefined : (t => { onSetActive(t); onNavToTimer() })} />
           ))}
         </div>
       )}
