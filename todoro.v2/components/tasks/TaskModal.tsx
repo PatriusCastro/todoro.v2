@@ -133,7 +133,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
           {PRIORITIES.map(p => (
             <button key={p} onClick={() => setPriority(p)}
               className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all duration-200
-                ${priority === p ? "text-white shadow-[0_4px_12px_rgba(108,99,255,0.3)]" : "bg-transparent text-sub border-border hover:border-accent/40"}`}
+                ${priority === p ? "text-white" : "bg-transparent text-sub border-border hover:border-accent/40"}`}
               style={priority === p ? { background: getPriority(p), borderColor: getPriority(p) } : {}}>
               {LABELS[p]}
             </button>
@@ -218,7 +218,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
           )}
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-border text-sub text-sm font-semibold hover:text-tx transition-all">Cancel</button>
           <button onClick={handleSave} disabled={!title.trim()}
-            className="flex-1 py-2.5 rounded-xl bg-accent text-white text-sm font-black shadow-[0_4px_16px_rgba(108,99,255,0.4)] hover:bg-accent-hover disabled:opacity-40 transition-all">
+            className="flex-1 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover disabled:opacity-40 transition-all">
             {task ? "Save" : "Create"}
           </button>
         </div>

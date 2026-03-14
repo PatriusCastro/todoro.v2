@@ -40,7 +40,7 @@ export default function TasksPage({ tasks, activeTask, onSave, onDelete, onToggl
           <p className="text-sm text-sub mt-0.5">{tasks.filter(t => !t.done).length} pending · {tasks.filter(t => t.done).length} done</p>
         </div>
         <button onClick={() => { setModalTask(undefined); setShowModal(true) }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-black shadow-[0_4px_16px_rgba(108,99,255,0.4)] hover:bg-accent-hover active:scale-95 transition-all">
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover active:scale-95 transition-all">
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           New
         </button>
