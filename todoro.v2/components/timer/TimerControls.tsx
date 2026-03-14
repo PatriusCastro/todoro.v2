@@ -8,9 +8,7 @@ interface TimerControlsProps {
 }
 
 function skipLabel(phase: Phase) {
-  if (phase === "focus")     return "Skip to break"
-  if (phase === "longbreak") return "Skip to focus"
-  return "Skip to focus"
+  return phase === "focus" ? "Skip to break" : "Skip to focus"
 }
 
 export default function TimerControls({ running, phase, onToggle, onReset, onSkip }: TimerControlsProps) {

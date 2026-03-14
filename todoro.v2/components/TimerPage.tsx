@@ -184,7 +184,7 @@ export default function TimerPage({
         </div>
 
         <div className="flex flex-col gap-5 flex-1">
-          <TaskSelector tasks={tasks} active={activeTask} onChange={onTaskChange} />
+          <TaskSelector tasks={tasks} active={activeTask} running={running} onChange={onTaskChange} onStop={onReset} />
           <ModeSelector active={mode} customFocus={focusMins} customBreak={breakMins} onChange={onModeChange} />
           <TimerControls running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip} phase={phase} />
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { getPriority, type Priority } from "@/lib/theme"
+import { getPriority, type Priority } from "../../lib/theme"
 
 export interface Subtask { id: string; title: string; done: boolean }
 export interface Task {
