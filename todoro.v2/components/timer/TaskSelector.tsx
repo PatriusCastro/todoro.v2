@@ -17,6 +17,7 @@ export default function TaskSelector({ tasks, active, running, onChange, onStop 
   const [pending, setPending] = useState<Task | null>(null)
 
   const pendingTasks = tasks.filter(t => !t.done)
+  const allDone      = pendingTasks.length === 0
 
   const handleSelect = (task: Task) => {
     setOpen(false)
@@ -32,19 +33,28 @@ export default function TaskSelector({ tasks, active, running, onChange, onStop 
   return (
     <>
       <div className="relative">
-        <button onClick={() => setOpen(o => !o)}
-          className="w-full flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3 hover:border-accent/40 transition-colors duration-200">
+        <button
+          onClick={() => { if (!allDone) setOpen(o => !o) }}
+          className={`w-full flex items-center justify-between gap-3 rounded-xl border bg-surface px-4 py-3 transition-colors duration-200
+            ${allDone ? "border-border opacity-50 cursor-not-allowed" : "border-border hover:border-accent/40"}`}>
           <div className="flex items-center gap-2 min-w-0">
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(active.priority) }} />
-            <span title={active.title} className="text-sm font-semibold text-tx truncate">{active.title}</span>
+            {allDone
+              ? <span className="text-sm text-sub italic">All tasks completed</span>
+              : <>
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(active.priority) }} />
+                  <span title={active.title} className="text-sm font-semibold text-tx truncate">{active.title}</span>
+                </>
+            }
           </div>
-          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
-            className={`text-sub shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
-            <path d="m6 9 6 6 6-6"/>
-          </svg>
+          {!allDone && (
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
+              className={`text-sub shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          )}
         </button>
 
-        {open && (
+        {open && !allDone && (
           <div className="absolute top-full left-0 right-0 mt-1 z-50 rounded-xl border border-border bg-surface shadow-[0_8px_32px_rgba(0,0,0,0.3)] overflow-hidden">
             {pendingTasks.map(task => (
               <button key={task.id} onClick={() => handleSelect(task)}

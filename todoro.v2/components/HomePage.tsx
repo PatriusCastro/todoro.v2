@@ -61,6 +61,7 @@ export default function HomePage({
   const size = 200; const cx = size / 2; const r = cx - 16; const C = 2 * Math.PI * r
 
   const pendingTasks = tasks.filter(t => !t.done && t.id !== activeTask.id)
+  const allDone = tasks.every(t => t.done)
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,25 +74,41 @@ export default function HomePage({
             {firstName}
             {running && <span className="ml-2 text-sm font-semibold text-priority-low align-middle">· focusing</span>}
           </h1>
-          <p className={`text-sm mt-0.5 transition-colors duration-300
+          <p className={`text-sm mt-1 transition-colors duration-300
             ${goalHit ? "text-priority-low font-semibold" : "text-sub"}`}>
             {subtitle}
           </p>
         </div>
-        <button onClick={onNavToSettings} className="relative shrink-0">
-          <div className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-colors
-            ${running ? "border-priority-low" : "border-accent/20"}`}>
-            {avatarUrl
-              ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-              : <div className="w-full h-full bg-accent/15 flex items-center justify-center text-accent font-black text-sm">
-                  {firstName.slice(0, 2).toUpperCase()}
-                </div>
-            }
+        <div className="flex flex-col items-end gap-2">
+          <button onClick={onNavToSettings} className="relative shrink-0">
+            <div className={`w-12 h-12 rounded-xl overflow-hidden border-2 transition-colors
+              ${running ? "border-priority-low" : "border-accent/20"}`}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+                : <div className="w-full h-full bg-accent/15 flex items-center justify-center text-accent font-black text-sm">
+                    {firstName.slice(0, 2).toUpperCase()}
+                  </div>
+              }
+            </div>
+            {running && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-priority-low border-2 border-bg" />
+            )}
+          </button>
+          <div className="flex items-center gap-4 border border-border rounded-xl px-3 py-1">
+            <div className="flex items-center gap-1.5">
+              <svg width="13" height="13" fill="none" stroke="#FFBA00" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+              <span className="text-xs font-semibold text-tx">{streak} day streak</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <svg width="13" height="13" fill="none" stroke="#FFBA00" strokeWidth="2" viewBox="0 0 24 24">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <span className="text-xs font-semibold text-tx">{totalPoints} pts</span>
+            </div>
           </div>
-          {running && (
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-priority-low border-2 border-bg" />
-          )}
-        </button>
+        </div>
       </div>
 
       {/* Today's Goal */}
@@ -99,9 +116,6 @@ export default function HomePage({
         ${goalHit ? "border-priority-low/40 bg-priority-low/5" : "border-border"}`}>
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-sub uppercase tracking-widest">Today's Goal</span>
-          <span className={`text-xs font-semibold ${goalHit ? "text-priority-low" : "text-sub"}`}>
-            {sessions} / {totalSessions} sessions
-          </span>
         </div>
         <div className="flex items-center gap-1.5">
           {Array.from({ length: totalSessions }).map((_, i) => (
@@ -111,20 +125,9 @@ export default function HomePage({
                 : "bg-ring"}`} />
           ))}
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <svg width="13" height="13" fill="none" stroke="#FFBA00" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-            </svg>
-            <span className="text-xs font-semibold text-tx">{streak} day streak</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <svg width="13" height="13" fill="none" stroke="#FFBA00" strokeWidth="2" viewBox="0 0 24 24">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-            <span className="text-xs font-semibold text-tx">{totalPoints} pts</span>
-          </div>
-        </div>
+        <span className={`text-xs font-semibold ${goalHit ? "text-priority-low" : "text-sub"}`}>
+          {sessions} / {totalSessions} sessions
+        </span>
       </div>
 
       {/* Timer card */}
@@ -134,8 +137,13 @@ export default function HomePage({
         <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-bold text-sub uppercase tracking-widest shrink-0">Now</span>
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(activeTask.priority) }} />
-            <span title={activeTask.title} className="text-sm font-semibold text-tx truncate">{activeTask.title}</span>
+            {allDone
+              ? <span className="text-sm text-sub italic">All tasks completed</span>
+              : <>
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(activeTask.priority) }} />
+                  <span className="text-sm font-semibold text-tx truncate">{activeTask.title}</span>
+                </>
+            }
           </div>
           <button onClick={onNavToTasks}
             className="text-xs text-sub hover:text-accent transition-colors flex items-center gap-0.5 shrink-0 ml-3">
@@ -145,7 +153,7 @@ export default function HomePage({
         </div>
 
         {/* Session bar inside card */}
-        {activeTask.estimatedSessions > 0 && (
+        {!allDone && activeTask.estimatedSessions > 0 && (
           <div className="px-5 pt-3 flex items-center gap-2">
             <div className="flex gap-1 flex-1">
               {Array.from({ length: activeTask.estimatedSessions }).map((_, i) => (

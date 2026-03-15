@@ -116,7 +116,7 @@ export default function Home() {
   const [tasks,      setTasks]      = useState<Task[]>(() => load("todoro:tasks", INITIAL_TASKS))
   const [activeTask, setActiveTask] = useState<Task>(() => {
     const saved = load<Task[]>("todoro:tasks", INITIAL_TASKS)
-    return saved[0] ?? INITIAL_TASKS[0]
+    return saved.find(t => !t.done) ?? saved[0] ?? INITIAL_TASKS[0]
   })
 
   const audioCtxRef = useRef<AudioContext | null>(null)
@@ -243,8 +243,11 @@ export default function Home() {
 
   const handleDeleteTask = (id: string) => {
     setTasks(ts => ts.filter(t => t.id !== id))
-    const remaining = tasks.filter(t => t.id !== id)
-    if (activeTask.id === id) setActiveTask(remaining[0] ?? INITIAL_TASKS[0])
+    if (activeTask.id === id) {
+      const remaining = tasks.filter(t => t.id !== id)
+      const nextPending = remaining.find(t => !t.done)
+      setActiveTask(nextPending ?? remaining[0] ?? INITIAL_TASKS[0])
+    }
   }
 
   const timerProps = {

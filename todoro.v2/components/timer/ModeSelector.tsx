@@ -38,7 +38,7 @@ export default function ModeSelector({ active, customFocus, customBreak, onChang
           }}
             className={`flex-1 py-2 rounded-xl text-sm font-bold border transition-all duration-200
               ${active === m
-                ? "bg-accent text-white border-accent shadow-[0_4px_16px_rgba(108,99,255,0.35)]"
+                ? "bg-accent text-white border-accent"
                 : "bg-transparent text-sub border-border hover:border-accent/50 hover:text-tx"}`}>
             {m === "custom" ? "Custom" : m}
           </button>

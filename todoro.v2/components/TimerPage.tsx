@@ -70,6 +70,7 @@ export default function TimerPage({
 
   const sessionsInCycle  = cycleCount % 4 === 0 && cycleCount > 0 ? 4 : cycleCount % 4
   const nextLongBreakIn  = 4 - sessionsInCycle
+  const allDone = tasks.every(t => t.done)
 
   /* Shared subtask list used in both views */
   const SubtaskList = () => (
@@ -110,8 +111,8 @@ export default function TimerPage({
           <span className={`w-1.5 h-1.5 rounded-full ${dot} ${running ? "animate-pulse" : ""}`} />
           {label}
         </div>
-        <p className="text-sm font-semibold text-tx">{activeTask.title}</p>
-        {phase === "focus" && activeTask.estimatedSessions > 0 && (
+        <p className="text-sm font-semibold text-tx">{allDone ? "All tasks completed" : activeTask.title}</p>
+        {!allDone && phase === "focus" && activeTask.estimatedSessions > 0 && (
           <p className="text-xs text-sub mt-1">
             {activeTask.completedSessions}/{activeTask.estimatedSessions} sessions
           </p>
@@ -122,7 +123,7 @@ export default function TimerPage({
         label={label} spentLabel={spentLabel}
         size={isDesktop ? 320 : 260} color={ringColor} />
 
-      {phase === "focus" && (activeTask.estimatedSessions > 0 || activeTask.subtasks.length > 0) && (
+      {!allDone && phase === "focus" && (activeTask.estimatedSessions > 0 || activeTask.subtasks.length > 0) && (
         <div className="w-full max-w-xs flex flex-col gap-3">
           {activeTask.estimatedSessions > 0 && <SessionBar />}
           {activeTask.subtasks.length > 0 && (
@@ -152,7 +153,7 @@ export default function TimerPage({
         <div>
           <h1 className="text-2xl md:text-3xl font-black text-tx">Timer</h1>
           <p className="text-sm text-sub mt-0.5">
-            {phase === "focus"
+            {allDone ? "All tasks completed" : phase === "focus"
               ? `Session ${sessions + 1} of ${totalSessions} · long break in ${nextLongBreakIn}`
               : phase === "longbreak"
                 ? "Long break — great work on 4 sessions!"
@@ -160,11 +161,10 @@ export default function TimerPage({
           </p>
         </div>
         <button onClick={() => setFocused(true)}
-          className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface2 border border-border text-sm font-semibold text-sub hover:text-accent hover:border-accent/40 transition-all">
+          className="flex items-center gap-2 p-3 rounded-xl bg-surface2 border border-border text-sm font-semibold text-sub hover:text-accent hover:border-accent/40 transition-all">
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
             <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
           </svg>
-          Focus view
         </button>
       </div>
 
@@ -175,7 +175,7 @@ export default function TimerPage({
             {label}
             <span className="text-sub font-normal">·</span>
             <span className="font-normal text-sub">
-              {phase === "focus" ? focusMins : phase === "longbreak" ? longBreakMins : breakMins} min
+              {!allDone && phase === "focus" ? focusMins : phase === "longbreak" ? longBreakMins : breakMins} min
             </span>
           </div>
           <TimerRing minutes={minutes} seconds={seconds} progress={progress}
@@ -218,7 +218,7 @@ export default function TimerPage({
       <div className="rounded-2xl border border-border bg-surface px-5 py-4 flex flex-col gap-3">
         <div className="flex justify-between text-xs font-semibold text-sub">
           <span>
-            {phase === "focus"
+            {!allDone && phase === "focus"
               ? `Focus — ${focusMins} min`
               : phase === "longbreak"
                 ? `Long Break — ${longBreakMins} min`
@@ -232,7 +232,7 @@ export default function TimerPage({
             style={{ width: `${progress * 100}%` }} />
         </div>
 
-        {phase === "focus" && (activeTask.estimatedSessions > 0 || activeTask.subtasks.length > 0) && (
+        {!allDone && phase === "focus" && (activeTask.estimatedSessions > 0 || activeTask.subtasks.length > 0) && (
           <div className="border-t border-border pt-3 flex flex-col gap-3">
             <p className="text-xs font-semibold text-sub">{activeTask.title}</p>
             {activeTask.estimatedSessions > 0 && <SessionBar />}

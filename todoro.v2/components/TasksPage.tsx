@@ -22,15 +22,18 @@ export default function TasksPage({
   onToggle, onToggleSub, onSetActive, onNavToTimer,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
-  const [filter,    setFilter]    = useState<Priority | "all">("all")
+  const [filter,    setFilter]    = useState<Priority | "all" | "done">("all")
   const [modalTask, setModalTask] = useState<Task | undefined>()
   const [showModal, setShowModal] = useState(false)
+  const [showDone,  setShowDone]  = useState(false)
   const [showToast, setShowToast] = useState(false)
 
-  const filtered = tasks.filter(t =>
-    t.title.toLowerCase().includes(search.toLowerCase()) &&
-    (filter === "all" || t.priority === filter)
-  )
+  const filtered = tasks.filter(t => {
+    if (!t.title.toLowerCase().includes(search.toLowerCase())) return false
+    if (filter === "done") return t.done
+    if (filter === "all")  return true
+    return t.priority === filter && !t.done
+  })
 
   const done    = filtered.filter(t =>  t.done)
   const pending = filtered.filter(t => !t.done)
@@ -107,34 +110,55 @@ export default function TasksPage({
               ${filter === key ? "text-white border-transparent" : "border-border text-sub hover:border-accent/40 bg-surface"}`}
             style={filter === key ? { background: getPriority(key), borderColor: getPriority(key) } : {}}>
             <span className="w-2 h-2 rounded-full" style={{ background: filter === key ? "rgba(255,255,255,0.7)" : getPriority(key) }} />
-            {label} ({tasks.filter(t => t.priority === key).length})
+            {label} ({tasks.filter(t => t.priority === key&& !t.done).length})
           </button>
         ))}
+        <button onClick={() => setFilter(f => f === "done" ? "all" : "done")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all shrink-0
+            ${filter === "done" ? "bg-accent text-white border-accent" : "border-border text-sub hover:border-accent/40 bg-surface"}`}>
+          Done ({tasks.filter(t => t.done).length})
+        </button>
       </div>
 
-      {/* Pending tasks */}
       {pending.length > 0 && (
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-bold text-sub uppercase tracking-wider px-1">Pending — {pending.length}</span>
-          {pending.map(task => (
-            <TaskCard key={task.id} task={task}
-              onToggle={onToggle} onToggleSub={onToggleSub}
-              onEdit={t => { setModalTask(t); setShowModal(true) }}
-              isActive={task.id === activeTask.id}
-              onClick={handleTaskClick} />
-          ))}
+          <span className="text-xs font-bold text-sub uppercase tracking-wider px-1">
+            Pending — {pending.length}
+          </span>
+          <div className={`flex flex-col gap-2 overflow-y-auto ${pending.length > 5 ? "max-h-105 pr-1" : ""}`}>
+            {pending.map(task => (
+              <TaskCard key={task.id} task={task}
+                onToggle={onToggle} onToggleSub={onToggleSub}
+                onEdit={t => { setModalTask(t); setShowModal(true) }}
+                isActive={task.id === activeTask.id}
+                onClick={handleTaskClick} />
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Done tasks */}
       {done.length > 0 && (
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-bold text-sub uppercase tracking-wider px-1">Completed — {done.length}</span>
-          {done.map(task => (
-            <TaskCard key={task.id} task={task}
-              onToggle={onToggle} onToggleSub={onToggleSub}
-              onEdit={t => { setModalTask(t); setShowModal(true) }} />
-          ))}
+          <button onClick={() => setShowDone(v => !v)}
+            className="flex items-center justify-between px-1 w-full group">
+            <span className="text-xs font-bold text-sub uppercase tracking-wider">
+              Completed — {done.length}
+            </span>
+            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2"
+              viewBox="0 0 24 24" className="text-sub transition-transform duration-200"
+              style={{ transform: showDone ? "rotate(180deg)" : "none" }}>
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </button>
+          {showDone && (
+            <div className={`flex flex-col gap-2 overflow-y-auto ${done.length > 5 ? "max-h-105 pr-1" : ""}`}>
+              {done.map(task => (
+                <TaskCard key={task.id} task={task}
+                  onToggle={onToggle} onToggleSub={onToggleSub}
+                  onEdit={t => { setModalTask(t); setShowModal(true) }} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
