@@ -52,9 +52,9 @@ export default function AppShell({
     <div className={dark ? "dark" : ""}>
       <div className="min-h-dvh bg-bg text-tx flex flex-col">
 
-        {/* ── Desktop / Tablet top nav ── */}
+        {/* Desktop / Tablet top nav */}
         {isTablet && (
-          <header className="fixed top-0 inset-x-0 z-50 h-14 bg-surface/90 backdrop-blur-xl border-b border-border flex items-center px-5 gap-4">
+          <header className="fixed rounded-2xl w-full max-w-2xl mx-auto px-4 md:px-6 py-6 m-2 top-0 inset-x-0 z-50 h-14 bg-surface/90 backdrop-blur-xl border-b border-border flex items-center gap-4">
 
             {/* Logo */}
             <div className="flex items-center gap-2 shrink-0">
@@ -85,12 +85,6 @@ export default function AppShell({
 
             {/* Right side */}
             <div className="flex items-center gap-3 shrink-0">
-              {running && (
-                <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-priority-low/10 border border-priority-low/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-priority-low animate-pulse" />
-                  <span className="text-xs font-semibold text-priority-low">Focusing</span>
-                </div>
-              )}
               <button onClick={() => onTabChange("settings")}
                 className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <div className="hidden lg:flex flex-col items-end">
@@ -103,16 +97,16 @@ export default function AppShell({
           </header>
         )}
 
-        {/* ── Content ── */}
+        {/* Content */}
         <main className={`flex-1 overflow-y-auto ${isTablet ? "pt-14" : "pb-16"}`}>
           <div className="w-full max-w-2xl mx-auto px-4 md:px-6 py-6">
             {children}
           </div>
         </main>
 
-        {/* ── Mobile bottom nav ── */}
+        {/* Mobile bottom nav */}
         {!isTablet && (
-          <nav className="fixed bottom-0 inset-x-0 z-50 bg-surface/95 backdrop-blur-xl border-t border-border pb-[env(safe-area-inset-bottom)]">
+          <nav className="fixed m-4 rounded-2xl bottom-0 inset-x-0 z-50 bg-surface/95 backdrop-blur-xl border-t border-border pb-[env(safe-area-inset-bottom)]">
             <div className="flex justify-around items-center h-16">
             {NAV.map(({ id, label }) => {
                 const active = activeTab === id
