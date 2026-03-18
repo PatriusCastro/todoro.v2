@@ -1,8 +1,14 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useIsTablet } from "../hooks/useMediaQuery"
+import TaskModal from "./tasks/TaskModal"
+import { type Task } from "./tasks/TaskCard"
+import { HiHome, HiOutlineHome, HiClipboardList, HiOutlineClipboardList, HiClock, HiOutlineClock, HiCog, HiOutlineCog } from "react-icons/hi"
+import { HiPlus } from "react-icons/hi2"
 
-type Tab = "home" | "tasks" | "timer" | "settings"
+type Tab   = "home" | "tasks" | "timer" | "settings"
+type Phase = "focus" | "break" | "longbreak"
 
 interface AppShellProps {
   children:    React.ReactNode
@@ -12,151 +18,176 @@ interface AppShellProps {
   userName:    string
   streak:      number
   running:     boolean
+  phase:       Phase
   avatarUrl?:  string
+  onAddTask:   (task: Task) => void
 }
 
 const NAV: { id: Tab; label: string }[] = [
-  { id: "home",  label: "Home"  },
-  { id: "tasks", label: "Tasks" },
-  { id: "timer", label: "Timer" },
-]
-
-const NAV_DESKTOP: { id: Tab; label: string }[] = [
   { id: "home",     label: "Home"     },
   { id: "tasks",    label: "Tasks"    },
   { id: "timer",    label: "Timer"    },
   { id: "settings", label: "Settings" },
 ]
 
+function NavIcon({ id, active }: { id: Tab; active: boolean }) {
+  const sz = 20
+  switch (id) {
+    case "home":     return active ? <HiHome size={sz} />          : <HiOutlineHome size={sz} />
+    case "tasks":    return active ? <HiClipboardList size={sz} /> : <HiOutlineClipboardList size={sz} />
+    case "timer":    return active ? <HiClock size={sz} />         : <HiOutlineClock size={sz} />
+    case "settings": return active ? <HiCog size={sz} />           : <HiOutlineCog size={sz} />
+  }
+}
+
 export default function AppShell({
   children, activeTab, onTabChange, dark,
-  userName, streak, running, avatarUrl,
+  userName, streak, running, phase, avatarUrl, onAddTask,
 }: AppShellProps) {
   const isTablet = useIsTablet()
   const initials = userName ? userName.slice(0, 2).toUpperCase() : "–"
+  const [mounted, setMounted] = useState(false)
+  const [showAdd, setShowAdd] = useState(false)
+  useEffect(() => { setTimeout(() => setMounted(true), 50) }, [])
 
-  const Avatar = ({ size = 8 }: { size?: number }) => (
-    <div
-      className={`w-${size} h-${size} rounded-xl overflow-hidden shrink-0 border-2 transition-colors
-        ${running ? "border-priority-low" : "border-accent/20"}`}>
+  const dotColor   = phase === "focus" ? "bg-accent" : "bg-priority-low"
+  const statusText = phase === "focus" ? "Focusing" : "Resting"
+  const statusCls  = phase === "focus" ? "bg-accent/10 text-accent border-accent/20" : "bg-priority-low/10 text-priority-low border-priority-low/20"
+
+  const AvatarEl = ({ size = 32 }: { size?: number }) => (
+    <div style={{ width: size, height: size }}
+      className={`rounded-xl overflow-hidden shrink-0 border-2 transition-colors duration-300
+        ${running ? (phase === "focus" ? "border-accent" : "border-priority-low") : "border-border"}`}>
       {avatarUrl
         ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-        : <div className="w-full h-full bg-accent/15 flex items-center justify-center text-accent font-black text-xs">
+        : <div className="w-full h-full bg-surface2 flex items-center justify-center text-sub font-black"
+            style={{ fontSize: size * 0.3 }}>
             {initials}
           </div>
       }
     </div>
   )
 
+  const MobileNavBtn = ({ id, label }: { id: Tab; label: string }) => {
+    const active  = activeTab === id
+    const isMe    = id === "settings"
+    return (
+      <button onClick={() => onTabChange(id)}
+        className={`relative flex flex-col items-center justify-center rounded-2xl gap-0.5 select-none
+          transition-all duration-200
+          ${active ? "bg-surface2 text-white px-5 py-2" : "text-sub hover:text-tx px-5 py-2"}`}>
+        {isMe
+          ? <div className={`w-5 h-5 rounded-lg overflow-hidden border transition-colors
+              ${active ? "border-white/30" : "border-border"}`}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+                : <div className={`w-full h-full flex items-center justify-center font-black text-[8px]
+                    ${active ? "bg-white/20 text-white" : "bg-surface2 text-sub"}`}>
+                    {initials}
+                  </div>
+              }
+            </div>
+          : <NavIcon id={id} active={active} />
+        }
+        <span className="font-semibold leading-none text-[9px]">{isMe ? "Me" : label}</span>
+        {id === "timer" && running && (
+          <span className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${dotColor}`} />
+        )}
+      </button>
+    )
+  }
+
   return (
     <div className={dark ? "dark" : ""}>
       <div className="min-h-dvh bg-bg text-tx flex flex-col">
 
-        {/* Desktop / Tablet top nav */}
         {isTablet && (
-          <header className="fixed rounded-2xl w-full max-w-2xl mx-auto px-4 md:px-6 py-6 m-2 top-0 inset-x-0 z-50 h-14 bg-surface/90 backdrop-blur-xl border-b border-border flex items-center gap-4">
+          <header className={`fixed top-0 inset-x-0 z-50 h-14 bg-surface/90 backdrop-blur-xl border-b border-border
+            flex items-center px-6 gap-6 transition-all duration-500
+            ${mounted ? "opacity-100" : "opacity-0"}`}>
 
-            {/* Logo */}
             <div className="flex items-center gap-2 shrink-0">
               <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth="2.5">
-                  <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>
-                </svg>
+                <HiClock size={14} color="white" />
               </div>
               <span className="font-black text-sm tracking-tight text-tx">Todoro</span>
             </div>
 
-            {/* Nav pills */}
-            <nav className="flex items-center justify-center gap-1 flex-1">
-              {NAV_DESKTOP.map(({ id, label }) => {
-                const active = activeTab === id
-                return (
-                  <button key={id} onClick={() => onTabChange(id)}
-                    className={`relative px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200
-                      ${active ? "bg-accent text-white" : "text-sub hover:text-tx hover:bg-surface2"}`}>
-                    {label}
-                    {id === "timer" && running && (
-                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-priority-low border-2 border-surface" />
-                    )}
-                  </button>
-                )
-              })}
+            <nav className="flex-1 flex justify-center">
+              <div className="flex items-center gap-1 rounded-2xl p-2">
+                {NAV.map(({ id, label }) => {
+                  const active = activeTab === id
+                  return (
+                    <button key={id} onClick={() => onTabChange(id)}
+                      className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold
+                        transition-all duration-200 select-none
+                        ${active ? "bg-surface2 text-white" : "text-sub hover:text-tx hover:bg-surface"}`}>
+                      <NavIcon id={id} active={active} />
+                      {label}
+                      {id === "timer" && running && (
+                        <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-surface2 ${dotColor}`} />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             </nav>
 
-            {/* Right side */}
             <div className="flex items-center gap-3 shrink-0">
+              {running && (
+                <div className={`hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold ${statusCls}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${dotColor}`} />
+                  {statusText}
+                </div>
+              )}
               <button onClick={() => onTabChange("settings")}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                className="flex items-center gap-2.5 transition-opacity hover:opacity-75">
                 <div className="hidden lg:flex flex-col items-end">
                   <span className="text-xs font-bold text-tx leading-none">{userName}</span>
                   <span className="text-[10px] text-sub">{streak} day streak</span>
                 </div>
-                <Avatar size={8} />
+                <AvatarEl size={32} />
               </button>
             </div>
           </header>
         )}
 
-        {/* Content */}
-        <main className={`flex-1 overflow-y-auto ${isTablet ? "pt-14" : "pb-16"}`}>
-          <div className="w-full max-w-2xl mx-auto px-4 md:px-6 py-6">
+        <main className={`flex-1 overflow-y-auto ${isTablet ? "pt-14" : "pb-32"}`}>
+          <div className="w-full max-w-4xl mx-auto px-4 md:px-8 py-6">
             {children}
           </div>
         </main>
 
-        {/* Mobile bottom nav */}
         {!isTablet && (
-          <nav className="fixed m-4 rounded-2xl bottom-0 inset-x-0 z-50 bg-surface/95 backdrop-blur-xl border-t border-border pb-[env(safe-area-inset-bottom)]">
-            <div className="flex justify-around items-center h-16">
-            {NAV.map(({ id, label }) => {
-                const active = activeTab === id
-                return (
-                  <button key={id} onClick={() => onTabChange(id)}
-                    className={`relative flex flex-col items-center gap-1 px-3 py-1 transition-colors duration-200
-                      ${active ? "text-accent" : "text-sub"}`}>
-                    <NavIcon id={id} active={active} />
-                    <span className="text-[10px] font-semibold">{label}</span>
-                    {/* Running dot on Timer tab */}
-                    {id === "timer" && running && (
-                      <span className="absolute top-0.5 right-2 w-2 h-2 rounded-full bg-priority-low border-2 border-surface" />
-                    )}
-                  </button>
-                )
-              })}
+          <div className={`fixed bottom-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none
+            transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <div className="pointer-events-auto flex items-center bg-surface/95 backdrop-blur-xl border border-border rounded-3xl p-2">
 
-              {/* Avatar shortcut to settings */}
-              <button onClick={() => onTabChange("settings")}
-                className={`relative flex flex-col items-center gap-1 px-3 py-1 transition-colors duration-200
-                  ${activeTab === "settings" ? "text-accent" : "text-sub"}`}>
-                <div className={`w-6 h-6 rounded-lg overflow-hidden border-2 transition-colors
-                  ${activeTab === "settings" ? "border-accent" : "border-border"}`}>
-                  {avatarUrl
-                    ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full bg-accent/15 flex items-center justify-center text-accent font-black text-[9px]">
-                        {initials}
-                      </div>
-                  }
-                </div>
-                <span className="text-[10px] font-semibold">Me</span>
-                {running && (
-                  <span className="absolute top-0.5 right-2 w-2 h-2 rounded-full bg-priority-low border-2 border-surface" />
-                )}
+              <nav className="flex items-center">
+                {NAV.slice(0, 2).map(({ id, label }) => <MobileNavBtn key={id} id={id} label={label} />)}
+              </nav>
+
+              <button onClick={() => setShowAdd(true)}
+                className="w-10 h-10 mx-2 rounded-2xl border-2 border-accent text-white flex items-center justify-center
+                  active:scale-95 transition-all duration-150 hover:border-accent-hover">
+                <HiPlus size={24} />
               </button>
+
+              <nav className="flex items-center">
+                {NAV.slice(2).map(({ id, label }) => <MobileNavBtn key={id} id={id} label={label} />)}
+              </nav>
+
             </div>
-          </nav>
+          </div>
+        )}
+
+        {showAdd && (
+          <TaskModal
+            onSave={task => { onAddTask(task); setShowAdd(false) }}
+            onClose={() => setShowAdd(false)} />
         )}
 
       </div>
     </div>
   )
-}
-
-function NavIcon({ id, active }: { id: Tab; active: boolean }) {
-  const s = active ? "currentColor" : "none"
-  switch (id) {
-    case "home":     return <svg width="20" height="20" viewBox="0 0 24 24" fill={s} stroke="currentColor" strokeWidth="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22" fill="none"/></svg>
-    case "tasks":    return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-    case "timer":    return <svg width="20" height="20" viewBox="0 0 24 24" fill={active ? "rgba(41,64,211,0.12)" : "none"} stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
-    case "settings": return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" fill={s}/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-  }
 }

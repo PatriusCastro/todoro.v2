@@ -256,8 +256,7 @@ export default function Home() {
   }
 
   return (
-    <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} avatarUrl={avatarUrl}>
-
+      <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} avatarUrl={avatarUrl} onAddTask={handleSaveTask}>
       {tab === "home" && (
         <HomePage {...timerProps}
           onTimerToggle={handleToggle} onNavToTimer={() => setTab("timer")}
