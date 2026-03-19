@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { HiArrowsPointingOut, HiChevronLeft } from "react-icons/hi2"
 import TimerRing from "../components/timer/TimerRing"
 import ModeSelector, { type Mode } from "../components/timer/ModeSelector"
 import TimerControls from "../components/timer/TimerControls"
@@ -80,7 +81,7 @@ export default function TimerPage({
           <button onMouseDown={() => onToggleSub(activeTask.id, sub.id)}
             className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center transition-all
               ${sub.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
-            {sub.done && <svg width="8" height="8" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>}
+            {sub.done &&<span className="text-white text-[8px] font-black leading-none">✓</span>}
           </button>
           <span title={sub.title} className={`text-xs truncate flex-1 min-w-0 ${sub.done ? "line-through text-sub" : "text-tx"}`}>{sub.title}</span>
         </div>
@@ -138,10 +139,7 @@ export default function TimerPage({
 
       <button onClick={() => setFocused(false)}
         className="flex items-center gap-1.5 text-xs text-sub hover:text-tx transition-colors">
-        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path d="m15 18-6-6 6-6"/>
-        </svg>
-        Exit focus view
+        <HiChevronLeft size={14} /> Exit focus view
       </button>
     </div>
   )
@@ -162,9 +160,7 @@ export default function TimerPage({
         </div>
         <button onClick={() => setFocused(true)}
           className="flex items-center gap-2 p-3 rounded-xl bg-surface2 border border-border text-sm font-semibold text-sub hover:text-accent hover:border-accent/40 transition-all">
-          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-          </svg>
+          <HiArrowsPointingOut size={16} />
         </button>
       </div>
 

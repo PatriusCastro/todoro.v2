@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { HiXMark, HiClock, HiCalendarDays, HiTrash } from "react-icons/hi2"
 import { type Task, type Subtask } from "../tasks/TaskCard"
 import { type Priority, getPriority } from "../../lib/theme"
 
@@ -35,13 +36,9 @@ function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
   return (
     <div className="bg-surface2 rounded-2xl p-4 border border-border">
       <div className="flex items-center justify-between mb-3">
-        <button onClick={prev} className="p-1 rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">
-          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
-        </button>
+        <button onClick={prev} className="p-1 rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">←</button>
         <span className="text-sm font-bold text-tx">{monthName}</span>
-        <button onClick={next} className="p-1 rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">
-          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
+        <button onClick={next} className="p-1 rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">→</button>
       </div>
       <div className="grid grid-cols-7 gap-1 mb-1">
         {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
@@ -121,9 +118,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
 
         <div className="flex items-center justify-between">
           <h2 className="font-black text-lg text-tx">{task ? "Edit Task" : "New Task"}</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors">
-            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors"><HiXMark size={16} /></button>
         </div>
 
         <input value={title} onChange={e => setTitle(e.target.value)} placeholder="What needs to be done?" autoFocus
@@ -142,9 +137,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
 
         {/* Session estimate */}
         <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface2 px-4 py-3">
-          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-sub shrink-0">
-            <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>
-          </svg>
+          <HiClock size={16} className="text-sub shrink-0" />
           <span className="flex-1 text-sm font-medium text-tx">Estimated sessions</span>
           <div className="flex items-center gap-2">
             <button onClick={() => setEstimatedSessions(n => Math.max(0, n - 1))} disabled={estimatedSessions <= 0}
@@ -162,16 +155,14 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
             onKeyDown={e => e.key === "Enter" && setShowCal(v => !v)}
             className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3 cursor-pointer transition-colors select-none
               ${dueDate ? "border-accent/40 bg-accent/5" : "border-border bg-surface2"}`}>
-            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className={dueDate ? "text-accent" : "text-sub"}>
-              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
+            <HiCalendarDays size={16} className={dueDate ? "text-accent" : "text-sub"} />
             <span className={`text-sm font-semibold flex-1 ${dueDate ? "text-tx" : "text-sub"}`}>{dateDisplay}</span>
             {dueDate && (
               <span role="button" tabIndex={0}
                 onClick={e => { e.stopPropagation(); setDueDate(""); setDueTime("") }}
                 onKeyDown={e => e.key === "Enter" && (setDueDate(""), setDueTime(""))}
                 className="ml-auto text-sub hover:text-tx cursor-pointer">
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <HiXMark size={14} />
               </span>
             )}
           </div>
@@ -179,9 +170,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
 
           {dueDate && (
             <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface2 px-4 py-3">
-              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-sub shrink-0">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-              </svg>
+              <HiClock size={16} className="text-sub shrink-0" />
               <input type="time" value={dueTime} onChange={e => setDueTime(e.target.value)}
                 className="flex-1 bg-transparent outline-none text-sm text-tx" />
               <span className="text-xs text-sub">optional</span>
@@ -195,9 +184,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
           {subtasks.map(sub => (
             <div key={sub.id} className="flex items-center gap-3 bg-surface2 rounded-xl px-3 py-2.5 border border-border">
               <span className="flex-1 text-sm text-tx truncate min-w-0">{sub.title}</span>
-              <button onMouseDown={() => removeSub(sub.id)} className="text-sub hover:text-priority-high transition-colors">
-                <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
+              <button onMouseDown={() => removeSub(sub.id)} className="text-sub hover:text-priority-high transition-colors"><HiXMark size={13} /></button>
             </div>
           ))}
           <div className="flex gap-2">

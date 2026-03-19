@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { getPriority, type Priority } from "@/lib/theme"
+import { HiPencil, HiChevronDown, HiCheck } from "react-icons/hi2"
+import { getPriority, type Priority } from "../../lib/theme"
 
 export interface Subtask { id: string; title: string; done: boolean }
 export interface Task {
@@ -48,7 +49,7 @@ export default function TaskCard({
           onClick={e => { e.stopPropagation(); onToggle?.(task.id) }}
           className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all duration-200
             ${task.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
-          {task.done && <svg width="10" height="10" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>}
+          {task.done && <HiCheck size={10} color="white" />}
         </button>
 
         {/* Body */}
@@ -80,19 +81,14 @@ export default function TaskCard({
           {onEdit && (
             <button onClick={e => { e.stopPropagation(); onEdit(task) }}
               className="p-1.5 rounded-lg text-sub hover:text-accent hover:bg-accent/10 transition-all duration-150">
-              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
+              <HiPencil size={13} />
             </button>
           )}
           {expandable && (
             <button onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}
               className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-all duration-150">
-              <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
-                style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
-                <path d="m6 9 6 6 6-6"/>
-              </svg>
+              <HiChevronDown size={13} className="transition-transform duration-200"
+                style={{ transform: expanded ? "rotate(180deg)" : "none" }} />
             </button>
           )}
         </div>
@@ -137,7 +133,7 @@ function SubtaskRow({ sub, taskId, onToggleSub }: {
       <button onClick={e => { e.stopPropagation(); onToggleSub?.(taskId, sub.id) }}
         className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center transition-all duration-200
           ${sub.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
-        {sub.done && <svg width="8" height="8" fill="none" stroke="white" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>}
+        {sub.done && <HiCheck size={8} color="white" />}
       </button>
       <span
         onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}

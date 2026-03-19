@@ -1,5 +1,6 @@
 "use client"
 
+import { HiBolt, HiStar, HiPlayCircle, HiPauseCircle, HiChevronRight, HiCheckCircle } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import { type Mode } from "../components/timer/ModeSelector"
 import { colors, getPriority } from "../lib/theme"
@@ -96,15 +97,11 @@ export default function HomePage({
           </button>
           <div className="flex items-center gap-4 border border-border rounded-xl px-3 py-1">
             <div className="flex items-center gap-1.5">
-              <svg width="13" height="13" fill="none" stroke="#FFBA00" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-              </svg>
+              <HiBolt size={12} color="#FFBA00" />
               <span className="text-xs font-semibold text-tx">{streak} day streak</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <svg width="13" height="13" fill="none" stroke="#FFBA00" strokeWidth="2" viewBox="0 0 24 24">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
+              <HiStar size={12} color="#FFBA00" />
               <span className="text-xs font-semibold text-tx">{totalPoints} pts</span>
             </div>
           </div>
@@ -147,8 +144,7 @@ export default function HomePage({
           </div>
           <button onClick={onNavToTasks}
             className="text-xs text-sub hover:text-accent transition-colors flex items-center gap-0.5 shrink-0 ml-3">
-            Tasks
-            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            Tasks <HiChevronRight size={12} />
           </button>
         </div>
 
@@ -205,9 +201,8 @@ export default function HomePage({
               ${phase === "focus" ? "bg-accent hover:bg-accent-hover" : "bg-priority-low hover:bg-[#42c956]"}`}>
             <span className="flex items-center justify-center gap-2">
               {running
-                ? <><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause</>
-                : <><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    {phase === "focus" ? "Start Focus" : phase === "longbreak" ? "Start Long Break" : "Start Break"}</>
+                ? <><HiPauseCircle size={16} /> Pause</>
+                : <><HiPlayCircle size={16} /> {phase === "focus" ? "Start Focus" : phase === "longbreak" ? "Start Long Break" : "Start Break"}</>
               }
             </span>
           </button>
@@ -233,9 +228,7 @@ export default function HomePage({
           <div className="rounded-2xl border border-border bg-surface px-5 py-3 flex flex-col gap-2.5">
             {todayHistory.map((s, i) => (
               <div key={i} className="flex items-center gap-2">
-                <svg width="12" height="12" fill="none" stroke="var(--color-accent)" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
+                <HiCheckCircle size={14} className="text-accent shrink-0" />
                 <span className="text-xs text-tx font-medium truncate flex-1">{s.taskTitle}</span>
                 <span className="text-[11px] text-sub shrink-0">{s.focusMins}m · {formatTime(s.at)}</span>
               </div>

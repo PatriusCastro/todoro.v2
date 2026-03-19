@@ -1,5 +1,7 @@
 "use client"
 
+import { HiArrowPath, HiPlay, HiPause, HiForward } from "react-icons/hi2"
+
 type Phase = "focus" | "break" | "longbreak"
 
 interface TimerControlsProps {
@@ -15,11 +17,7 @@ export default function TimerControls({ running, phase, onToggle, onReset, onSki
   const isBreak = phase !== "focus"
   return (
     <div className="flex items-center justify-center gap-4">
-      <IconBtn onClick={onReset} label="Reset">
-        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
-        </svg>
-      </IconBtn>
+      <IconBtn onClick={onReset} label="Reset"><HiArrowPath size={16} /></IconBtn>
 
       <button onClick={onToggle}
         className={`flex items-center gap-2 px-8 py-3 rounded-full text-white text-sm font-black min-w-27.5 justify-center
@@ -28,17 +26,12 @@ export default function TimerControls({ running, phase, onToggle, onReset, onSki
             ? "bg-accent hover:bg-accent-hover"
             : "bg-priority-low hover:bg-[#42c956]"}`}>
         {running
-          ? <><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause</>
-          : <><svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              {phase === "focus" ? "Start" : phase === "longbreak" ? "Long Rest" : "Rest"}</>
+          ? <><HiPause size={14} /> Pause</>
+          : <><HiPlay size={14} /> {phase === "focus" ? "Start" : phase === "longbreak" ? "Long Rest" : "Rest"}</>
         }
       </button>
 
-      <IconBtn onClick={onSkip} label={skipLabel(phase)}>
-        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>
-        </svg>
-      </IconBtn>
+      <IconBtn onClick={onSkip} label={skipLabel(phase)}><HiForward size={16} /></IconBtn>
     </div>
   )
 }

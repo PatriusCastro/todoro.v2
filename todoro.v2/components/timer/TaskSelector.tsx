@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { HiChevronDown, HiCheck } from "react-icons/hi2"
 import { type Task } from "../tasks/TaskCard"
 import { getPriority } from "../../lib/theme"
 
@@ -47,10 +48,7 @@ export default function TaskSelector({ tasks, active, running, onChange, onStop 
             }
           </div>
           {!allDone && (
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
-              className={`text-sub shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
-              <path d="m6 9 6 6 6-6"/>
-            </svg>
+            <HiChevronDown size={14} className={`text-sub shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
           )}
         </button>
 
@@ -62,11 +60,7 @@ export default function TaskSelector({ tasks, active, running, onChange, onStop 
                   ${task.id === active.id ? "bg-accent/10" : ""}`}>
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(task.priority) }} />
                 <span className="text-sm font-medium text-tx truncate flex-1">{task.title}</span>
-                {task.id === active.id && (
-                  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="text-accent shrink-0">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                )}
+                {task.id === active.id && <HiCheck size={12} className="text-accent shrink-0" />}
               </button>
             ))}
           </div>

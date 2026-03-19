@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import TaskModal from "../components/tasks/TaskModal"
 import { type Priority, getPriority } from "../lib/theme"
@@ -68,8 +69,7 @@ export default function TasksPage({
         </div>
         <button onClick={() => { setModalTask(undefined); setShowModal(true) }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover active:scale-95 transition-all">
-          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New
+          <HiPlus size={14} /> New
         </button>
       </div>
 
@@ -85,15 +85,11 @@ export default function TasksPage({
 
       {/* Search */}
       <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
-        <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" className="text-sub shrink-0">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
+        <HiMagnifyingGlass size={15} className="text-sub shrink-0" />
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks…"
           className="bg-transparent outline-none text-sm text-tx placeholder:text-sub flex-1" />
         {search && (
-          <button onClick={() => setSearch("")} className="text-sub hover:text-tx">
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+          <button onClick={() => setSearch("")} className="text-sub hover:text-tx"><HiXMark size={14} /></button>
         )}
       </div>
 
@@ -144,11 +140,8 @@ export default function TasksPage({
             <span className="text-xs font-bold text-sub uppercase tracking-wider">
               Completed — {done.length}
             </span>
-            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2"
-              viewBox="0 0 24 24" className="text-sub transition-transform duration-200"
-              style={{ transform: showDone ? "rotate(180deg)" : "none" }}>
-              <path d="m6 9 6 6 6-6"/>
-            </svg>
+            <HiChevronDown size={13} className="text-sub transition-transform duration-200"
+              style={{ transform: showDone ? "rotate(180deg)" : "none" }} />
           </button>
           {showDone && (
             <div className={`flex flex-col gap-2 overflow-y-auto ${done.length > 5 ? "max-h-105 pr-1" : ""}`}>
