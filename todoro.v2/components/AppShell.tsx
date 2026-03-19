@@ -75,14 +75,14 @@ export default function AppShell({
       <button onClick={() => onTabChange(id)}
         className={`relative flex flex-col items-center justify-center rounded-2xl gap-0.5 select-none
           transition-all duration-200
-          ${active ? "bg-surface2 text-white px-5 py-2" : "text-sub hover:text-tx px-5 py-2"}`}>
+          ${active ? "bg-surface2 text-tx px-5 py-2" : "text-sub hover:text-tx px-5 py-2"}`}>
         {isMe
           ? <div className={`w-5 h-5 rounded-lg overflow-hidden border transition-colors
               ${active ? "border-white/30" : "border-border"}`}>
               {avatarUrl
                 ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
                 : <div className={`w-full h-full flex items-center justify-center font-black text-[8px]
-                    ${active ? "bg-white/20 text-white" : "bg-surface2 text-sub"}`}>
+                    ${active ? "bg-white/20 text-surface" : "bg-surface2 text-sub"}`}>
                     {initials}
                   </div>
               }
@@ -168,8 +168,8 @@ export default function AppShell({
               </nav>
 
               <button onClick={() => setShowAdd(true)}
-                className="w-10 h-10 mx-2 rounded-2xl border-2 border-accent text-white flex items-center justify-center
-                  active:scale-95 transition-all duration-150 hover:border-accent-hover">
+                className="w-10 h-10 mx-2 rounded-2xl border-2 border-accent text-tx flex items-center justify-center
+                  active:scale-95 transition-all duration-150 hover:bg-surface2 hover:border-accent-hover">
                 <HiPlus size={24} />
               </button>
 

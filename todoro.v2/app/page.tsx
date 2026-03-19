@@ -73,15 +73,18 @@ function save(key: string, value: unknown) {
 }
 
 function computeStreak(history: SessionRecord[]): number {
-  if (history.length === 0) return 0
-  const days = new Set(history.map(s => new Date(s.at).toISOString().slice(0, 10)))
-  let streak = 0
-  const d = new Date()
-  while (days.has(d.toISOString().slice(0, 10))) {
-    streak++
-    d.setDate(d.getDate() - 1)
+  if (!history.length) return 0
+  const days = [...new Set(history.map(s => new Date(s.at).toISOString().slice(0, 10)))].sort().reverse()
+  const ms  = 864e5
+  const key = (offset: number) => new Date(Date.now() - offset * ms).toISOString().slice(0, 10)
+  const start = days[0] === key(0) ? 0 : days[0] === key(1) ? 1 : null
+  if (start === null) return 0
+  let count = 0
+  for (const day of days.slice(start)) {
+    if (day !== key(start + count)) break
+    count++
   }
-  return streak
+  return count
 }
 
 export default function Home() {
