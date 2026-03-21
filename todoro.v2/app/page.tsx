@@ -128,7 +128,7 @@ export default function Home() {
   const maxTime  = phase === "focus" ? focusMins * 60 : currentBreakMins * 60
   const progress = maxTime > 0 ? (maxTime - time) / maxTime : 0
 
-  /* Keep activeTask in sync with tasks state, but never point to a completed task */
+  /* Keep activeTask in sync with tasks state */
   useEffect(() => {
     const updated = tasks.find(t => t.id === activeTask.id)
     if (updated && !updated.done) setActiveTask(updated)
