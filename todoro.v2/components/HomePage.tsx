@@ -18,7 +18,6 @@ interface HomePageProps {
   onNavToTasks: () => void; onSetActive: (t: Task) => void
   streak: number; totalPoints: number; greeting: string; userName: string
   avatarUrl: string; onNavToSettings: () => void
-  todayHistory: { taskId: string; taskTitle: string; focusMins: number; at: number }[]
 }
 
 function phaseLabel(phase: Phase) {
@@ -47,7 +46,7 @@ export default function HomePage({
   sessions, totalSessions, cycleCount, onTimerToggle, onNavToTimer,
   tasks, activeTask, onToggleTask, onToggleSub,
   onNavToTasks, onSetActive, streak, totalPoints, greeting, userName,
-  avatarUrl, onNavToSettings, todayHistory,
+  avatarUrl, onNavToSettings,
 }: HomePageProps) {
   const minutes  = Math.floor(time / 60)
   const seconds  = time % 60
@@ -218,22 +217,6 @@ export default function HomePage({
             <TaskCard key={t.id} task={t} onToggle={onToggleTask}
               onClick={running && phase === "focus" ? undefined : () => onSetActive(t)} compact />
           ))}
-        </div>
-      )}
-
-      {/* Today's session log */}
-      {todayHistory.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <span className="text-xs font-bold text-sub uppercase tracking-widest px-1">Today's Sessions</span>
-          <div className="rounded-2xl border border-border bg-surface px-5 py-3 flex flex-col gap-2.5">
-            {todayHistory.map((s, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <HiCheckCircle size={14} className="text-accent shrink-0" />
-                <span className="text-xs text-tx font-medium truncate flex-1">{s.taskTitle}</span>
-                <span className="text-[11px] text-sub shrink-0">{s.focusMins}m · {formatTime(s.at)}</span>
-              </div>
-            ))}
-          </div>
         </div>
       )}
 

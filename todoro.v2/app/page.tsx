@@ -73,18 +73,15 @@ function save(key: string, value: unknown) {
 }
 
 function computeStreak(history: SessionRecord[]): number {
-  if (!history.length) return 0
-  const days = [...new Set(history.map(s => new Date(s.at).toISOString().slice(0, 10)))].sort().reverse()
-  const ms  = 864e5
-  const key = (offset: number) => new Date(Date.now() - offset * ms).toISOString().slice(0, 10)
-  const start = days[0] === key(0) ? 0 : days[0] === key(1) ? 1 : null
-  if (start === null) return 0
-  let count = 0
-  for (const day of days.slice(start)) {
-    if (day !== key(start + count)) break
-    count++
+  if (history.length === 0) return 0
+  const days = new Set(history.map(s => new Date(s.at).toISOString().slice(0, 10)))
+  let streak = 0
+  const d = new Date()
+  while (days.has(d.toISOString().slice(0, 10))) {
+    streak++
+    d.setDate(d.getDate() - 1)
   }
-  return count
+  return streak
 }
 
 export default function Home() {
@@ -105,6 +102,7 @@ export default function Home() {
 
   const [cycleCount,  setCycleCount]  = useState(0)
   const [totalPoints, setTotalPoints] = useState(() => load("todoro:points", 0))
+  const [toast,       setToast]       = useState<{ points: number; streak: number } | null>(null)
 
   const [allHistory, setAllHistory] = useState<SessionRecord[]>(
     () => load("todoro:history", [])
@@ -128,7 +126,7 @@ export default function Home() {
   const maxTime  = phase === "focus" ? focusMins * 60 : currentBreakMins * 60
   const progress = maxTime > 0 ? (maxTime - time) / maxTime : 0
 
-  /* Keep activeTask in sync with tasks state */
+  /* Keep activeTask in sync with tasks state, but never point to a completed task */
   useEffect(() => {
     const updated = tasks.find(t => t.id === activeTask.id)
     if (updated && !updated.done) setActiveTask(updated)
@@ -179,12 +177,12 @@ export default function Home() {
         const nextCycle = cycleCount + 1
         setCycleCount(nextCycle)
         setTotalPoints(p => p + 5)
-        setAllHistory(h => [...h, {
-          taskId:    activeTask.id,
-          taskTitle: activeTask.title,
-          focusMins,
-          at:        Date.now(),
-        }])
+        setAllHistory(h => {
+          const next = [...h, { taskId: activeTask.id, taskTitle: activeTask.title, focusMins, at: Date.now() }]
+          const newStreak = computeStreak(next)
+          setTimeout(() => { setToast({ points: 5, streak: newStreak }); setTimeout(() => setToast(null), 3500) }, 300)
+          return next
+        })
         setTasks(ts => ts.map(t => t.id === activeTask.id
           ? { ...t, completedSessions: t.completedSessions + 1 }
           : t))
@@ -259,14 +257,26 @@ export default function Home() {
   }
 
   return (
-      <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} avatarUrl={avatarUrl} onAddTask={handleSaveTask}>
+    <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} avatarUrl={avatarUrl} onAddTask={handleSaveTask}>
+
+      <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 pointer-events-none transition-all duration-300
+        ${toast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
+        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap">
+          <span className="text-base">🎉</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-black text-tx">Session complete!</span>
+            <span className="text-xs text-sub">+{toast?.points} pts · {toast?.streak} day streak</span>
+          </div>
+        </div>
+      </div>
+
       {tab === "home" && (
         <HomePage {...timerProps}
           onTimerToggle={handleToggle} onNavToTimer={() => setTab("timer")}
           tasks={tasks} activeTask={activeTask}
           onToggleTask={handleToggleTask} onToggleSub={handleToggleSub}
           onNavToTasks={() => setTab("tasks")} onSetActive={setActiveTask}
-          streak={streak} totalPoints={totalPoints} todayHistory={todayHistory}
+          streak={streak} totalPoints={totalPoints}
           avatarUrl={avatarUrl} onNavToSettings={() => setTab("settings")}
           greeting={getGreeting()} userName={userName} />
       )}
