@@ -11,6 +11,7 @@ interface TasksPageProps {
   onSave: (t: Task) => void; onDelete: (id: string) => void
   onToggle: (id: string) => void; onToggleSub: (tId: string, sId: string) => void
   onSetActive: (t: Task) => void; onNavToTimer: () => void
+  dark: boolean
 }
 
 const PRIORITIES: { key: Priority; label: string }[] = [
@@ -20,7 +21,7 @@ const PRIORITIES: { key: Priority; label: string }[] = [
 
 export default function TasksPage({
   tasks, activeTask, running, onSave, onDelete,
-  onToggle, onToggleSub, onSetActive, onNavToTimer,
+  onToggle, onToggleSub, onSetActive, onNavToTimer, dark
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Priority | "all" | "done">("all")
@@ -164,7 +165,7 @@ export default function TasksPage({
       )}
 
       {showModal && (
-        <TaskModal task={modalTask} onSave={onSave} onDelete={onDelete} onClose={() => setShowModal(false)} />
+        <TaskModal task={modalTask} onSave={onSave} onDelete={onDelete} onClose={() => setShowModal(false)} dark={dark} />
       )}
     </div>
   )

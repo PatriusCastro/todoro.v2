@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { HiXMark, HiClock, HiCalendarDays, HiTrash } from "react-icons/hi2"
+import { createPortal } from "react-dom"
+import { HiXMark, HiClock, HiCalendarDays, HiTrash, HiChevronLeft, HiChevronRight } from "react-icons/hi2"
 import { type Task, type Subtask } from "../tasks/TaskCard"
 import { type Priority, getPriority } from "../../lib/theme"
 
 interface TaskModalProps {
   task?: Task; onSave: (task: Task) => void
-  onDelete?: (id: string) => void; onClose: () => void
+  onDelete?: (id: string) => void; onClose: () => void; dark?: boolean
 }
 
 const PRIORITIES: Priority[] = ["high", "mid", "low", "none"]
@@ -36,9 +37,13 @@ function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
   return (
     <div className="bg-surface2 rounded-2xl p-4 border border-border">
       <div className="flex items-center justify-between mb-3">
-        <button onClick={prev} className="p-1 rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">←</button>
+        <button onClick={prev} className="p-1 rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">
+          <HiChevronLeft size={16} />
+        </button>
         <span className="text-sm font-bold text-tx">{monthName}</span>
-        <button onClick={next} className="p-1 rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">→</button>
+        <button onClick={next} className="p-1 rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">
+          <HiChevronRight size={16} />
+        </button>
       </div>
       <div className="grid grid-cols-7 gap-1 mb-1">
         {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
@@ -78,7 +83,7 @@ function formatDueLabel(date: string, time: string) {
   return `Due ${d.toLocaleDateString([], { month: "short", day: "numeric" })}${timeStr}`
 }
 
-export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModalProps) {
+export default function TaskModal({ task, onSave, onDelete, onClose, dark }: TaskModalProps) {
   const [title,              setTitle]              = useState(task?.title    ?? "")
   const [priority,           setPriority]           = useState<Priority>(task?.priority ?? "none")
   const [dueDate,            setDueDate]            = useState(task?.dueDate  ?? "")
@@ -111,14 +116,17 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
 
   const dateDisplay = dueDate ? new Date(dueDate + "T00:00").toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) : "Pick a date"
 
-  return (
-    <div className="fixed inset-0 z-200 flex items-end md:items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+  return createPortal(
+    <div className={dark ? "dark" : ""}>
+    <div className="fixed inset-0 z-9999 flex items-end md:items-center justify-center p-4 bg-black/70 backdrop-blur-md"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="w-full max-w-md bg-surface border border-border rounded-3xl flex flex-col gap-4 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.5)] max-h-[90dvh] overflow-y-auto">
 
         <div className="flex items-center justify-between">
           <h2 className="font-black text-lg text-tx">{task ? "Edit Task" : "New Task"}</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors"><HiXMark size={16} /></button>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors">
+            <HiXMark size={16} />
+          </button>
         </div>
 
         <input value={title} onChange={e => setTitle(e.target.value)} placeholder="What needs to be done?" autoFocus
@@ -184,7 +192,9 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
           {subtasks.map(sub => (
             <div key={sub.id} className="flex items-center gap-3 bg-surface2 rounded-xl px-3 py-2.5 border border-border">
               <span className="flex-1 text-sm text-tx truncate min-w-0">{sub.title}</span>
-              <button onMouseDown={() => removeSub(sub.id)} className="text-sub hover:text-priority-high transition-colors"><HiXMark size={13} /></button>
+              <button onMouseDown={() => removeSub(sub.id)} className="text-sub hover:text-priority-high transition-colors">
+                <HiXMark size={13} />
+              </button>
             </div>
           ))}
           <div className="flex gap-2">
@@ -212,5 +222,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose }: TaskModal
 
       </div>
     </div>
+    </div>,
+    document.body
   )
 }
