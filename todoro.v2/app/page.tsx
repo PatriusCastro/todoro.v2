@@ -57,9 +57,12 @@ function getGreeting() {
   return "Good evening"
 }
 
-function todayKey() {
-  return new Date().toISOString().slice(0, 10)
+function localDate(ts: number = Date.now()) {
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
+
+const todayKey = () => localDate()
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -73,15 +76,19 @@ function save(key: string, value: unknown) {
 }
 
 function computeStreak(history: SessionRecord[]): number {
-  if (history.length === 0) return 0
-  const days = new Set(history.map(s => new Date(s.at).toISOString().slice(0, 10)))
-  let streak = 0
-  const d = new Date()
-  while (days.has(d.toISOString().slice(0, 10))) {
-    streak++
-    d.setDate(d.getDate() - 1)
+  if (!history.length) return 0
+  const days = [...new Set(history.map(s => localDate(s.at)))].sort().reverse()
+  const ms = 864e5
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0)
+  const key = (offset: number) => localDate(midnight.getTime() - offset * ms)
+  const start = days[0] === key(0) ? 0 : days[0] === key(1) ? 1 : null
+  if (start === null) return 0
+  let count = 0
+  for (const day of days) {
+    if (day !== key(start + count)) break
+    count++
   }
-  return streak
+  return count
 }
 
 export default function Home() {
@@ -108,9 +115,7 @@ export default function Home() {
     () => load("todoro:history", [])
   )
 
-  const todayHistory = allHistory.filter(
-    s => new Date(s.at).toISOString().slice(0, 10) === todayKey()
-  )
+  const todayHistory = allHistory.filter(s => localDate(s.at) === todayKey())
   const sessions = todayHistory.length
   const streak   = computeStreak(allHistory)
 
@@ -290,7 +295,7 @@ export default function Home() {
       )}
 
       {tab === "tasks" && (
-        <TasksPage dark={dark} tasks={tasks} activeTask={activeTask} running={running}
+        <TasksPage dark={dark}tasks={tasks} activeTask={activeTask} running={running}
           onSave={handleSaveTask} onDelete={handleDeleteTask}
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
           onSetActive={setActiveTask} onNavToTimer={() => setTab("timer")} />
