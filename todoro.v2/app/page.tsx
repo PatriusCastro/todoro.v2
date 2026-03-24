@@ -6,12 +6,13 @@ import HomePage     from "../components/HomePage"
 import TimerPage    from "../components/TimerPage"
 import TasksPage    from "../components/TasksPage"
 import SettingsPage from "../components/SettingsPage"
+import CalendarPage from "../components/CalendarPage"
 import { type Mode } from "../components/timer/ModeSelector"
 import { type Task } from "../components/tasks/TaskCard"
 import { useWakeLock } from "../hooks/useWakeLock"
 import { useDocumentTitle } from "../hooks/useDocumentTitle"
 
-type Tab   = "home" | "tasks" | "timer" | "settings"
+type Tab   = "home" | "tasks" | "timer" | "settings" | "calendar"
 type Phase = "focus" | "break" | "longbreak"
 
 export interface SessionRecord {
@@ -278,10 +279,10 @@ export default function Home() {
       {tab === "home" && (
         <HomePage {...timerProps}
           onTimerToggle={handleToggle} onNavToTimer={() => setTab("timer")}
-          tasks={tasks} activeTask={activeTask}
+          tasks={tasks} activeTask={activeTask} onNavToCalendar={() => setTab("calendar")}
           onToggleTask={handleToggleTask} onToggleSub={handleToggleSub}
           onNavToTasks={() => setTab("tasks")} onSetActive={setActiveTask}
-          streak={streak} totalPoints={totalPoints}
+          streak={streak} totalPoints={totalPoints} allHistory={allHistory}
           avatarUrl={avatarUrl} onNavToSettings={() => setTab("settings")}
           greeting={getGreeting()} userName={userName} />
       )}
@@ -308,6 +309,10 @@ export default function Home() {
           sound={sound}         onSound={setSound}
           dailyGoal={dailyGoal} onDailyGoal={setDailyGoal}
           avatarUrl={avatarUrl} onAvatarUrl={setAvatarUrl} />
+      )}
+
+      {tab === "calendar" && (
+        <CalendarPage tasks={tasks} allHistory={allHistory} />
       )}
 
     </AppShell>

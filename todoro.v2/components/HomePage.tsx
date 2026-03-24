@@ -18,6 +18,8 @@ interface HomePageProps {
   onNavToTasks: () => void; onSetActive: (t: Task) => void
   streak: number; totalPoints: number; greeting: string; userName: string
   avatarUrl: string; onNavToSettings: () => void
+  allHistory: { taskId: string; taskTitle: string; focusMins: number; at: number }[]
+  onNavToCalendar: () => void
 }
 
 function phaseLabel(phase: Phase) {
@@ -43,8 +45,8 @@ function getSubtitle(running: boolean, phase: Phase, sessions: number, totalSess
 
 export default function HomePage({
   time, phase, mode, focusMins, breakMins, longBreakMins, running, progress,
-  sessions, totalSessions, cycleCount, onTimerToggle, onNavToTimer,
-  tasks, activeTask, onToggleTask, onToggleSub,
+  sessions, totalSessions, onTimerToggle, onNavToTimer, onNavToCalendar,
+  tasks, activeTask, onToggleTask, allHistory, onToggleSub,
   onNavToTasks, onSetActive, streak, totalPoints, greeting, userName,
   avatarUrl, onNavToSettings,
 }: HomePageProps) {
@@ -219,6 +221,30 @@ export default function HomePage({
           ))}
         </div>
       )}
+
+      {/* Focus history heatmap widget */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-bold text-sub uppercase tracking-widest">Focus History</span>
+          <button onClick={onNavToCalendar} className="text-xs text-accent hover:underline">View calendar →</button>
+        </div>
+        <div className="rounded-2xl border border-border bg-surface px-4 py-3 overflow-x-auto">
+          <div className="flex gap-1 min-w-max">
+            {Array.from({ length: 18 }).map((_, wi) => (
+              <div key={wi} className="flex flex-col gap-1">
+                {Array.from({ length: 7 }).map((_, di) => {
+                  const offset = (17 - wi) * 7 + (6 - di)
+                  const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - offset)
+                  const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`
+                  const count = allHistory.filter(s => { const sd = new Date(s.at); return `${sd.getFullYear()}-${String(sd.getMonth()+1).padStart(2,"0")}-${String(sd.getDate()).padStart(2,"0")}` === ds }).length
+                  const bg = count === 0 ? "bg-ring" : count === 1 ? "bg-accent/30" : count <= 3 ? "bg-accent/60" : "bg-accent"
+                  return <div key={di} title={`${ds}: ${count} sessions`} className={`w-3 h-3 rounded-sm ${bg}`} />
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
     </div>
   )

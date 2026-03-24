@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from "react"
 import { useIsTablet } from "../hooks/useMediaQuery"
 import TaskModal from "./tasks/TaskModal"
 import { type Task } from "./tasks/TaskCard"
-import { HiHome, HiOutlineHome, HiClipboardList, HiOutlineClipboardList, HiClock, HiOutlineClock, HiCog, HiOutlineCog } from "react-icons/hi"
+import { HiHome, HiOutlineHome, HiClipboardList, HiOutlineClipboardList, HiClock, HiOutlineClock, HiCog, HiOutlineCog, HiOutlineCalendar, HiCalendar } from "react-icons/hi"
 import { HiPlus } from "react-icons/hi2"
 
-type Tab   = "home" | "tasks" | "timer" | "settings"
+type Tab   = "home" | "tasks" | "timer" | "settings" | "calendar"
 type Phase = "focus" | "break" | "longbreak"
 
 interface AppShellProps {
@@ -27,7 +27,9 @@ const NAV: { id: Tab; label: string }[] = [
   { id: "home",     label: "Home"  },
   { id: "tasks",    label: "Tasks" },
   { id: "timer",    label: "Timer" },
+  { id: "calendar", label: "Calendar" },
   { id: "settings", label: "Me"    },
+
 ]
 
 function NavIcon({ id, active }: { id: Tab; active: boolean }) {
@@ -36,6 +38,7 @@ function NavIcon({ id, active }: { id: Tab; active: boolean }) {
     case "home":     return active ? <HiHome size={sz} />          : <HiOutlineHome size={sz} />
     case "tasks":    return active ? <HiClipboardList size={sz} /> : <HiOutlineClipboardList size={sz} />
     case "timer":    return active ? <HiClock size={sz} />         : <HiOutlineClock size={sz} />
+    case "calendar": return active ? <HiCalendar size={sz} />      : <HiOutlineCalendar size={sz} />
     case "settings": return active ? <HiCog size={sz} />           : <HiOutlineCog size={sz} />
   }
 }
@@ -51,7 +54,6 @@ export default function AppShell({
   const [animKey, setAnimKey] = useState(0)
   useEffect(() => { setTimeout(() => setMounted(true), 50) }, [])
 
-  // Sliding indicator state — tracks the active button's position
   const navContainerRef                        = useRef<HTMLDivElement>(null)
   const btnRefs                                = useRef<Map<Tab, HTMLElement>>(new Map())
   const [pill, setPill]                        = useState({ left: 0, width: 0, ready: false })
@@ -206,12 +208,12 @@ export default function AppShell({
                 )
               })}
 
-              <button onClick={() => setShowAdd(true)}
+              {/* <button onClick={() => setShowAdd(true)}
                 className="relative z-10 w-10 h-10 mx-1.5 rounded-full border-2 border-accent text-tx
                   flex items-center justify-center shrink-0
                   active:scale-95 transition-all duration-150 hover:bg-surface2">
                 <HiPlus size={20} />
-              </button>
+              </button> */}
 
               {NAV.slice(2).map(({ id, label }) => {
                 const active = activeTab === id
