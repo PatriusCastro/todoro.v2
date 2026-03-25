@@ -1,35 +1,37 @@
 @import "tailwindcss";
 
 @theme {
-  --color-accent:        #2940D3;
-  --color-accent-hover:  #2033A8;
-  --color-accent-dim:    rgba(41,64,211,0.15);
-  --color-accent-glow:   rgba(41,64,211,0.4);
+  --color-accent:        #5B8CFF;
+  --color-accent-hover:  #4C7CF0;
+  --color-accent-dim:    rgba(91,140,255,0.15);
+  --color-accent-glow:   rgba(91,140,255,0.45);
+  --color-accent-secondary: #A78BFA;
+  --color-accent-gradient: linear-gradient(135deg, #5B8CFF, #A78BFA);
   --color-priority-high: #FF6B6B;
-  --color-priority-mid:  #FFB347;
-  --color-priority-low:  #51CF66;
-  --color-priority-none: #868E96;
+  --color-priority-mid:  #FBBF24;
+  --color-priority-low:  #34D399;
+  --color-priority-none: #6B7280;
   --font-sans: var(--font-dm-sans), 'Segoe UI', sans-serif;
 }
 
 :root {
-  --bg:      #F7F6F3;
+  --bg:      #F8F7F4;
   --surface: #FFFFFF;
-  --surface2:#F0EEE9;
-  --border:  #E8E4DC;
+  --surface2:#F1EFEA;
+  --border:  #E5E1D8;
   --tx:      #1C1917;
   --sub:     #78716C;
-  --ring:    #E2DDD6;
+  --ring:    #e7e3dc;
 }
  
 .dark {
-  --bg:      #111111;
-  --surface: #181818;
-  --surface2:#272521;
-  --border:  #2E2C28;
-  --tx:      #F5F3EF;
-  --sub:     #87837C;
-  --ring:    #2E2C28;
+  --bg:      #0F1115;
+  --surface: #151821;
+  --surface2:#1B2030;
+  --border:  #ffffff0f;
+  --tx:      #E6EAF2;
+  --sub:     #9AA4B2;
+  --ring: #ffffff14;
 }
 
 @theme inline {
@@ -40,6 +42,18 @@
   --color-tx:       var(--tx);
   --color-sub:      var(--sub);
   --color-ring:     var(--ring);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    circle at 20% 20%,
+    rgba(91,140,255,0.08),
+    transparent 40%
+  );
+  pointer-events: none;
 }
 
 *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }

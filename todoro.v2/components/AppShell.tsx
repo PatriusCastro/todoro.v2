@@ -29,7 +29,6 @@ const NAV: { id: Tab; label: string }[] = [
   { id: "timer",    label: "Timer" },
   { id: "calendar", label: "Calendar" },
   { id: "settings", label: "Me"    },
-
 ]
 
 function NavIcon({ id, active }: { id: Tab; active: boolean }) {
@@ -67,7 +66,6 @@ export default function AppShell({
     setPill({ left: br.left - cr.left, width: br.width, ready: true })
   }, [activeTab, mounted])
 
-  // Same for desktop nav
   const desktopNavRef                          = useRef<HTMLDivElement>(null)
   const desktopBtnRefs                         = useRef<Map<Tab, HTMLElement>>(new Map())
   const [desktopPill, setDesktopPill]          = useState({ left: 0, width: 0, ready: false })
@@ -89,7 +87,7 @@ export default function AppShell({
 
   const ease       = "cubic-bezier(0.4,0,0.2,1)"
   const pillTrans  = `left 0.22s ${ease}, width 0.22s ${ease}`
-  const dotColor   = phase === "focus" ? "bg-accent" : "bg-priority-low"
+  const dotColor   = phase === "focus" ? "bg-priority-low" : "bg-priority-low"
   const statusCls  = phase === "focus"
     ? "bg-accent/10 text-accent border-accent/20"
     : "bg-priority-low/10 text-priority-low border-priority-low/20"
@@ -115,67 +113,62 @@ export default function AppShell({
 
         {/* Desktop */}
         {isTablet && (
-          <header className={`fixed top-0 inset-x-0 z-50 h-20 flex items-center px-6 gap-3 max-w-4xl mx-auto
-            transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
-
-            <div className="flex items-center gap-2 px-3 py-2 shrink-0">
-              <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
-                <HiClock size={13} color="white" />
-              </div>
-              <span className="font-black text-sm tracking-tight text-tx">Todoro</span>
-            </div>
-
-            <div className="flex-1 flex justify-center">
-              <div ref={desktopNavRef}
-                className="relative flex items-center p-1 rounded-2xl bg-surface/90 backdrop-blur-xl border border-border">
-                {desktopPill.ready && (
-                  <div className="absolute top-1 bottom-1 bg-surface2 rounded-xl pointer-events-none"
-                    style={{ left: desktopPill.left, width: desktopPill.width, transition: pillTrans }} />
-                )}
-                {NAV.map(({ id, label }) => {
-                  const active = activeTab === id
-                  return (
-                    <button key={id}
-                      ref={el => { if (el) desktopBtnRefs.current.set(id, el); else desktopBtnRefs.current.delete(id) }}
-                      onClick={() => handleTabChange(id)}
-                      className={`relative z-10 flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold
-                        select-none transition-colors duration-150
-                        ${active ? "text-tx" : "text-sub hover:text-tx"}`}>
-                      <NavIcon id={id} active={active} />
-                      {label === "Me" ? "Settings" : label}
-                      {id === "timer" && running && (
-                        <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-bg ${dotColor}`} />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5 px-3 py-2 shrink-0">
-              {running && (
-                <div className={`hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-xs font-semibold ${statusCls}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${dotColor}`} />
-                  {statusText}
+          <header className={`fixed top-4 inset-x-0 z-50 flex items-center gap-3 max-w-7xl px-4 lg:px-10 mx-auto 
+              transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
+            <div className="w-full h-12 mx-auto flex rounded-2xl bg-surface/90 backdrop-blur-xl border border-border">   
+              <div className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
+                  <HiClock size={13} color="white" />
                 </div>
-              )}
-              <button onClick={() => handleTabChange("settings")}
-                className="flex items-center gap-2 transition-opacity hover:opacity-75">
-                <div className="hidden lg:flex flex-col items-end">
-                  <span className="text-xs font-bold text-tx leading-none">{userName}</span>
-                  <span className="text-[10px] text-sub">{streak}d streak</span>
+                <span className="font-black text-sm tracking-tight text-tx">Todoro</span>
+              </div>
+
+              <div className="flex-1 flex justify-center">
+                <div ref={desktopNavRef}
+                  className="relative flex items-center p-1">
+                  {desktopPill.ready && (
+                    <div className="absolute top-1 bottom-1 bg-surface2 rounded-xl pointer-events-none"
+                      style={{ left: desktopPill.left, width: desktopPill.width, transition: pillTrans }} />
+                  )}
+                  {NAV.map(({ id, label }) => {
+                    const active = activeTab === id
+                    return (
+                      <button key={id}
+                        ref={el => { if (el) desktopBtnRefs.current.set(id, el); else desktopBtnRefs.current.delete(id) }}
+                        onClick={() => handleTabChange(id)}
+                        className={`relative z-10 flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold
+                          select-none transition-colors duration-150
+                          ${active ? "text-tx" : "text-sub hover:text-tx"}`}>
+                        <NavIcon id={id} active={active} />
+                        {label === "Me" ? "Settings" : label}
+                        {id === "timer" && running && (
+                          <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-bg ${dotColor}`} />
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
-                <AvatarEl size={28} />
-              </button>
+              </div>
+
+              <div className="flex items-center gap-2.5 px-3 py-2 shrink-0">
+                <button onClick={() => handleTabChange("settings")}
+                  className="flex items-center gap-2 transition-opacity hover:opacity-75">
+                  <div className="hidden lg:flex flex-col items-end">
+                    <span className="text-xs font-bold text-tx leading-none">{userName}</span>
+                    <span className="text-[10px] text-sub">{streak}d streak</span>
+                  </div>
+                  <AvatarEl size={28} />
+                </button>
+              </div>
             </div>
           </header>
         )}
 
         {/* Page content */}
-        <main className={`flex-1 overflow-y-auto ${isTablet ? "pt-14" : "pb-32"}`}>
+        <main className={`flex-1 overflow-y-auto ${isTablet ? "pt-20" : "pb-32"}`}>
           <div key={animKey}
             style={{ animation: "tabenter 0.2s ease both" }}
-            className="w-full max-w-4xl mx-auto px-4 md:px-8 py-6">
+            className="w-full max-w-7xl mx-auto px-4 lg:px-10 py-6">
             {children}
           </div>
         </main>
@@ -193,29 +186,7 @@ export default function AppShell({
                   style={{ left: pill.left, width: pill.width, transition: pillTrans }} />
               )}
 
-              {NAV.slice(0, 2).map(({ id, label }) => {
-                const active = activeTab === id
-                return (
-                  <button key={id}
-                    ref={el => { if (el) btnRefs.current.set(id, el); else btnRefs.current.delete(id) }}
-                    onClick={() => handleTabChange(id)}
-                    className={`relative z-10 flex flex-col items-center justify-center gap-0.5
-                      px-4 py-2 select-none transition-colors duration-150
-                      ${active ? "text-tx" : "text-sub hover:text-tx"}`}>
-                    <NavIcon id={id} active={active} />
-                    <span className="font-semibold leading-none text-[9px]">{label}</span>
-                  </button>
-                )
-              })}
-
-              {/* <button onClick={() => setShowAdd(true)}
-                className="relative z-10 w-10 h-10 mx-1.5 rounded-full border-2 border-accent text-tx
-                  flex items-center justify-center shrink-0
-                  active:scale-95 transition-all duration-150 hover:bg-surface2">
-                <HiPlus size={20} />
-              </button> */}
-
-              {NAV.slice(2).map(({ id, label }) => {
+              {NAV.map(({ id, label }) => {
                 const active = activeTab === id
                 const isMe   = id === "settings"
                 return (
@@ -223,8 +194,8 @@ export default function AppShell({
                     ref={el => { if (el) btnRefs.current.set(id, el); else btnRefs.current.delete(id) }}
                     onClick={() => handleTabChange(id)}
                     className={`relative z-10 flex flex-col items-center justify-center gap-0.5
-                      px-4 py-2 select-none transition-colors duration-150
-                      ${active ? "text-tx" : "text-sub hover:text-tx"}`}>
+                      px-4 py-2 select-none transition-colors duration-300
+                      ${active ? "text-accent scale-105" : "text-sub hover:text-tx"}`}>
                     {isMe
                       ? <span className={`w-5 h-5 rounded-lg overflow-hidden border block
                           ${active ? "border-border" : "border-border/50"}`}>
