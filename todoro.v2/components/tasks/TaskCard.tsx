@@ -32,7 +32,7 @@ export default function TaskCard({
   onDelete, onPin, onQuickStart,
   compact = false, isActive = false, isPinned = false,
 }: TaskCardProps) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded,      setExpanded]      = useState(false)
   const [titleExpanded, setTitleExpanded] = useState(false)
 
   const { ref, swipeHandlers } = useSwipe({
@@ -48,19 +48,15 @@ export default function TaskCard({
   return (
     <div className="relative rounded-2xl overflow-hidden">
 
-      <div className="absolute inset-0 flex items-stretch pointer-events-none select-none">
-        <div className="flex items-center justify-start pl-5 w-24 rounded-l-2xl bg-accent/15">
-          <div className="flex flex-col items-center gap-1">
-            <HiMapPin size={16} className="text-accent" />
-            <span className="text-[10px] font-bold text-accent">{isPinned ? "Unpin" : "Pin"}</span>
-          </div>
+      <div className="absolute inset-0 flex pointer-events-none select-none">
+        <div className="flex flex-col items-center justify-center gap-1 w-24 rounded-l-2xl bg-accent/15">
+          <HiMapPin size={15} className="text-accent" />
+          <span className="text-[10px] font-bold text-accent">{isPinned ? "Unpin" : "Pin"}</span>
         </div>
         <div className="flex-1" />
-        <div className="flex items-center justify-end pr-5 w-24 rounded-r-2xl bg-red-500/15">
-          <div className="flex flex-col items-center gap-1">
-            <HiTrash size={16} className="text-red-500" />
-            <span className="text-[10px] font-bold text-red-500">Delete</span>
-          </div>
+        <div className="flex flex-col items-center justify-center gap-1 w-24 rounded-r-2xl bg-red-500/15">
+          <HiTrash size={15} className="text-red-500" />
+          <span className="text-[10px] font-bold text-red-500">Delete</span>
         </div>
       </div>
 
@@ -69,7 +65,7 @@ export default function TaskCard({
         {...swipeHandlers}
         style={{ touchAction: "pan-y", willChange: "transform" }}
         className={`relative rounded-2xl border transition-colors duration-200
-          ${isActive  ? "border-accent bg-surface"  : "border-border bg-surface hover:border-accent/40"}
+          ${isActive  ? "border-accent bg-surface" : "border-border bg-surface hover:border-accent/40"}
           ${task.done ? "opacity-60" : ""}`}>
 
         <div className={`flex items-center gap-3 ${compact ? "px-3 py-3" : "px-4 py-4"}`}>
@@ -84,34 +80,27 @@ export default function TaskCard({
 
           <div
             className="flex-1 min-w-0 cursor-pointer"
-            onClick={() => {
-              if (onClick) onClick(task)
-              else if (expandable) setExpanded(v => !v)
-            }}>
+            onClick={() => onClick ? onClick(task) : expandable && setExpanded(v => !v)}>
             <div className="flex items-center gap-2">
-              {isPinned && <HiMapPin size={10} className="text-accent shrink-0" />}
-              {isActive && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 animate-pulse" />}
+              {isPinned  && <HiMapPin size={10} className="text-accent shrink-0" />}
+              {isActive  && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 animate-pulse" />}
               <span className="w-2 h-2 rounded-full shrink-0" style={{ background: dot }} />
               <span
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); setTitleExpanded(v => !v) }}
                 className={`text-sm font-semibold select-none
                   ${task.done ? "line-through text-sub" : "text-tx"}
-                  ${titleExpanded ? "break-words whitespace-normal" : "truncate"}`}>
+                  ${titleExpanded ? "wrap-break-words whitespace-normal" : "truncate"}`}>
                 {task.title}
               </span>
             </div>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <span className="text-[11px] text-sub">{task.dueLabel}</span>
               {task.subtasks.length > 0 && (
-                <span className="text-[11px] text-sub">
-                  · {doneCount}/{task.subtasks.length} subtasks
-                </span>
+                <span className="text-[11px] text-sub">· {doneCount}/{task.subtasks.length} subtasks</span>
               )}
               {task.estimatedSessions > 0 && (
-                <span className="text-[11px] text-sub">
-                  · {task.completedSessions}/{task.estimatedSessions} sessions
-                </span>
+                <span className="text-[11px] text-sub">· {task.completedSessions}/{task.estimatedSessions} sessions</span>
               )}
             </div>
           </div>
@@ -187,7 +176,7 @@ function SubtaskRow({ sub, taskId, onToggleSub }: {
         onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}
         className={`text-xs flex-1 min-w-0 cursor-pointer
           ${sub.done ? "line-through text-sub" : "text-tx"}
-          ${expanded ? "break-words whitespace-normal" : "truncate"}`}>
+          ${expanded ? "wrap-break-words whitespace-normal" : "truncate"}`}>
         {sub.title}
       </span>
     </div>

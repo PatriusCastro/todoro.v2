@@ -1,49 +1,29 @@
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback } from "react"
 import { type Task } from "../components/tasks/TaskCard"
 
-interface UndoEntry { task: Task; timeout: ReturnType<typeof setTimeout> }
+export function useUndo(onConfirm: (id: string) => void) {
+  const [pending, setPending] = useState<Task | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-export function useUndo(onConfirmDelete: (id: string) => void) {
-  const [pendingId, setPendingId] = useState<string | null>(null)
-  const entry = useRef<UndoEntry | null>(null)
-
-  const onConfirmDeleteRef = useRef(onConfirmDelete)
-  useEffect(() => { onConfirmDeleteRef.current = onConfirmDelete }, [onConfirmDelete])
+  const clear = () => {
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = null
+  }
 
   const stage = useCallback((task: Task) => {
-    if (entry.current) {
-      clearTimeout(entry.current.timeout)
-      if (entry.current.task.id !== task.id) {
-        onConfirmDeleteRef.current(entry.current.task.id)
-      }
-      entry.current = null
-    }
-
-    setPendingId(task.id)
-    entry.current = {
-      task,
-      timeout: setTimeout(() => {
-        onConfirmDeleteRef.current(task.id)
-        setPendingId(null)
-        entry.current = null
-      }, 4000),
-    }
-  }, [])
+    clear()
+    if (pending) onConfirm(pending.id)
+    setPending(task)
+    timer.current = setTimeout(() => {
+      onConfirm(task.id)
+      setPending(null)
+    }, 4000)
+  }, [pending, onConfirm])
 
   const undo = useCallback(() => {
-    if (!entry.current) return
-    clearTimeout(entry.current.timeout)
-    setPendingId(null)
-    entry.current = null
+    clear()
+    setPending(null)
   }, [])
 
-  useEffect(() => {
-    return () => {
-      if (entry.current) {
-        clearTimeout(entry.current.timeout)
-      }
-    }
-  }, [])
-
-  return { pendingId, stage, undo }
+  return { pending, stage, undo }
 }

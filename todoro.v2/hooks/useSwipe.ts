@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from "react"
+import { useRef, useCallback } from "react"
 
 interface SwipeOptions {
   onSwipeLeft?: () => void
@@ -13,17 +13,11 @@ export function useSwipe({
   threshold = 72,
   maxDrag   = 110,
 }: SwipeOptions) {
-  const el       = useRef<HTMLDivElement>(null)
-  const startX   = useRef(0)
-  const startY   = useRef(0)
-  const active   = useRef(false)
-  const axis     = useRef<"x" | "y" | null>(null)
-  const capturedPointerId = useRef<number | null>(null)
-
-  const onSwipeLeftRef  = useRef(onSwipeLeft)
-  const onSwipeRightRef = useRef(onSwipeRight)
-  useEffect(() => { onSwipeLeftRef.current  = onSwipeLeft  }, [onSwipeLeft])
-  useEffect(() => { onSwipeRightRef.current = onSwipeRight }, [onSwipeRight])
+  const el      = useRef<HTMLDivElement>(null)
+  const startX  = useRef(0)
+  const startY  = useRef(0)
+  const active  = useRef(false)
+  const axis    = useRef<"x" | "y" | null>(null)
 
   const AXIS_LOCK = 8
 
@@ -37,27 +31,21 @@ export function useSwipe({
     node.style.opacity   = `${Math.max(0.35, 1 - Math.abs(x) / 180)}`
   }
 
-  const reset = useCallback(() => {
+  const snapBack = useCallback(() => {
     active.current = false
     axis.current   = null
-
-    if (capturedPointerId.current !== null && el.current) {
-      try { el.current.releasePointerCapture(capturedPointerId.current) } catch {}
-      capturedPointerId.current = null
-    }
     setStyle(0, true)
   }, [])
 
-  const flyOut = useCallback((dir: "left" | "right", cb: () => void) => {
+  const flyOutLeft = useCallback((cb: () => void) => {
     const node = el.current
     if (!node) return
     node.style.transition = "transform 0.22s ease-in, opacity 0.22s ease-in"
-    node.style.transform  = `translateX(${dir === "left" ? -280 : 280}px)`
+    node.style.transform  = "translateX(-300px)"
     node.style.opacity    = "0"
     active.current = false
     axis.current   = null
-    capturedPointerId.current = null
-    setTimeout(cb, 200)
+    setTimeout(cb, 210)
   }, [])
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
@@ -65,7 +53,6 @@ export function useSwipe({
     startY.current = e.clientY
     active.current = true
     axis.current   = null
-    capturedPointerId.current = e.pointerId
     el.current?.setPointerCapture(e.pointerId)
   }, [])
 
@@ -80,38 +67,33 @@ export function useSwipe({
     }
 
     if (axis.current !== "x") return
+    e.preventDefault()
 
-    const clamped = Math.sign(dx) * Math.min(Math.abs(dx), maxDrag)
-    const rubber  = dx >  maxDrag ?  maxDrag + (dx - maxDrag)  * 0.12
-                  : dx < -maxDrag ? -maxDrag + (dx + maxDrag)  * 0.12
-                  : clamped
+    const rubber = dx > maxDrag  ? maxDrag  + (dx - maxDrag)  * 0.12
+                 : dx < -maxDrag ? -maxDrag + (dx + maxDrag) * 0.12
+                 : dx
     setStyle(rubber)
   }, [maxDrag])
 
   const onPointerUp = useCallback(() => {
-    if (!active.current || axis.current !== "x") { reset(); return }
+    if (!active.current || axis.current !== "x") { snapBack(); return }
 
     const node = el.current
     if (!node) return
     const x = new DOMMatrix(getComputedStyle(node).transform).m41
 
-    if      (x >  threshold && onSwipeRightRef.current) flyOut("right", onSwipeRightRef.current)
-    else if (x < -threshold && onSwipeLeftRef.current)  flyOut("left",  onSwipeLeftRef.current)
-    else                                                 reset()
-  }, [threshold, reset, flyOut])
-
-  useEffect(() => {
-    const node = el.current
-    if (!node) return
-    const handleNativeMove = (e: PointerEvent) => {
-      if (active.current && axis.current === "x") e.preventDefault()
+    if (x > threshold && onSwipeRight) {
+      snapBack()
+      onSwipeRight()
+    } else if (x < -threshold && onSwipeLeft) {
+      flyOutLeft(onSwipeLeft)
+    } else {
+      snapBack()
     }
-    node.addEventListener("pointermove", handleNativeMove, { passive: false })
-    return () => node.removeEventListener("pointermove", handleNativeMove)
-  }, [])
+  }, [threshold, onSwipeLeft, onSwipeRight, snapBack, flyOutLeft])
 
   return {
     ref: el,
-    swipeHandlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: reset },
+    swipeHandlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: snapBack },
   }
 }

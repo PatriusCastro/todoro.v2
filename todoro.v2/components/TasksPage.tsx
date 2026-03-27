@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useCallback, useEffect, useRef } from "react"
+import { useState, useCallback } from "react"
 import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import TaskModal from "../components/tasks/TaskModal"
 import { type Priority, getPriority } from "../lib/theme"
 import { useUndo } from "../hooks/useUndo"
+import { usePinnedTasks } from "../hooks/usePinnedTasks"
 import { useSortedTasks } from "../hooks/useTaskSort"
 
 interface TasksPageProps {
@@ -23,7 +24,7 @@ const PRIORITIES: { key: Priority; label: string }[] = [
 
 export default function TasksPage({
   tasks, activeTask, running, onSave, onDelete,
-  onToggle, onToggleSub, onSetActive, onNavToTimer, dark
+  onToggle, onToggleSub, onSetActive, onNavToTimer, dark,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Priority | "all" | "done">("all")
@@ -31,65 +32,34 @@ export default function TasksPage({
   const [showModal, setShowModal] = useState(false)
   const [showDone,  setShowDone]  = useState(false)
   const [showToast, setShowToast] = useState(false)
-  const [pinned,    setPinned]    = useState<Set<string>>(new Set())
 
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { pinned, togglePin } = usePinnedTasks()
+  const { pending: deletePending, stage: stageDelete, undo } = useUndo(onDelete)
 
-  useEffect(() => {
-    return () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current)
-    }
-  }, [])
-
-  const showRunningToast = useCallback(() => {
-    setShowToast(true)
-    if (toastTimer.current) clearTimeout(toastTimer.current)
-    toastTimer.current = setTimeout(() => {
-      setShowToast(false)
-      toastTimer.current = null
-    }, 3000)
-  }, [])
-
-  const { pendingId, stage: stageDelete, undo } = useUndo(onDelete)
-
-  const handlePin = useCallback((id: string) => {
-    setPinned(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }, [])
-
-  const handleDelete = useCallback((task: Task) => {
-    stageDelete(task)
-  }, [stageDelete])
+  const handleDelete = useCallback((task: Task) => stageDelete(task), [stageDelete])
 
   const handleQuickStart = useCallback((task: Task) => {
-    if (running) { showRunningToast(); return }
+    if (running) { setShowToast(true); setTimeout(() => setShowToast(false), 3000); return }
     onSetActive(task)
     onNavToTimer()
-  }, [running, onSetActive, onNavToTimer, showRunningToast])
+  }, [running, onSetActive, onNavToTimer])
 
   const handleTaskClick = useCallback((task: Task) => {
-    if (running) { showRunningToast(); return }
+    if (running) { setShowToast(true); setTimeout(() => setShowToast(false), 3000); return }
     onSetActive(task)
     onNavToTimer()
-  }, [running, onSetActive, onNavToTimer, showRunningToast])
+  }, [running, onSetActive, onNavToTimer])
 
-  const visibleTasks = tasks.filter(t => {
-    if (t.id === pendingId) return false
+  const visible = tasks.filter(t => {
+    if (t.id === deletePending?.id) return false
     if (!t.title.toLowerCase().includes(search.toLowerCase())) return false
     if (filter === "done") return t.done
     if (filter === "all")  return true
     return t.priority === filter && !t.done
   })
 
-  const pending = useSortedTasks(
-    visibleTasks.filter(t => !t.done),
-    activeTask.id,
-    pinned
-  )
-  const done = visibleTasks.filter(t => t.done)
+  const pending = useSortedTasks(visible.filter(t => !t.done), activeTask.id, pinned)
+  const done    = visible.filter(t => t.done)
 
   return (
     <div className="flex flex-col gap-5">
@@ -103,10 +73,16 @@ export default function TasksPage({
         </div>
       </div>
 
-      {pendingId && (
+      {deletePending && (
         <div className="flex items-center gap-3 rounded-xl bg-surface border border-border px-4 py-3">
-          <span className="flex-1 text-xs font-semibold text-tx">Task deleted</span>
-          <button onClick={undo} className="text-xs font-black text-accent hover:underline">Undo</button>
+          <span className="flex-1 text-xs font-semibold text-tx truncate">
+            "{deletePending.title}" will be deleted
+          </span>
+          <button
+            onClick={undo}
+            className="text-xs font-black text-accent hover:underline shrink-0">
+            Undo
+          </button>
         </div>
       )}
 
@@ -138,7 +114,9 @@ export default function TasksPage({
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks…"
           className="bg-transparent outline-none text-sm text-tx placeholder:text-sub flex-1" />
         {search && (
-          <button onClick={() => setSearch("")} className="text-sub hover:text-tx"><HiXMark size={14} /></button>
+          <button onClick={() => setSearch("")} className="text-sub hover:text-tx">
+            <HiXMark size={14} />
+          </button>
         )}
       </div>
 
@@ -176,7 +154,7 @@ export default function TasksPage({
                 onToggle={onToggle} onToggleSub={onToggleSub}
                 onEdit={t => { setModalTask(t); setShowModal(true) }}
                 onDelete={handleDelete}
-                onPin={handlePin}
+                onPin={togglePin}
                 onQuickStart={handleQuickStart}
                 isActive={task.id === activeTask.id}
                 isPinned={pinned.has(task.id)}
@@ -189,7 +167,7 @@ export default function TasksPage({
       {done.length > 0 && (
         <div className="flex flex-col gap-2">
           <button onClick={() => setShowDone(v => !v)}
-            className="flex items-center justify-between px-1 w-full group">
+            className="flex items-center justify-between px-1 w-full">
             <span className="text-xs font-bold text-sub uppercase tracking-wider">
               Completed — {done.length}
             </span>
@@ -209,16 +187,19 @@ export default function TasksPage({
         </div>
       )}
 
-      {visibleTasks.length === 0 && !pendingId && (
+      {visible.length === 0 && !deletePending && (
         <div className="rounded-2xl border border-border bg-surface px-5 py-12 text-center">
           <p className="text-sub text-sm">No tasks found</p>
           <button onClick={() => { setModalTask(undefined); setShowModal(true) }}
-            className="mt-3 text-sm text-accent font-semibold hover:underline">Create one →</button>
+            className="mt-3 text-sm text-accent font-semibold hover:underline">
+            Create one →
+          </button>
         </div>
       )}
 
       {showModal && (
-        <TaskModal task={modalTask} onSave={onSave} onDelete={id => { onDelete(id); setShowModal(false) }}
+        <TaskModal task={modalTask} onSave={onSave}
+          onDelete={id => { onDelete(id); setShowModal(false) }}
           onClose={() => setShowModal(false)} dark={dark} />
       )}
     </div>
