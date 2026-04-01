@@ -45,10 +45,18 @@ export default function TaskCard({
   const hasDetails = task.subtasks.length > 0 || task.estimatedSessions > 0
   const expandable = !compact && hasDetails
 
+  function isSwiped() {
+    if (!ref.current) return false
+    const style = window.getComputedStyle(ref.current)
+    const matrix = new DOMMatrixReadOnly(style.transform)
+    return matrix.m41 !== 0
+  }
+
   return (
     <div className="relative rounded-2xl overflow-hidden">
 
-      <div className="absolute inset-0 flex pointer-events-none select-none">
+      <div className="absolute inset-0 flex pointer-events-none select-none"
+        style={{ opacity: isSwiped() ? 1 : 0, transition: "opacity" }}>
         <div className="flex flex-col items-center justify-center gap-1 w-24 rounded-l-2xl bg-accent/15">
           <HiMapPin size={15} className="text-accent" />
           <span className="text-[10px] font-bold text-accent">{isPinned ? "Unpin" : "Pin"}</span>
@@ -66,7 +74,7 @@ export default function TaskCard({
         style={{ touchAction: "pan-y", willChange: "transform" }}
         className={`relative rounded-2xl border transition-colors duration-200
           ${isActive  ? "border-accent bg-surface" : "border-border bg-surface hover:border-accent/40"}
-          ${task.done ? "opacity-60" : ""}`}>
+          ${task.done ? "bg-surface line-through text-sub border-border opacity-60" : "text-tx"}`}>
 
         <div className={`flex items-center gap-3 ${compact ? "px-3 py-3" : "px-4 py-4"}`}>
 

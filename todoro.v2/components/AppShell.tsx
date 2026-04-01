@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useIsTablet } from "../hooks/useMediaQuery"
+import { usePillAnimation } from "../hooks/usePillAnimation"
 import TaskModal from "./tasks/TaskModal"
 import { type Task } from "./tasks/TaskCard"
 import { HiHome, HiOutlineHome, HiClipboardList, HiOutlineClipboardList, HiClock, HiOutlineClock, HiCog, HiOutlineCog, HiOutlineCalendar, HiCalendar } from "react-icons/hi"
@@ -19,6 +20,7 @@ interface AppShellProps {
   streak:      number
   running:     boolean
   phase:       Phase
+  hideNavbar?: boolean
   avatarUrl?:  string
   onAddTask:   (task: Task) => void
 }
@@ -44,7 +46,7 @@ function NavIcon({ id, active }: { id: Tab; active: boolean }) {
 
 export default function AppShell({
   children, activeTab, onTabChange, dark,
-  userName, streak, running, phase, avatarUrl, onAddTask,
+  userName, streak, running, phase, hideNavbar, avatarUrl, onAddTask,
 }: AppShellProps) {
   const isTablet  = useIsTablet()
   const initials  = userName ? userName.slice(0, 2).toUpperCase() : "–"
@@ -53,31 +55,8 @@ export default function AppShell({
   const [animKey, setAnimKey] = useState(0)
   useEffect(() => { setTimeout(() => setMounted(true), 50) }, [])
 
-  const navContainerRef                        = useRef<HTMLDivElement>(null)
-  const btnRefs                                = useRef<Map<Tab, HTMLElement>>(new Map())
-  const [pill, setPill]                        = useState({ left: 0, width: 0, ready: false })
-
-  useEffect(() => {
-    const container = navContainerRef.current
-    const btn       = btnRefs.current.get(activeTab)
-    if (!container || !btn) return
-    const cr = container.getBoundingClientRect()
-    const br = btn.getBoundingClientRect()
-    setPill({ left: br.left - cr.left, width: br.width, ready: true })
-  }, [activeTab, mounted])
-
-  const desktopNavRef                          = useRef<HTMLDivElement>(null)
-  const desktopBtnRefs                         = useRef<Map<Tab, HTMLElement>>(new Map())
-  const [desktopPill, setDesktopPill]          = useState({ left: 0, width: 0, ready: false })
-
-  useEffect(() => {
-    const container = desktopNavRef.current
-    const btn       = desktopBtnRefs.current.get(activeTab)
-    if (!container || !btn) return
-    const cr = container.getBoundingClientRect()
-    const br = btn.getBoundingClientRect()
-    setDesktopPill({ left: br.left - cr.left, width: br.width, ready: true })
-  }, [activeTab, mounted])
+  const { containerRef: navContainerRef, btnRefs, pill } = usePillAnimation(activeTab, mounted)
+  const { containerRef: desktopNavRef, btnRefs: desktopBtnRefs, pill: desktopPill } = usePillAnimation(activeTab, mounted)
 
   const handleTabChange = (tab: Tab) => {
     if (tab === activeTab) return
@@ -88,10 +67,6 @@ export default function AppShell({
   const ease       = "cubic-bezier(0.4,0,0.2,1)"
   const pillTrans  = `left 0.22s ${ease}, width 0.22s ${ease}`
   const dotColor   = phase === "focus" ? "bg-priority-low" : "bg-priority-low"
-  const statusCls  = phase === "focus"
-    ? "bg-accent/10 text-accent border-accent/20"
-    : "bg-priority-low/10 text-priority-low border-priority-low/20"
-  const statusText = phase === "focus" ? "Focusing" : "Resting"
 
   const AvatarEl = ({ size = 32 }: { size?: number }) => (
     <div style={{ width: size, height: size }}
@@ -112,10 +87,10 @@ export default function AppShell({
       <div className="min-h-dvh bg-bg text-tx flex flex-col">
 
         {/* Desktop */}
-        {isTablet && (
-          <header className={`fixed top-4 inset-x-0 z-50 flex items-center gap-3 max-w-7xl px-4 lg:px-10 mx-auto 
+        {isTablet && !hideNavbar && (
+          <header className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 w-full py-2 mx-auto bg-surface/90 backdrop-blur-xl
               transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
-            <div className="w-full h-12 mx-auto flex rounded-2xl bg-surface/90 backdrop-blur-xl border border-border">   
+            <div className="max-w-7xl w-full h-12 mx-auto flex px-4 lg:px-8">   
               <div className="flex items-center gap-2 px-3 py-2 shrink-0">
                 <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
                   <HiClock size={13} color="white" />
@@ -165,7 +140,7 @@ export default function AppShell({
         )}
 
         {/* Page content */}
-        <main className={`flex-1 overflow-y-auto ${isTablet ? "pt-20" : "pb-32"}`}>
+        <main className={`flex-1 overflow-y-auto ${isTablet && !hideNavbar ? "pt-20" : ""} ${isTablet ? "" : "pb-20"}`}>
           <div key={animKey}
             style={{ animation: "tabenter 0.2s ease both" }}
             className="w-full max-w-7xl mx-auto px-4 lg:px-10 py-6">
@@ -174,7 +149,7 @@ export default function AppShell({
         </main>
 
         {/* Mobile */}
-        {!isTablet && (
+        {!isTablet && !hideNavbar && (
           <div className={`fixed bottom-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none
             transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}>
 
@@ -218,6 +193,15 @@ export default function AppShell({
 
             </div>
           </div>
+        )}
+
+        {!isTablet && activeTab === "tasks" && (
+          <button
+            onClick={() => setShowAdd(true)}
+            className={`fixed bottom-24 right-4 z-40 flex items-center justify-center w-12 h-12 rounded-full bg-accent text-white text-sm font-black hover:bg-accent-hover active:scale-95 transition-all
+              ${running ? "opacity-50 pointer-events-none" : ""}`}>
+            <HiPlus size={16} />
+          </button>
         )}
 
         {showAdd && (

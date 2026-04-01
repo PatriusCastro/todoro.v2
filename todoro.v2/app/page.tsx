@@ -116,6 +116,8 @@ export default function Home() {
     () => load("todoro:history", [])
   )
 
+  const [focusedView, setFocusedView] = useState(false)
+
   const todayHistory = allHistory.filter(s => localDate(s.at) === todayKey())
   const sessions = todayHistory.length
   const streak   = computeStreak(allHistory)
@@ -263,7 +265,7 @@ export default function Home() {
   }
 
   return (
-    <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} avatarUrl={avatarUrl} onAddTask={handleSaveTask}>
+    <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask}>
 
       <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 pointer-events-none transition-all duration-300
         ${toast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
@@ -292,7 +294,7 @@ export default function Home() {
           tasks={tasks} activeTask={activeTask}
           onToggle={handleToggle} onReset={handleReset} onSkip={handleSkip}
           onModeChange={handleModeChange} onTaskChange={setActiveTask}
-          onToggleSub={handleToggleSub} />
+          onToggleSub={handleToggleSub} onFocusedChange={setFocusedView} />
       )}
 
       {tab === "tasks" && (

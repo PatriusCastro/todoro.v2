@@ -74,13 +74,12 @@ export default function TasksPage({
       </div>
 
       {deletePending && (
-        <div className="flex items-center gap-3 rounded-xl bg-surface border border-border px-4 py-3">
-          <span className="flex-1 text-xs font-semibold text-tx truncate">
-            "{deletePending.title}" will be deleted
-          </span>
-          <button
-            onClick={undo}
-            className="text-xs font-black text-accent hover:underline shrink-0">
+        <div className="min-w-75 absolute top-4 left-1/2 -translate-x-1/2 flex items-center justify-between z-100 gap-3 rounded-xl bg-surface border border-border px-4 py-3">
+          <div className= "flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+            <p className="text-sm font-semibold text-tx">Task "{deletePending.title}" deleted</p>
+          </div>
+          <button onClick={undo} className="text-sm text-accent font-semibold justify-end hover:underline">
             Undo
           </button>
         </div>
@@ -93,9 +92,10 @@ export default function TasksPage({
             {tasks.filter(t => !t.done).length} pending · {tasks.filter(t => t.done).length} done
           </p>
         </div>
+        {/* Appears only on wider screens */}
         <button
           onClick={() => { setModalTask(undefined); setShowModal(true) }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover active:scale-95 transition-all">
+          className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover active:scale-95 transition-all">
           <HiPlus size={14} /> New
         </button>
       </div>
