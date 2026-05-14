@@ -2,8 +2,6 @@
 
 A modern **Progressive Web App (PWA)** that combines a **Pomodoro timer** with a **task manager** for deep focus sessions. Works offline and installs like a native app on any device.
 
-![Todoro](./public/icons/todoro-light.png)
-
 ## 🚀 Features
 
 - ⏱️ **Pomodoro Timer** - Customizable work/break intervals for focused productivity
