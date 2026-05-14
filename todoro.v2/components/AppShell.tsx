@@ -92,10 +92,12 @@ export default function AppShell({
               transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
             <div className="max-w-7xl w-full h-12 mx-auto flex px-4 lg:px-8">   
               <div className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
-                  <HiClock size={13} color="white" />
-                </div>
-                <span className="font-black text-sm tracking-tight text-tx">Todoro</span>
+                <img 
+                  src={dark ? "/icons/todoro-light.png" : "/icons/todoro-dark.png"} 
+                  alt="Todoro" 
+                  className="w-5 h-5"
+                />
+                <span className="text-sm font-bold text-tx">Todoro</span>
               </div>
 
               <div className="flex-1 flex justify-center">
