@@ -93,6 +93,12 @@ function computeStreak(history: SessionRecord[]): number {
 }
 
 export default function Home() {
+  const [hydrated, setHydrated] = useState(false)
+  
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+
   const [tab,       setTab]       = useState<Tab>("home")
   const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Kath"))
   const [dark,      setDark]      = useState(() => load("todoro:dark",      true))
@@ -262,6 +268,16 @@ export default function Home() {
   const timerProps = {
     time, phase, mode, focusMins, breakMins, longBreakMins: LONG_BREAK_MINS,
     running, progress, sessions, totalSessions: dailyGoal, cycleCount,
+  }
+
+  if (!hydrated) {
+    return (
+      <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask}>
+        <div className="flex items-center justify-center h-96 text-sub">
+          <p>Loading...</p>
+        </div>
+      </AppShell>
+    )
   }
 
   return (
