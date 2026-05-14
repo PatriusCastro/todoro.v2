@@ -72,7 +72,7 @@ export default function TimerPage({
   )
 
   if (focused) return (
-    <div className="flex flex-col items-center justify-center min-h-[75dvh] gap-8">
+    <div className="flex flex-col items-center justify-center min-h-[75dvh] max-h-screen gap-8">
       <div className="text-center">
         <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-3 border ${badge}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${dot} ${running ? "animate-pulse" : ""}`} />
