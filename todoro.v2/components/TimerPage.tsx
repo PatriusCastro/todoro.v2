@@ -106,7 +106,7 @@ export default function TimerPage({
       </div>
 
       <div className="flex flex-col-reverse lg:flex-row gap-4">
-        <div className="flex flex-col items-center gap-3 min-w-2xl shrink-0 bg-surface border border-border rounded-2xl py-6">
+        <div className="flex flex-col items-center gap-3 sm:min-w-2xl shrink-0 bg-surface border border-border rounded-2xl py-6">
           <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold border ${badge}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${dot} ${running ? "animate-pulse" : ""}`} />
             {label}
