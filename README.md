@@ -1,241 +1,117 @@
 # Todoro v2
 
-A modern **Progressive Web App (PWA)** that combines a **Pomodoro timer** with a **task manager** for deep focus sessions. Works offline and installs like a native app on any device.
+A **Pomodoro timer + task manager** built as a Progressive Web App (PWA). Stay focused, track your tasks, and use it anywhere — even without internet.
 
-## 🚀 Features
+> 🌐 **Live App**: [todo-ro.vercel.app](https://todo-ro.vercel.app)
 
-- ⏱️ **Pomodoro Timer** - Customizable work/break intervals for focused productivity
-- ✅ **Task Manager** - Create, organize, and track your tasks
-- 📱 **Progressive Web App (PWA)** - Install on home screen, works offline
-- 🎨 **Beautiful UI** - Modern design with Tailwind CSS & smooth animations
-- ⚡ **Fast & Responsive** - Built with Next.js for optimal performance
-- 🌙 **Dark Theme** - Eye-friendly interface with custom color scheme
-- 💾 **Local Storage** - All data stored locally on your device
-- 🔔 **Notifications** - Get reminders for timer completions
+---
 
-## 📋 Tech Stack
+## ✨ What You Can Do
 
-- **Framework**: Next.js 16.1.6 with React 19.2.3
-- **Language**: TypeScript 5
-- **Styling**: Tailwind CSS v4 & PostCSS
-- **PWA**: next-pwa for service workers
-- **Icons**: React Icons
-- **Font**: DM Sans (Google Fonts)
+- **Pomodoro Timer** — Start focused work sessions with customizable work and break intervals
+- **Task Manager** — Add, complete, and organize your tasks alongside your timer
+- **Install as an App** — Add Todoro to your home screen or desktop for a native app feel
+- **Use Offline** — Once loaded, the app works without internet (see guide below)
+- **Dark Theme** — Easy on the eyes during long focus sessions
+- **Local Data** — Everything is saved on your device, no account needed
 
-## 🛠️ Installation
+---
+
+## 📱 Installing Todoro on Your Device
+
+Installing Todoro gives you a full-screen, app-like experience and enables offline use.
+
+### Desktop (Chrome or Edge)
+1. Visit the app URL in Chrome or Edge
+2. Look for the **install icon** (➕) in the address bar — click it
+3. Click **Install** in the prompt
+
+### Android (Chrome)
+1. Open the app URL in Chrome
+2. Tap the **⋮ menu** (top right)
+3. Tap **"Add to Home Screen"** or **"Install app"**
+4. Tap **Add**
+
+### iOS (Safari)
+1. Open the app URL in **Safari** (must be Safari, not Chrome)
+2. Tap the **Share button** (the box with an arrow)
+3. Scroll down and tap **"Add to Home Screen"**
+4. Tap **Add**
+
+---
+
+## 📶 Using Todoro Offline
+
+Todoro is a PWA, which means it caches itself after your first visit so you can use it without internet. Here's how to make sure it works offline:
+
+### Step 1 — Load the app while online first
+Open the app in your browser or via the installed icon **while connected to the internet**. Wait for it to fully load. This lets the service worker cache everything it needs.
+
+### Step 2 — Don't refresh while offline
+Once you're offline, **do not refresh the page or tab**. Refreshing forces the browser to re-fetch the app from the network, which will fail without internet. Simply keep the tab or app open.
+
+### Step 3 — Use it normally
+After the initial load, you can:
+- ✅ Start and use the **Pomodoro timer**
+- ✅ **Add, complete, and manage tasks**
+- ✅ Change **settings** (timer intervals, preferences)
+- ✅ View your **task history and progress**
+
+> **Note:** Notifications may not work on all devices while offline, depending on your browser and OS.
+
+### Tips
+- If you close the app while offline and reopen it, it should still load from cache — but opening it while connected is always safer
+- If you see a blank page or error offline, you likely need to reconnect and reload the app once to re-cache it
+- Installed PWA users (home screen / desktop) have more reliable offline access than browser tab users
+
+---
+
+## 🛠️ Developer Setup
 
 ### Prerequisites
 - Node.js 20+ and npm
 
-### Setup
-
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/todoro-v2.git
-cd todoro-v2/todoro.v2
-
-# Install dependencies
+git clone https://github.com/PatriusCastro/todoro.v2.git
+cd todoro.v2/todoro.v2
 npm install
-
-# Start development server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000).
 
-## 📁 Project Structure
+> **Note:** The service worker (offline support) is disabled in development mode. To test offline behavior, run a production build:
+> ```bash
+> npm run build && npm start
+> ```
 
-```
-todoro.v2/
-├── app/                    # Next.js app directory
-│   ├── layout.tsx         # Root layout with metadata & PWA config
-│   ├── page.tsx           # Home page
-│   └── globals.css        # Global styles
-├── components/            # React components
-│   ├── AppShell.tsx       # Main app container
-│   ├── HomePage.tsx       # Home view
-│   ├── CalendarPage.tsx   # Calendar view
-│   ├── TasksPage.tsx      # Tasks view
-│   ├── TimerPage.tsx      # Timer view
-│   ├── SettingsPage.tsx   # Settings view
-│   ├── shared/            # Shared components
-│   ├── tasks/             # Task-related components
-│   └── timer/             # Timer-related components
-├── hooks/                 # Custom React hooks
-│   ├── useTimer*          # Timer-related hooks
-│   ├── useTask*           # Task-related hooks
-│   └── ...
-├── lib/                   # Utilities & helpers
-│   └── theme.ts           # Theme configuration
-├── public/                # Static assets
-│   ├── manifest.json      # PWA manifest
-│   ├── icon-192.png       # App icon (192x192)
-│   ├── icon-512.png       # App icon (512x512)
-│   ├── sw.js              # Service worker
-│   └── ...
-├── next.config.ts         # Next.js configuration with PWA
-├── tsconfig.json          # TypeScript configuration
-├── tailwind.config.js     # Tailwind CSS configuration
-└── package.json           # Project metadata & dependencies
-```
+### Tech Stack
+- **Next.js 16** + **React 19** + **TypeScript**
+- **Tailwind CSS v4**
+- **next-pwa** for service worker & offline caching
 
-## 🏗️ Building
-
-```bash
-# Build for production
-npm run build
-
-# Run production build locally
-npm start
-
-# Lint code
-npm run lint
-```
-
-## 🚀 Deployment to Vercel
-
-### Option 1: Automatic via GitHub (Recommended)
-
-1. **Push code to GitHub**:
-   ```bash
-   git add .
-   git commit -m "Ready for deployment"
-   git push origin main
-   ```
-
-2. **Connect to Vercel**:
-   - Go to [vercel.com](https://vercel.com)
-   - Click "Add New" → "Project"
-   - Select your GitHub repository
-   - **Important**: Set "Root Directory" to `todoro.v2`
-   - Click "Deploy"
-
-3. **Verify PWA**:
-   - Open your deployment URL
-   - Open DevTools → Application → Manifest
-   - Verify the manifest loads with correct icons and metadata
-
-### Option 2: CLI Deployment
-
-```bash
-# Install Vercel CLI globally
-npm install -g vercel
-
-# Deploy from project directory
-cd todoro.v2
-vercel
-```
-
-### After Deployment
-
-- **Share your URL**: Users can visit your app in any browser
-- **Install as App**: Users can click the install button or use "Install app" menu
-- **Auto-Deployment**: Future pushes to `main` branch auto-deploy automatically
-
-## 📱 Installing as PWA
-
-### On Desktop (Chrome/Edge)
-1. Visit the deployed URL
-2. Click the **Install** button in the address bar (or menu icon)
-3. Follow the prompts
-
-### On Mobile (Android Chrome)
-1. Visit the deployed URL
-2. Tap the **menu** (⋮) button
-3. Select **"Install app"** or **"Add to home screen"**
-
-### On iOS (Apple devices)
-1. Open in Safari browser
-2. Tap the **Share** button
-3. Select **"Add to Home Screen"**
-
-## 🔧 Configuration
-
-### PWA Settings (`next.config.ts`)
-```typescript
-const withPWA = withPWAInit({
-  dest: "public",
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === "development",
-})
-```
-
-### App Metadata (`app/layout.tsx`)
-- Title, description, and icons configured in Next.js metadata
-- Theme color set to `#2940D3` (Todoro blue)
-- Status bar style optimized for mobile
-
-### Manifest (`public/manifest.json`)
-- App name: "Todoro"
-- Display mode: "standalone" (full screen app)
-- Categories: productivity, utilities
-- Icons in maskable format for modern devices
-
-## 💡 Development Tips
-
-### Hot Reload
-The dev server supports fast refresh. Edit files and changes appear instantly without full page reload.
-
-### Service Worker
-- Automatically generated during build
-- Disables in development for easier debugging
-- Enables in production for offline support
-- Use `skipWaiting: true` for instant updates
-
-### TypeScript
-- Strict mode enabled for type safety
-- Auto-completion and type checking throughout
-
-## 📦 Dependencies
-
-| Package | Purpose |
-|---------|---------|
-| `next` | React framework with built-in optimizations |
-| `next-pwa` | PWA service worker & caching |
-| `react` / `react-dom` | UI library |
-| `react-icons` | Icon library (5.6.0+) |
-| `tailwindcss` | Utility-first CSS framework |
-| `typescript` | Static type checking |
-
-## 🤝 Contributing
-
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Commit changes: `git commit -m "feat: description"`
-3. Push: `git push origin feature/your-feature`
-4. Open a pull request
-
-## 📄 License
-
-This project is private and proprietary.
-
-## 🐛 Troubleshooting
-
-### Icons not showing after deploy?
-- Clear browser cache: `Ctrl+Shift+Delete`
-- Hard refresh: `Ctrl+F5` or `Cmd+Shift+R`
-- Check DevTools → Application → Cache Storage and clear old caches
-
-### Service worker not updating?
-- Users need to close and reopen the app
-- Or clear app data and reinstall from home screen
-
-### Build fails?
-- Delete `.next/` folder: `rm -r .next`
-- Clear npm cache: `npm cache clean --force`
-- Reinstall dependencies: `rm -rf node_modules && npm install`
-
-### Dev server won't start?
-- Make sure port 3000 is available
-- Try: `npm run dev -- -p 3001` for different port
-
-## 🔗 Resources
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Vercel Deployment Guide](https://vercel.com/docs)
-- [PWA Checklist](https://web.dev/pwa-checklist/)
-- [Tailwind CSS](https://tailwindcss.com)
+### Deploying to Vercel
+1. Push to GitHub
+2. Import the repo on [vercel.com](https://vercel.com)
+3. Set the **Root Directory** to `todoro.v2`
+4. Deploy
 
 ---
 
-**Built with ❤️ for focused productivity**
+## 🐛 Troubleshooting
+
+**App not loading offline?**
+Reconnect to the internet, open the app, let it fully load, then go offline again without refreshing.
+
+**Blank screen after coming back to the app?**
+Don't refresh — go back online first, reload once, then you can use it offline again.
+
+**Icons or UI look broken after an update?**
+Clear your browser cache (`Ctrl+Shift+Delete`) and reload while connected.
+
+**Service worker not updating?**
+Close and reopen the app, or clear app data and re-add it to your home screen.
+
+---
+
+**Built for focused productivity and for my girlfriend 🍅**
