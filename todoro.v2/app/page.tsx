@@ -58,6 +58,13 @@ function getGreeting() {
   return "Good evening"
 }
 
+function createQuickModeTask(): Task {
+  return {
+    id: "quick-mode", title: "", priority: "none", dueDate: "", dueTime: "", dueLabel: "",
+    done: false, estimatedSessions: 0, completedSessions: 0, subtasks: [],
+  }
+}
+
 function localDate(ts: number = Date.now()) {
   const d = new Date(ts)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
@@ -105,6 +112,7 @@ export default function Home() {
   const [sound,     setSound]     = useState(() => load("todoro:sound",     true))
   const [dailyGoal, setDailyGoal] = useState(() => load("todoro:dailyGoal", 5))
   const [avatarUrl, setAvatarUrl] = useState(() => load("todoro:avatarUrl", ""))
+  const [quickMode, setQuickMode] = useState(() => load("todoro:quickMode", false))
 
   const [mode,      setMode]      = useState<Mode>(()   => load("todoro:mode",      "25/5"))
   const [focusMins, setFocusMins] = useState<number>(() => load("todoro:focusMins", 25))
@@ -130,6 +138,8 @@ export default function Home() {
 
   const [tasks,      setTasks]      = useState<Task[]>(() => load("todoro:tasks", INITIAL_TASKS))
   const [activeTask, setActiveTask] = useState<Task>(() => {
+    const quickModeEnabled = load("todoro:quickMode", false)
+    if (quickModeEnabled) return createQuickModeTask()
     const saved = load<Task[]>("todoro:tasks", INITIAL_TASKS)
     return saved.find(t => !t.done) ?? saved[0] ?? INITIAL_TASKS[0]
   })
@@ -150,12 +160,26 @@ export default function Home() {
     }
   }, [tasks])
 
+  /* Handle Quick Mode changes */
+  useEffect(() => {
+    if (quickMode && activeTask.title !== "") {
+      // Switching to Quick Mode, set placeholder
+      setActiveTask(createQuickModeTask())
+    } else if (!quickMode && activeTask.id === "quick-mode") {
+      // Switching out of Quick Mode, set first pending task
+      const nextPending = tasks.find(t => !t.done)
+      if (nextPending) setActiveTask(nextPending)
+      else setActiveTask(tasks[0] ?? INITIAL_TASKS[0])
+    }
+  }, [quickMode, tasks])
+
   /* Persist settings & data */
   useEffect(() => { save("todoro:userName",  userName)    }, [userName])
   useEffect(() => { save("todoro:dark",      dark)        }, [dark])
   useEffect(() => { save("todoro:sound",     sound)       }, [sound])
   useEffect(() => { save("todoro:dailyGoal", dailyGoal)   }, [dailyGoal])
   useEffect(() => { save("todoro:avatarUrl", avatarUrl)   }, [avatarUrl])
+  useEffect(() => { save("todoro:quickMode", quickMode)   }, [quickMode])
   useEffect(() => { save("todoro:mode",      mode)        }, [mode])
   useEffect(() => { save("todoro:focusMins", focusMins)   }, [focusMins])
   useEffect(() => { save("todoro:breakMins", breakMins)   }, [breakMins])
@@ -302,15 +326,15 @@ export default function Home() {
           onNavToTasks={() => setTab("tasks")} onSetActive={setActiveTask}
           streak={streak} totalPoints={totalPoints} allHistory={allHistory}
           avatarUrl={avatarUrl} onNavToSettings={() => setTab("settings")}
-          greeting={getGreeting()} userName={userName} />
+          greeting={getGreeting()} userName={userName} quickMode={quickMode} onQuickMode={setQuickMode} />
       )}
 
       {tab === "timer" && (
         <TimerPage {...timerProps}
-          tasks={tasks} activeTask={activeTask}
+          tasks={tasks} activeTask={activeTask} quickMode={quickMode}
           onToggle={handleToggle} onReset={handleReset} onSkip={handleSkip}
-          onModeChange={handleModeChange} onTaskChange={setActiveTask}
-          onToggleSub={handleToggleSub} onFocusedChange={setFocusedView} />
+          onModeChange={handleModeChange} onTaskChange={setActiveTask} onQuickMode={setQuickMode}
+          onToggleSub={handleToggleSub} onFocusedChange={setFocusedView} allHistory={allHistory} />
       )}
 
       {tab === "tasks" && (
@@ -326,7 +350,8 @@ export default function Home() {
           dark={dark}           onDark={setDark}
           sound={sound}         onSound={setSound}
           dailyGoal={dailyGoal} onDailyGoal={setDailyGoal}
-          avatarUrl={avatarUrl} onAvatarUrl={setAvatarUrl} />
+          avatarUrl={avatarUrl} onAvatarUrl={setAvatarUrl}
+          quickMode={quickMode} onQuickMode={setQuickMode} />
       )}
 
       {tab === "calendar" && (

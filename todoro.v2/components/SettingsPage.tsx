@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray } from "react-icons/hi2"
+import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray, HiBolt } from "react-icons/hi2"
 import { FaBullseye } from "react-icons/fa"
 
 interface SettingsPageProps {
@@ -10,11 +10,12 @@ interface SettingsPageProps {
   sound: boolean;    onSound:    (v: boolean) => void
   dailyGoal: number; onDailyGoal:(v: number) => void
   avatarUrl: string; onAvatarUrl:(v: string) => void
+  quickMode: boolean; onQuickMode: (v: boolean) => void
 }
 
 export default function SettingsPage({
   userName, onUserName, dark, onDark, sound, onSound, dailyGoal, onDailyGoal,
-  avatarUrl, onAvatarUrl,
+  avatarUrl, onAvatarUrl, quickMode, onQuickMode,
 }: SettingsPageProps) {
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -77,6 +78,7 @@ export default function SettingsPage({
 
       <Section label="Focus">
         <ToggleRow label="Sound Effects" icon={<HiSpeakerWave size={18} className="text-sub shrink-0" />} value={sound} onChange={onSound} />
+        <ToggleRow label="Quick Mode" icon={<HiBolt size={18} className="text-sub shrink-0" />} value={quickMode} onChange={onQuickMode} />
         <div className="flex items-center gap-3 px-4 py-4">
           <FaBullseye size={18} className="text-sub shrink-0" />
           <span className="flex-1 text-sm font-medium text-tx">Daily Session Goal</span>

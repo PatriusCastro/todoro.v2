@@ -20,7 +20,7 @@ interface HomePageProps {
   streak: number; totalPoints: number; greeting: string; userName: string
   avatarUrl: string; onNavToSettings: () => void
   allHistory: { taskId: string; taskTitle: string; focusMins: number; at: number }[]
-  onNavToCalendar: () => void
+  onNavToCalendar: () => void,   quickMode: boolean; onQuickMode: (v: boolean) => void
 }
 
 function phaseLabel(phase: Phase) {
@@ -127,9 +127,8 @@ function StatTile({ icon, label, value, sub, accent }: {
         <span className="text-xs font-bold text-sub uppercase tracking-widest">{label}</span>
       </div>
       <span className="text-3xl font-black leading-none" style={accent ? { color: accent } : undefined}>
-        {value}
+        {value} {sub && <span className="font-semibold text-xs text-sub">{sub}</span>}
       </span>
-      {sub && <span className="text-xs text-sub">{sub}</span>}
     </div>
   )
 }
@@ -139,7 +138,7 @@ export default function HomePage({
   sessions, totalSessions, onTimerToggle, onNavToTimer, onNavToCalendar,
   tasks, activeTask, onToggleTask, allHistory, onToggleSub,
   onNavToTasks, onSetActive, streak, totalPoints, greeting, userName,
-  avatarUrl, onNavToSettings,
+  avatarUrl, onNavToSettings, quickMode, onQuickMode
 }: HomePageProps) {
   const minutes  = Math.floor(time / 60)
   const seconds  = time % 60
@@ -149,7 +148,7 @@ export default function HomePage({
   const label      = phaseLabel(phase)
   const goalHit    = sessions >= totalSessions
 
-  const size = 210; const cx = size / 2; const r = cx - 16; const C = 2 * Math.PI * r
+  const size = 220; const cx = size / 2; const r = cx - 16; const C = 2 * Math.PI * r
 
   const pendingTasks = tasks.filter(t => !t.done && t.id !== activeTask.id)
   const doneTasks    = tasks.filter(t => t.done)
@@ -190,6 +189,23 @@ export default function HomePage({
 
       {/* Bento */}
       <div className="grid grid-cols-12 gap-3">
+        
+          {/* Today's goal */}
+          <div className={`sm:hidden col-span-12 rounded-2xl border bg-surface px-5 py-4 transition-colors duration-300
+            ${goalHit ? "border-priority-low/40 bg-priority-low/5" : "border-border"}`}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-bold text-sub uppercase tracking-widest">Today's Goal</span>
+              <span className={`text-sm font-bold ${goalHit ? "text-priority-low" : "text-sub"}`}>
+                {sessions} / {totalSessions} sessions {goalHit && "✓"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: totalSessions }).map((_, i) => (
+                <div key={i} className={`h-2.5 flex-1 rounded-full transition-all duration-500
+                  ${i < sessions ? goalHit ? "bg-priority-low" : "bg-accent" : "bg-ring"}`} />
+              ))}
+            </div>
+          </div>
 
         {/* Timer */}
         <div className="col-span-12 max-h-fit lg:max-h-full md:col-span-6 lg:col-span-5 rounded-2xl border border-border bg-surface overflow-hidden">
@@ -204,6 +220,11 @@ export default function HomePage({
                     <span className="text-sm font-semibold text-tx truncate">{activeTask.title}</span>
                   </>
               }
+              {quickMode && (
+                <span className="ml-auto text-xs font-bold text-[#FFBA00] uppercase tracking-widest">
+                  Quick Mode
+                </span>
+              )}
             </div>
             <button onClick={onNavToTasks}
               className="text-xs text-sub hover:text-accent transition-colors flex items-center gap-0.5 shrink-0 ml-3">
@@ -225,7 +246,7 @@ export default function HomePage({
             </div>
           )}
 
-          <div className="flex flex-col items-center gap-4 px-5 py-7">
+          <div className="flex flex-col items-center gap-4 px-5 py-4">
             <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold
               ${phase === "focus" ? "bg-accent/10 text-accent" : "bg-priority-low/10 text-priority-low"}`}>
               <span className={`w-2 h-2 rounded-full ${running ? "animate-pulse" : ""}`}
@@ -233,7 +254,7 @@ export default function HomePage({
               {label} · {phase === "focus" ? focusMins : currentBreakMins} min
             </div>
 
-            <div className="relative cursor-pointer group" style={{ width: size, height: size }}
+            <div className="my-4 relative cursor-pointer group" style={{ width: size, height: size }}
               onClick={onNavToTimer}>
               <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
                 <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--ring)" strokeWidth={13} />
@@ -253,7 +274,6 @@ export default function HomePage({
                 </span>
               </div>
             </div>
-
             <button onClick={onTimerToggle}
               className={`w-full py-3.5 rounded-xl text-white text-sm font-black active:scale-95 transition-all duration-150
                 ${phase === "focus" ? "bg-accent hover:bg-accent-hover" : "bg-priority-low hover:bg-[#42c956]"}`}>
@@ -264,6 +284,13 @@ export default function HomePage({
                 }
               </span>
             </button>
+                        
+            <button onClick={() => onQuickMode(!quickMode)}
+              className="w-full py-3.5 rounded-xl text-sub text-sm font-black active:scale-95 transition-all duration-150">
+              <span className={`flex items-center justify-center gap-2 ${quickMode ? "text-[#FFBA00] hover:text-[#FFBA00]/80" : "text-sub hover:text-[#FFBA00]/80"}`}>
+                <HiBolt size={18} /><span className="text-xs font-semibold uppercase tracking-widest">Quick Mode</span>
+              </span>
+            </button>
           </div>
         </div>
 
@@ -271,7 +298,7 @@ export default function HomePage({
         <div className="col-span-12 md:col-span-6 lg:col-span-7 flex flex-col gap-3">
 
           {/* Today's goal */}
-          <div className={`rounded-2xl border bg-surface px-5 py-4 transition-colors duration-300
+          <div className={`hidden sm:grid rounded-2xl border bg-surface px-5 py-4 transition-colors duration-300
             ${goalHit ? "border-priority-low/40 bg-priority-low/5" : "border-border"}`}>
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-bold text-sub uppercase tracking-widest">Today's Goal</span>
@@ -289,7 +316,7 @@ export default function HomePage({
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
-            <StatTile icon={<HiFire size={14} />}        label="Streak" value={`${streak}d`}      sub="current streak"           accent="#FFBA00" />
+            <StatTile icon={<HiFire size={14} />}        label="Streak" value={`${streak}d`}      sub="streak"           accent="#FFBA00" />
             <StatTile icon={<HiCheckCircle size={14} />} label="Done"   value={doneTasks.length}  sub={`of ${tasks.length} tasks`} accent="#51CF66" />
           </div>
 

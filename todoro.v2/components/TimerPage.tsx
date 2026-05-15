@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { HiArrowsPointingOut, HiChevronLeft } from "react-icons/hi2"
+import { HiArrowsPointingOut, HiChevronLeft, HiBolt } from "react-icons/hi2"
 import TimerRing from "../components/timer/TimerRing"
 import ModeSelector, { type Mode } from "../components/timer/ModeSelector"
 import TimerControls from "../components/timer/TimerControls"
@@ -9,6 +9,7 @@ import TaskSelector from "../components/timer/TaskSelector"
 import { useTimerKeys } from "../hooks/useTimerKeys"
 import { useIsDesktop } from "../hooks/useMediaQuery"
 import { type Task } from "../components/tasks/TaskCard"
+import { type SessionRecord } from "../app/page"
 
 type Phase = "focus" | "break" | "longbreak"
 
@@ -17,12 +18,13 @@ interface TimerPageProps {
   focusMins: number; breakMins: number; longBreakMins: number
   running: boolean; progress: number
   sessions: number; totalSessions: number; cycleCount: number
-  tasks: Task[]; activeTask: Task
+  tasks: Task[]; activeTask: Task; quickMode: boolean; allHistory: SessionRecord[]
   onToggle: () => void; onReset: () => void; onSkip: () => void
   onModeChange: (mode: Mode, fm: number, bm: number) => void
   onTaskChange: (task: Task) => void
   onToggleSub: (taskId: string, subId: string) => void
   onFocusedChange?: (focused: boolean) => void
+  onQuickMode: (v: boolean) => void
 }
 
 const PHASE = {
@@ -33,8 +35,8 @@ const PHASE = {
 
 export default function TimerPage({
   time, phase, mode, focusMins, breakMins, longBreakMins, running, progress,
-  sessions, totalSessions, cycleCount, tasks, activeTask,
-  onToggle, onReset, onSkip, onModeChange, onTaskChange, onToggleSub, onFocusedChange,
+  sessions, totalSessions, cycleCount, tasks, activeTask, quickMode, allHistory,
+  onToggle, onReset, onSkip, onModeChange, onTaskChange, onToggleSub, onFocusedChange, onQuickMode
 }: TimerPageProps) {
   const [focused, setFocused] = useState(false)
   const isDesktop = useIsDesktop()
@@ -50,6 +52,14 @@ export default function TimerPage({
   const spentLabel = `${Math.floor(spentSecs / 60)}:${(spentSecs % 60).toString().padStart(2, "0")} elapsed`
   const allDone = tasks.every(t => t.done)
   const { label, color, badge, dot } = PHASE[phase]
+  
+  // Get today's sessions for active task
+  const localDate = (ts: number = Date.now()) => {
+    const d = new Date(ts)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+  }
+  const todayKey = localDate()
+  const todaySessionsForTask = allHistory.filter(s => s.taskId === activeTask.id && localDate(s.at) === todayKey).length
 
   const SubtaskList = () => <>{activeTask.subtasks.map(s => (
     <div key={s.id} className="flex items-center gap-3">
@@ -78,9 +88,15 @@ export default function TimerPage({
           <span className={`w-1.5 h-1.5 rounded-full ${dot} ${running ? "animate-pulse" : ""}`} />
           {label}
         </div>
-        <p className="text-sm font-semibold text-tx">{allDone ? "All tasks completed 🎉" : activeTask.title}</p>
-        {!allDone && phase === "focus" && activeTask.estimatedSessions > 0 && (
-          <p className="text-xs text-sub mt-1">{activeTask.completedSessions}/{activeTask.estimatedSessions} sessions</p>
+        {quickMode && !activeTask.title ? (
+          <p className="text-sm font-semibold text-tx">Quick Mode</p>
+        ) : (
+          <>
+            <p className="text-sm font-semibold text-tx">{allDone ? "All tasks completed 🎉" : activeTask.title}</p>
+            {!allDone && phase === "focus" && todaySessionsForTask > 0 && (
+              <p className="text-xs text-sub mt-1">{todaySessionsForTask} {todaySessionsForTask === 1 ? "Pomodoro" : "Pomodoros"} today</p>
+            )}
+          </>
         )}
       </div>
       <TimerRing minutes={minutes} seconds={seconds} progress={progress} label={label} spentLabel={spentLabel} size={isDesktop ? 320 : 260} color={color} />
@@ -115,11 +131,18 @@ export default function TimerPage({
           </div>
           <TimerRing minutes={minutes} seconds={seconds} progress={progress} label={label} spentLabel={spentLabel} size={isDesktop ? 280 : 220} color={color} />
           <TimerControls running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip} phase={phase} />
+          {/* Quick Mode Toggle */}
+          <button onClick={() => onQuickMode(!quickMode)}
+            className="w-full py-3.5 rounded-xl text-sub text-sm font-black active:scale-95 transition-all duration-150">
+            <span className={`flex items-center justify-center gap-2 ${quickMode ? "text-[#FFBA00] hover:text-[#FFBA00]/80" : "text-sub hover:text-[#FFBA00]/80"}`}>
+              <HiBolt size={18} /><span className="text-xs font-semibold uppercase tracking-widest">Quick Mode</span>
+            </span>
+          </button>
         </div>
 
         <div className="flex flex-col-reverse lg:flex-col flex-1 gap-5">
           <div className="flex flex-col gap-3 bg-surface border border-border rounded-2xl px-5 py-4">
-            <TaskSelector tasks={tasks} active={activeTask} running={running} onChange={onTaskChange} onStop={onReset} />
+            <TaskSelector tasks={tasks} active={activeTask} running={running} onChange={onTaskChange} onStop={onReset} quickMode={quickMode} />
             <ModeSelector active={mode} customFocus={focusMins} customBreak={breakMins} onChange={onModeChange} />
 
             {isDesktop && (
@@ -141,11 +164,32 @@ export default function TimerPage({
             <div className="h-2 rounded-full bg-ring overflow-hidden">
               <div className={`h-full rounded-full transition-all duration-1000 ease-linear ${phase === "focus" ? "bg-accent" : "bg-priority-low"}`} style={{ width: `${progress * 100}%` }} />
             </div>
-            {!allDone && phase === "focus" && (activeTask.estimatedSessions > 0 || activeTask.subtasks.length > 0) && (
+            {!allDone && phase === "focus" && (
               <div className="border-t border-border pt-3 flex flex-col gap-3">
-                <p className="text-xs font-semibold text-sub">{activeTask.title}</p>
-                {activeTask.estimatedSessions > 0 && <SessionBar />}
-                {activeTask.subtasks.length > 0 && <SubtaskList />}
+                {!quickMode || activeTask.title ? (
+                  <>
+                    <p className="text-xs font-semibold text-sub">{activeTask.title}</p>
+                    {todaySessionsForTask > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-sub">{todaySessionsForTask} {todaySessionsForTask === 1 ? "Pomodoro" : "Pomodoros"} today</span>
+                        <div className="flex gap-1 flex-1">
+                          {Array.from({ length: Math.min(todaySessionsForTask, 5) }).map((_, i) => (
+                            <div key={i} className="h-1.5 flex-1 rounded-full bg-accent" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {activeTask.estimatedSessions > 0 && (
+                      <>
+                        <p className="text-xs font-semibold text-sub mt-2">Session Goal</p>
+                        <SessionBar />
+                      </>
+                    )}
+                    {activeTask.subtasks.length > 0 && <SubtaskList />}
+                  </>
+                ) : (
+                  <p className="text-xs text-sub italic">No task selected — Quick Mode active</p>
+                )}
               </div>
             )}
           </div>
