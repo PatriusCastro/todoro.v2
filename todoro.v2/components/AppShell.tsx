@@ -156,7 +156,7 @@ export default function AppShell({
             transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}>
 
             <div ref={navContainerRef}
-              className="pointer-events-auto relative flex items-center bg-surface/95 backdrop-blur-xl border border-border rounded-3xl p-2">
+              className="w-full pointer-events-auto relative flex items-center justify-between bg-surface/95 backdrop-blur-md border border-border rounded-3xl p-2">
 
               {pill.ready && (
                 <div className="absolute top-1.5 bottom-1.5 bg-surface2 rounded-2xl pointer-events-none"

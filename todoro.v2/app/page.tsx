@@ -107,7 +107,7 @@ export default function Home() {
   }, [])
 
   const [tab,       setTab]       = useState<Tab>("home")
-  const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Kath"))
+  const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Bossing"))
   const [dark,      setDark]      = useState(() => load("todoro:dark",      true))
   const [sound,     setSound]     = useState(() => load("todoro:sound",     true))
   const [dailyGoal, setDailyGoal] = useState(() => load("todoro:dailyGoal", 5))
