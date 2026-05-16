@@ -8,6 +8,7 @@ import { type Priority, getPriority } from "../lib/theme"
 import { useUndo } from "../hooks/useUndo"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
 import { useSortedTasks } from "../hooks/useTaskSort"
+import { useToast } from "../hooks/useToast"
 
 interface TasksPageProps {
   tasks: Task[]; activeTask: Task; running: boolean
@@ -22,6 +23,12 @@ const PRIORITIES: { key: Priority; label: string }[] = [
   { key: "low",  label: "Low"  }, { key: "none", label: "None" },
 ]
 
+const TOAST_EMOJI: Record<string, string> = {
+  created: "✅",
+  saved:   "✏️",
+  deleted: "🗑️",
+}
+
 export default function TasksPage({
   tasks, activeTask, running, onSave, onDelete,
   onToggle, onToggleSub, onSetActive, onNavToTimer, dark,
@@ -31,21 +38,46 @@ export default function TasksPage({
   const [modalTask, setModalTask] = useState<Task | undefined>()
   const [showModal, setShowModal] = useState(false)
   const [showDone,  setShowDone]  = useState(false)
-  const [showToast, setShowToast] = useState(false)
+  const [showSessionToast, setShowSessionToast] = useState(false)
 
+  const { toast, show: showToast, dismiss: dismissToast } = useToast()
   const { pinned, togglePin } = usePinnedTasks()
+
+  // Wire undo: when the 4s window expires, onDelete fires — no extra toast needed
   const { pending: deletePending, stage: stageDelete, undo } = useUndo(onDelete)
 
-  const handleDelete = useCallback((task: Task) => stageDelete(task), [stageDelete])
+  const handleDelete = useCallback((task: Task) => {
+    stageDelete(task)
+    showToast(
+      "deleted",
+      `"${task.title}" deleted`,
+      "Tap undo to restore",
+      () => {
+        undo()
+        dismissToast()
+      },
+    )
+  }, [stageDelete, showToast, undo, dismissToast])
+
+  const handleSave = useCallback((task: Task) => {
+    const isNew = !tasks.find(t => t.id === task.id)
+    onSave(task)
+    showToast(
+      isNew ? "created" : "saved",
+      isNew ? "Task created" : "Changes saved",
+      task.title,
+    )
+    setShowModal(false)
+  }, [tasks, onSave, showToast])
 
   const handleQuickStart = useCallback((task: Task) => {
-    if (running) { setShowToast(true); setTimeout(() => setShowToast(false), 3000); return }
+    if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
     onSetActive(task)
     onNavToTimer()
   }, [running, onSetActive, onNavToTimer])
 
   const handleTaskClick = useCallback((task: Task) => {
-    if (running) { setShowToast(true); setTimeout(() => setShowToast(false), 3000); return }
+    if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
     onSetActive(task)
     onNavToTimer()
   }, [running, onSetActive, onNavToTimer])
@@ -64,26 +96,34 @@ export default function TasksPage({
   return (
     <div className="flex flex-col gap-5">
 
-      <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-200 transition-all duration-300
-        ${showToast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"}`}>
+      {/* ── Task action toast (created / saved / deleted + undo) ── */}
+      <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 transition-all duration-300
+        ${toast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
+        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap shadow-[0_8px_32px_rgba(0,0,0,0.15)]">
+          <span className="text-base">{toast ? TOAST_EMOJI[toast.type] : "✅"}</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-black text-tx">{toast?.title}</span>
+            {toast?.sub && <span className="text-xs text-sub">{toast.sub}</span>}
+          </div>
+          {toast?.undoFn && (
+            <button
+              onClick={toast.undoFn}
+              className="ml-2 text-sm font-black text-accent hover:underline">
+              Undo
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Session-in-progress toast ── */}
+      <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-200 transition-all duration-300
+        ${showSessionToast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
         <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-surface border border-border shadow-[0_8px_32px_rgba(0,0,0,0.3)] whitespace-nowrap">
           <span className="w-2 h-2 rounded-full bg-priority-low animate-pulse shrink-0" />
           <span className="text-sm font-semibold text-tx">Focus session in progress</span>
           <span className="text-sm text-sub">— finish or pause first</span>
         </div>
       </div>
-
-      {deletePending && (
-        <div className="min-w-75 absolute top-4 left-1/2 -translate-x-1/2 flex items-center justify-between z-100 gap-3 rounded-xl bg-surface border border-border px-4 py-3">
-          <div className= "flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
-            <p className="text-sm font-semibold text-tx">Task "{deletePending.title}" deleted</p>
-          </div>
-          <button onClick={undo} className="text-sm text-accent font-semibold justify-end hover:underline">
-            Undo
-          </button>
-        </div>
-      )}
 
       <div className="flex items-start justify-between">
         <div>
@@ -92,7 +132,6 @@ export default function TasksPage({
             {tasks.filter(t => !t.done).length} pending · {tasks.filter(t => t.done).length} done
           </p>
         </div>
-        {/* Appears only on wider screens */}
         <button
           onClick={() => { setModalTask(undefined); setShowModal(true) }}
           className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover active:scale-95 transition-all">
@@ -198,10 +237,11 @@ export default function TasksPage({
       )}
 
       {showModal && (
-        <TaskModal task={modalTask} onSave={onSave}
+        <TaskModal task={modalTask} onSave={handleSave}
           onDelete={id => { onDelete(id); setShowModal(false) }}
           onClose={() => setShowModal(false)} dark={dark} />
       )}
+
     </div>
   )
 }
