@@ -94,7 +94,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.0.0" />
+        <InfoRow label="Version" value="2.0.5" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
     </div>
