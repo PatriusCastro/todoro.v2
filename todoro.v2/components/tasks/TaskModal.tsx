@@ -2,17 +2,33 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { HiXMark, HiClock, HiCalendarDays, HiTrash, HiChevronLeft, HiChevronRight } from "react-icons/hi2"
+import {
+  HiXMark, HiClock, HiCalendarDays, HiTrash,
+  HiChevronLeft, HiChevronRight, HiFolderOpen, HiPlus,
+} from "react-icons/hi2"
 import { type Task, type Subtask } from "../tasks/TaskCard"
 import { type Priority, getPriority } from "../../lib/theme"
 
+export interface Project { id: string; name: string; color: string }
+
 interface TaskModalProps {
-  task?: Task; onSave: (task: Task) => void
-  onDelete?: (id: string) => void; onClose: () => void; dark?: boolean
+  task?: Task
+  projects: Project[]
+  onSave: (task: Task) => void
+  onDelete?: (id: string) => void
+  onClose: () => void
+  onCreateProject: (p: Project) => void
+  dark?: boolean
 }
 
 const PRIORITIES: Priority[] = ["high", "mid", "low", "none"]
 const LABELS: Record<Priority, string> = { high: "High", mid: "Mid", low: "Low", none: "None" }
+
+const PROJECT_COLORS = [
+  "#6366f1", "#8b5cf6", "#ec4899", "#f59e0b",
+  "#10b981", "#3b82f6", "#f97316", "#14b8a6",
+]
+
 function uid() { return Math.random().toString(36).slice(2) }
 
 function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: string) => void }) {
@@ -75,9 +91,7 @@ function formatDueLabel(date: string, time: string) {
   const midnight = new Date()
   midnight.setHours(0, 0, 0, 0)
   const diff    = Math.floor((d.getTime() - midnight.getTime()) / 86400000)
-  const timeStr = time
-    ? ` at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-    : ""
+  const timeStr = time ? ` at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""
   if (diff === 0)  return `Due today${timeStr}`
   if (diff === 1)  return `Due tomorrow${timeStr}`
   if (diff === -1) return `Due yesterday${timeStr}`
@@ -86,7 +100,7 @@ function formatDueLabel(date: string, time: string) {
   return `Due ${d.toLocaleDateString([], { month: "short", day: "numeric" })}${timeStr}`
 }
 
-export default function TaskModal({ task, onSave, onDelete, onClose, dark }: TaskModalProps) {
+export default function TaskModal({ task, projects, onSave, onDelete, onClose, onCreateProject, dark }: TaskModalProps) {
   const [title,             setTitle]             = useState(task?.title    ?? "")
   const [priority,          setPriority]          = useState<Priority>(task?.priority ?? "none")
   const [dueDate,           setDueDate]           = useState(task?.dueDate  ?? "")
@@ -95,6 +109,12 @@ export default function TaskModal({ task, onSave, onDelete, onClose, dark }: Tas
   const [subInput,          setSubInput]          = useState("")
   const [showCal,           setShowCal]           = useState(false)
   const [estimatedSessions, setEstimatedSessions] = useState(task?.estimatedSessions ?? 0)
+  const [projectId,         setProjectId]         = useState<string | undefined>(task?.projectId)
+
+  // inline new-project creation
+  const [showNewProject, setShowNewProject] = useState(false)
+  const [newProjectName, setNewProjectName] = useState("")
+  const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[0])
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
@@ -105,6 +125,15 @@ export default function TaskModal({ task, onSave, onDelete, onClose, dark }: Tas
   const addSub    = () => { if (!subInput.trim()) return; setSubtasks(s => [...s, { id: uid(), title: subInput.trim(), done: false }]); setSubInput("") }
   const removeSub = (id: string) => setSubtasks(s => s.filter(x => x.id !== id))
 
+  const handleCreateProject = () => {
+    if (!newProjectName.trim()) return
+    const p: Project = { id: uid(), name: newProjectName.trim(), color: newProjectColor }
+    onCreateProject(p)
+    setProjectId(p.id)
+    setNewProjectName("")
+    setShowNewProject(false)
+  }
+
   const handleSave = () => {
     if (!title.trim()) return
     onSave({
@@ -113,13 +142,15 @@ export default function TaskModal({ task, onSave, onDelete, onClose, dark }: Tas
       dueLabel: formatDueLabel(dueDate, dueTime),
       done: task?.done ?? false, subtasks,
       estimatedSessions, completedSessions: task?.completedSessions ?? 0,
+      projectId,
     })
-    onClose()
   }
 
   const dateDisplay = dueDate
     ? new Date(dueDate + "T00:00").toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })
     : "Pick a date"
+
+  const selectedProject = projects.find(p => p.id === projectId)
 
   return createPortal(
     <div className={dark ? "dark" : ""}>
@@ -128,6 +159,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose, dark }: Tas
         onClick={e => { if (e.target === e.currentTarget) onClose() }}>
         <div className="w-full max-w-md bg-surface border border-border rounded-3xl flex flex-col gap-4 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.5)] max-h-[90dvh] overflow-y-auto">
 
+          {/* Header */}
           <div className="flex items-center justify-between">
             <h2 className="font-black text-lg text-tx">{task ? "Edit Task" : "New Task"}</h2>
             <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors">
@@ -135,9 +167,11 @@ export default function TaskModal({ task, onSave, onDelete, onClose, dark }: Tas
             </button>
           </div>
 
+          {/* Title */}
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="What needs to be done?" autoFocus
             className="w-full bg-surface2 border border-border rounded-2xl px-4 py-3 text-sm font-semibold text-tx placeholder:text-sub outline-none focus:border-accent transition-colors" />
 
+          {/* Priority */}
           <div className="flex gap-2">
             {PRIORITIES.map(p => (
               <button key={p} onClick={() => setPriority(p)}
@@ -147,6 +181,77 @@ export default function TaskModal({ task, onSave, onDelete, onClose, dark }: Tas
                 {LABELS[p]}
               </button>
             ))}
+          </div>
+
+          {/* Project picker */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-bold text-sub uppercase tracking-wider">Project</span>
+
+            <div className="flex flex-wrap gap-2">
+              {/* No project option */}
+              <button
+                onClick={() => setProjectId(undefined)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all
+                  ${!projectId ? "border-accent text-accent bg-accent/10" : "border-border text-sub hover:border-accent/30"}`}>
+                <HiFolderOpen size={12} />
+                No project
+              </button>
+
+              {projects.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => setProjectId(pid => pid === p.id ? undefined : p.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all
+                    ${projectId === p.id ? "border-transparent text-white" : "border-border text-sub hover:border-accent/30"}`}
+                  style={projectId === p.id ? { background: p.color, borderColor: p.color } : {}}>
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
+                  {p.name}
+                </button>
+              ))}
+
+              {/* New project inline toggle */}
+              <button
+                onClick={() => setShowNewProject(v => !v)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-dashed border-border text-sub hover:border-accent/40 hover:text-tx transition-all">
+                <HiPlus size={11} />
+                New
+              </button>
+            </div>
+
+            {/* Inline new project form */}
+            {showNewProject && (
+              <div className="flex flex-col gap-2 p-3 rounded-2xl bg-surface2 border border-border">
+                <input
+                  value={newProjectName}
+                  onChange={e => setNewProjectName(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleCreateProject() } }}
+                  placeholder="Project name…"
+                  autoFocus
+                  className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-sm text-tx placeholder:text-sub outline-none focus:border-accent transition-colors" />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-sub shrink-0">Color</span>
+                  <div className="flex gap-1.5 flex-wrap flex-1">
+                    {PROJECT_COLORS.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setNewProjectColor(c)}
+                        className="w-5 h-5 rounded-full transition-transform hover:scale-110"
+                        style={{
+                          background: c,
+                          outline: newProjectColor === c ? `2px solid ${c}` : "none",
+                          outlineOffset: "2px",
+                        }} />
+                    ))}
+                  </div>
+                  <button
+                    onClick={handleCreateProject}
+                    disabled={!newProjectName.trim()}
+                    className="px-3 py-1.5 rounded-xl bg-accent text-white text-xs font-bold hover:bg-accent-hover disabled:opacity-40 transition-all shrink-0">
+                    Add
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Session estimate */}
@@ -181,7 +286,6 @@ export default function TaskModal({ task, onSave, onDelete, onClose, dark }: Tas
               )}
             </div>
             {showCal && <MiniCalendar selected={dueDate} onSelect={d => { setDueDate(d); setShowCal(false) }} />}
-
             {dueDate && (
               <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface2 px-4 py-3">
                 <HiClock size={16} className="text-sub shrink-0" />
@@ -212,6 +316,7 @@ export default function TaskModal({ task, onSave, onDelete, onClose, dark }: Tas
             </div>
           </div>
 
+          {/* Footer actions */}
           <div className="flex gap-2 pt-1">
             {onDelete && task && (
               <button

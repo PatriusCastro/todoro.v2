@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useIsTablet } from "../hooks/useMediaQuery"
 import { usePillAnimation } from "../hooks/usePillAnimation"
-import TaskModal from "./tasks/TaskModal"
+import TaskModal, { type Project } from "./tasks/TaskModal"
 import { type Task } from "./tasks/TaskCard"
 import { HiHome, HiOutlineHome, HiClipboardList, HiOutlineClipboardList, HiClock, HiOutlineClock, HiCog, HiOutlineCog, HiOutlineCalendar, HiCalendar } from "react-icons/hi"
 import { HiPlus } from "react-icons/hi2"
@@ -12,25 +12,27 @@ type Tab   = "home" | "tasks" | "timer" | "settings" | "calendar"
 type Phase = "focus" | "break" | "longbreak"
 
 interface AppShellProps {
-  children:    React.ReactNode
-  activeTab:   Tab
-  onTabChange: (tab: Tab) => void
-  dark:        boolean
-  userName:    string
-  streak:      number
-  running:     boolean
-  phase:       Phase
-  hideNavbar?: boolean
-  avatarUrl?:  string
-  onAddTask:   (task: Task) => void
+  children:      React.ReactNode
+  activeTab:     Tab
+  onTabChange:   (tab: Tab) => void
+  dark:          boolean
+  userName:      string
+  streak:        number
+  running:       boolean
+  phase:         Phase
+  hideNavbar?:   boolean
+  avatarUrl?:    string
+  onAddTask:     (task: Task) => void
+  projects:      Project[]
+  onSaveProject: (p: Project) => void
 }
 
 const NAV: { id: Tab; label: string }[] = [
-  { id: "home",     label: "Home"  },
-  { id: "tasks",    label: "Tasks" },
-  { id: "timer",    label: "Timer" },
+  { id: "home",     label: "Home"     },
+  { id: "tasks",    label: "Tasks"    },
+  { id: "timer",    label: "Timer"    },
   { id: "calendar", label: "Calendar" },
-  { id: "settings", label: "Me"    },
+  { id: "settings", label: "Me"       },
 ]
 
 function NavIcon({ id, active }: { id: Tab; active: boolean }) {
@@ -46,13 +48,14 @@ function NavIcon({ id, active }: { id: Tab; active: boolean }) {
 
 export default function AppShell({
   children, activeTab, onTabChange, dark,
-  userName, streak, running, phase, hideNavbar, avatarUrl, onAddTask,
+  userName, streak, running, phase, hideNavbar, avatarUrl,
+  onAddTask, projects, onSaveProject,
 }: AppShellProps) {
   const isTablet  = useIsTablet()
   const initials  = userName ? userName.slice(0, 2).toUpperCase() : "–"
-  const [mounted, setMounted] = useState(false)
-  const [showAdd, setShowAdd] = useState(false)
-  const [animKey, setAnimKey] = useState(0)
+  const [mounted,  setMounted]  = useState(false)
+  const [showAdd,  setShowAdd]  = useState(false)
+  const [animKey,  setAnimKey]  = useState(0)
   useEffect(() => { setTimeout(() => setMounted(true), 50) }, [])
 
   const { containerRef: navContainerRef, btnRefs, pill } = usePillAnimation(activeTab, mounted)
@@ -64,9 +67,9 @@ export default function AppShell({
     onTabChange(tab)
   }
 
-  const ease       = "cubic-bezier(0.4,0,0.2,1)"
-  const pillTrans  = `left 0.22s ${ease}, width 0.22s ${ease}`
-  const dotColor   = phase === "focus" ? "bg-priority-low" : "bg-priority-low"
+  const ease      = "cubic-bezier(0.4,0,0.2,1)"
+  const pillTrans = `left 0.22s ${ease}, width 0.22s ${ease}`
+  const dotColor  = phase === "focus" ? "bg-priority-low" : "bg-priority-low"
 
   const AvatarEl = ({ size = 32 }: { size?: number }) => (
     <div style={{ width: size, height: size }}
@@ -86,23 +89,22 @@ export default function AppShell({
     <div className={dark ? "dark" : ""}>
       <div className="min-h-dvh bg-bg text-tx flex flex-col">
 
-        {/* Desktop */}
+        {/* Desktop header */}
         {isTablet && !hideNavbar && (
           <header className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 w-full py-2 mx-auto bg-surface/90 backdrop-blur-xl
               transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
-            <div className="max-w-7xl w-full h-12 mx-auto flex px-4 lg:px-8">   
+            <div className="max-w-7xl w-full h-12 mx-auto flex px-4 lg:px-8">
               <div className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <img 
-                  src={dark ? "/icons/todoro-light.png" : "/icons/todoro-dark.png"} 
-                  alt="Todoro" 
+                <img
+                  src={dark ? "/icons/todoro-light.png" : "/icons/todoro-dark.png"}
+                  alt="Todoro"
                   className="w-5 h-5"
                 />
                 <span className="text-sm font-bold text-tx">Todoro</span>
               </div>
 
               <div className="flex-1 flex justify-center">
-                <div ref={desktopNavRef}
-                  className="relative flex items-center p-1">
+                <div ref={desktopNavRef} className="relative flex items-center p-1">
                   {desktopPill.ready && (
                     <div className="absolute top-1 bottom-1 bg-surface2 rounded-xl pointer-events-none"
                       style={{ left: desktopPill.left, width: desktopPill.width, transition: pillTrans }} />
@@ -150,19 +152,16 @@ export default function AppShell({
           </div>
         </main>
 
-        {/* Mobile */}
+        {/* Mobile bottom nav */}
         {!isTablet && !hideNavbar && (
           <div className={`fixed bottom-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none
             transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}>
-
             <div ref={navContainerRef}
               className="w-full pointer-events-auto relative flex items-center justify-between bg-surface/95 backdrop-blur-md border border-border rounded-3xl p-2">
-
               {pill.ready && (
                 <div className="absolute top-1.5 bottom-1.5 bg-surface2 rounded-2xl pointer-events-none"
                   style={{ left: pill.left, width: pill.width, transition: pillTrans }} />
               )}
-
               {NAV.map(({ id, label }) => {
                 const active = activeTab === id
                 const isMe   = id === "settings"
@@ -175,7 +174,7 @@ export default function AppShell({
                       ${active ? "text-accent scale-105" : "text-sub hover:text-tx"}`}>
                     {isMe
                       ? <span className={`w-5 h-5 rounded-lg overflow-hidden border block
-                          ${active ? "border-border" : "border-border/50"}`}>
+                            ${active ? "border-border" : "border-border/50"}`}>
                           {avatarUrl
                             ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
                             : <span className="w-full h-full flex items-center justify-center font-black text-[8px] bg-surface2 text-sub">
@@ -192,25 +191,29 @@ export default function AppShell({
                   </button>
                 )
               })}
-
             </div>
           </div>
         )}
 
+        {/* Mobile FAB — only on tasks tab */}
         {!isTablet && activeTab === "tasks" && (
           <button
             onClick={() => setShowAdd(true)}
-            className={`fixed bottom-24 right-4 z-40 flex items-center justify-center w-12 h-12 rounded-full bg-accent text-white text-sm font-black hover:bg-accent-hover active:scale-95 transition-all
+            className={`fixed bottom-24 right-4 z-40 flex items-center justify-center w-12 h-12 rounded-full bg-accent text-white shadow-lg hover:bg-accent-hover active:scale-95 transition-all
               ${running ? "opacity-50 pointer-events-none" : ""}`}>
             <HiPlus size={16} />
           </button>
         )}
 
+        {/* Quick-add modal (FAB) */}
         {showAdd && (
           <TaskModal
             dark={dark}
+            projects={projects}
             onSave={task => { onAddTask(task); setShowAdd(false) }}
-            onClose={() => setShowAdd(false)} />
+            onClose={() => setShowAdd(false)}
+            onCreateProject={onSaveProject}
+          />
         )}
 
       </div>

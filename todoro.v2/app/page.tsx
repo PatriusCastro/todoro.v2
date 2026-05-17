@@ -9,6 +9,7 @@ import SettingsPage from "../components/SettingsPage"
 import CalendarPage from "../components/CalendarPage"
 import { type Mode } from "../components/timer/ModeSelector"
 import { type Task } from "../components/tasks/TaskCard"
+import { type Project } from "../components/tasks/TaskModal"
 import { useWakeLock } from "../hooks/useWakeLock"
 import { useDocumentTitle } from "../hooks/useDocumentTitle"
 
@@ -33,8 +34,8 @@ const INITIAL_TASKS: Task[] = [
     dueDate: new Date().toISOString().slice(0, 10), dueTime: "", dueLabel: "Due today",
     done: false, estimatedSessions: 2, completedSessions: 0,
     subtasks: [
-      { id: uid(), title: "Pick a task to work on",     done: false },
-      { id: uid(), title: "Hit Start and stay focused",  done: false },
+      { id: uid(), title: "Pick a task to work on",    done: false },
+      { id: uid(), title: "Hit Start and stay focused", done: false },
     ],
   },
   {
@@ -85,10 +86,10 @@ function save(key: string, value: unknown) {
 
 function computeStreak(history: SessionRecord[]): number {
   if (!history.length) return 0
-  const days = [...new Set(history.map(s => localDate(s.at)))].sort().reverse()
-  const ms = 864e5
+  const days  = [...new Set(history.map(s => localDate(s.at)))].sort().reverse()
+  const ms    = 864e5
   const midnight = new Date(); midnight.setHours(0, 0, 0, 0)
-  const key = (offset: number) => localDate(midnight.getTime() - offset * ms)
+  const key   = (offset: number) => localDate(midnight.getTime() - offset * ms)
   const start = days[0] === key(0) ? 0 : days[0] === key(1) ? 1 : null
   if (start === null) return 0
   let count = 0
@@ -101,10 +102,7 @@ function computeStreak(history: SessionRecord[]): number {
 
 export default function Home() {
   const [hydrated, setHydrated] = useState(false)
-  
-  useEffect(() => {
-    setHydrated(true)
-  }, [])
+  useEffect(() => { setHydrated(true) }, [])
 
   const [tab,       setTab]       = useState<Tab>("home")
   const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Bossing"))
@@ -144,13 +142,24 @@ export default function Home() {
     return saved.find(t => !t.done) ?? saved[0] ?? INITIAL_TASKS[0]
   })
 
+  // ── Projects ──────────────────────────────────────────────────────
+  const [projects, setProjects] = useState<Project[]>(
+    () => load("todoro:projects", [])
+  )
+
+  const handleSaveProject = useCallback((p: Project) => {
+    setProjects(ps => ps.some(x => x.id === p.id) ? ps.map(x => x.id === p.id ? p : x) : [...ps, p])
+  }, [])
+
+  useEffect(() => { save("todoro:projects", projects) }, [projects])
+  // ─────────────────────────────────────────────────────────────────
+
   const audioCtxRef = useRef<AudioContext | null>(null)
 
   const currentBreakMins = phase === "longbreak" ? LONG_BREAK_MINS : breakMins
   const maxTime  = phase === "focus" ? focusMins * 60 : currentBreakMins * 60
   const progress = maxTime > 0 ? (maxTime - time) / maxTime : 0
 
-  /* Keep activeTask in sync with tasks state, but never point to a completed task */
   useEffect(() => {
     const updated = tasks.find(t => t.id === activeTask.id)
     if (updated && !updated.done) setActiveTask(updated)
@@ -160,20 +169,16 @@ export default function Home() {
     }
   }, [tasks])
 
-  /* Handle Quick Mode changes */
   useEffect(() => {
     if (quickMode && activeTask.title !== "") {
-      // Switching to Quick Mode, set placeholder
       setActiveTask(createQuickModeTask())
     } else if (!quickMode && activeTask.id === "quick-mode") {
-      // Switching out of Quick Mode, set first pending task
       const nextPending = tasks.find(t => !t.done)
       if (nextPending) setActiveTask(nextPending)
       else setActiveTask(tasks[0] ?? INITIAL_TASKS[0])
     }
   }, [quickMode, tasks])
 
-  /* Persist settings & data */
   useEffect(() => { save("todoro:userName",  userName)    }, [userName])
   useEffect(() => { save("todoro:dark",      dark)        }, [dark])
   useEffect(() => { save("todoro:sound",     sound)       }, [sound])
@@ -283,8 +288,8 @@ export default function Home() {
   const handleDeleteTask = (id: string) => {
     setTasks(ts => ts.filter(t => t.id !== id))
     if (activeTask.id === id) {
-      const remaining = tasks.filter(t => t.id !== id)
-      const nextPending = remaining.find(t => !t.done)
+      const remaining    = tasks.filter(t => t.id !== id)
+      const nextPending  = remaining.find(t => !t.done)
       setActiveTask(nextPending ?? remaining[0] ?? INITIAL_TASKS[0])
     }
   }
@@ -296,7 +301,7 @@ export default function Home() {
 
   if (!hydrated) {
     return (
-      <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask}>
+      <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask} projects={projects} onSaveProject={handleSaveProject}>
         <div className="flex items-center justify-center h-96 text-sub">
           <p>Loading...</p>
         </div>
@@ -305,8 +310,9 @@ export default function Home() {
   }
 
   return (
-    <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask}>
+    <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask} projects={projects} onSaveProject={handleSaveProject}>
 
+      {/* Session complete toast */}
       <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 pointer-events-none transition-all duration-300
         ${toast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
         <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap">
@@ -338,10 +344,13 @@ export default function Home() {
       )}
 
       {tab === "tasks" && (
-        <TasksPage dark={dark}tasks={tasks} activeTask={activeTask} running={running}
+        <TasksPage
+          dark={dark} tasks={tasks} activeTask={activeTask} running={running}
+          projects={projects}
           onSave={handleSaveTask} onDelete={handleDeleteTask}
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
-          onSetActive={setActiveTask} onNavToTimer={() => setTab("timer")} />
+          onSetActive={setActiveTask} onNavToTimer={() => setTab("timer")}
+          onSaveProject={handleSaveProject} />
       )}
 
       {tab === "settings" && (

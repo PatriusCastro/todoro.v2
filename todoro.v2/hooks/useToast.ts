@@ -12,10 +12,16 @@ export interface Toast {
   undoFn?: () => void
 }
 
-const CONFIGS: Record<ToastType, { emoji: string; duration: number }> = {
-  created: { emoji: "✅", duration: 3000 },
-  saved:   { emoji: "✏️", duration: 3000 },
-  deleted: { emoji: "🗑️", duration: 4000 },
+const DURATION: Record<ToastType, number> = {
+  created: 3000,
+  saved:   3000,
+  deleted: 4000,
+}
+
+const EMOJI: Record<ToastType, string> = {
+  created: "✅",
+  saved:   "✏️",
+  deleted: "🗑️",
 }
 
 let _id = 0
@@ -29,13 +35,17 @@ export function useToast() {
     setToast(null)
   }, [])
 
-  const show = useCallback((type: ToastType, title: string, sub?: string, undoFn?: () => void) => {
+  const show = useCallback((
+    type: ToastType,
+    title: string,
+    sub?: string,
+    undoFn?: () => void,
+  ) => {
     if (timer.current) clearTimeout(timer.current)
-    const { duration } = CONFIGS[type]
     const next: Toast = { id: ++_id, type, title, sub, undoFn }
     setToast(next)
-    timer.current = setTimeout(() => setToast(null), duration)
+    timer.current = setTimeout(() => setToast(null), DURATION[type])
   }, [])
 
-  return { toast, show, dismiss }
+  return { toast, show, dismiss, EMOJI }
 }
