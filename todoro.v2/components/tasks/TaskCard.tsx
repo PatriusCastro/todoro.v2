@@ -205,12 +205,14 @@ function SubtaskRow({ sub, taskId, onToggleSub }: {
   return (
     <div className="flex items-center gap-3">
       <button
+        onPointerDown={e => e.stopPropagation()}
         onClick={e => { e.stopPropagation(); onToggleSub?.(taskId, sub.id) }}
         className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center transition-colors duration-150
           ${sub.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
         {sub.done && <HiCheck size={8} color="white" />}
       </button>
       <span
+        onPointerDown={e => e.stopPropagation()}
         onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}
         className={`text-xs flex-1 min-w-0 cursor-pointer leading-snug
           ${sub.done ? "line-through text-sub" : "text-tx"}
