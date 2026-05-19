@@ -40,33 +40,65 @@ function ProjectGroup({
 }) {
   const [open, setOpen] = useState(defaultOpen)
   const pending = tasks.filter(t => !t.done).length
+  const done    = tasks.filter(t => t.done).length
+  const total   = tasks.length
+  const progress = total > 0 ? done / total : 0
 
   return (
-    <div className="flex flex-col">
-      {/* Group header */}
+    <div className="flex flex-col gap-1.5">
+
+      {/* Header */}
       <button
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 py-1.5 w-full group">
+        className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl border
+          transition-colors duration-150
+          bg-surface2 border-border hover:border-accent/30 group`}>
+
+        {/* Project color dot */}
         <span
           className="w-2.5 h-2.5 rounded-full shrink-0"
-          style={{ background: color ?? "#888" }} />
-        <span className="text-xs font-bold text-tx flex-1 text-left truncate">{label}</span>
-        <span className="text-[11px] text-sub mr-1">{pending} pending</span>
+          style={{ backgroundColor: color ?? "#888" }} />
+
+        {/* Label */}
+        <span className="text-[13px] font-semibold text-tx flex-1 text-left truncate">
+          {label}
+        </span>
+
+        {/* Progress bar + count */}
+        {total > 0 && (
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Mini progress bar */}
+            <div className="w-16 h-1 rounded-full bg-border overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${progress * 100}%`,
+                  backgroundColor: color ?? "var(--accent)",
+                }} />
+            </div>
+            <span className="text-[11px] text-sub tabular-nums w-14 text-right">
+              {pending > 0 ? `${pending} pending` : "all done"}
+            </span>
+          </div>
+        )}
+
         <HiChevronDown
-          size={12}
-          className="text-sub transition-transform duration-200 shrink-0"
+          size={13}
+          className="text-sub transition-transform duration-200 shrink-0 ml-1"
           style={{ transform: open ? "rotate(180deg)" : "none" }} />
       </button>
 
-      {/* Divider */}
-      <div className="h-px bg-border mb-1" style={{ opacity: 0.5 }} />
-
-      {/* Task rows */}
+      {/* Tasks */}
       {open && (
-        <div className="flex flex-col">
-          {tasks.map(task => renderTask(task))}
+        <div className="flex flex-col gap-1.5 pl-2 border-l-2 border-border ml-3">
+          {tasks.length === 0 ? (
+            <p className="text-[12px] text-sub px-3 py-2">No tasks</p>
+          ) : (
+            tasks.map(task => renderTask(task))
+          )}
         </div>
       )}
+
     </div>
   )
 }
