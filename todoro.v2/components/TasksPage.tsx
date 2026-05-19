@@ -3,7 +3,10 @@
 import { useState, useCallback } from "react"
 import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
-import TaskModal, { type Project } from "../components/tasks/TaskModal"
+import TaskModal from "../components/tasks/TaskModal"
+import ProjectCard from "../components/tasks/ProjectCard"
+import ProjectPage from "../components/tasks/ProjectPage"
+import { type Project } from "../components/tasks/TaskModal"
 import { type Priority, getPriority } from "../lib/theme"
 import { useUndo } from "../hooks/useUndo"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
@@ -118,6 +121,7 @@ export default function TasksPage({
   const { toast, show: showToast, dismiss: dismissToast, EMOJI } = useToast()
   const { pinned, togglePin } = usePinnedTasks()
   const { pending: deletePending, stage: stageDelete, undo } = useUndo(onDelete)
+  const [activeProject, setActiveProject] = useState<Project | null>(null)
 
   const handleDelete = useCallback((task: Task) => {
     stageDelete(task)
@@ -187,6 +191,26 @@ export default function TasksPage({
 
   const pendingCount = tasks.filter(t => !t.done).length
   const doneCount    = tasks.filter(t => t.done).length
+
+  if (activeProject) {
+  return (
+      <ProjectPage
+        project={activeProject}
+        allTasks={tasks}
+        activeTask={activeTask}
+        running={running}
+        dark={dark}
+        projects={projects}
+        onBack={() => setActiveProject(null)}
+        onSave={onSave}
+        onDelete={onDelete}
+        onToggle={onToggle}
+        onToggleSub={onToggleSub}
+        onSetActive={onSetActive}
+        onNavToTimer={onNavToTimer}
+        onSaveProject={onSaveProject} />
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -277,31 +301,51 @@ export default function TasksPage({
         </button>
       </div>
 
-      {/* Pending tasks — grouped or flat */}
+      {/* Pending tasks — project folder cards + unassigned flat */}
       {allPending.length > 0 && (
-        <div className="flex flex-col gap-5">
-          {showGroups
-            ? grouped.map((group, i) => (
-                <ProjectGroup
-                  key={group.projectId ?? "__none__"}
-                  label={group.label}
-                  color={group.color}
-                  tasks={group.tasks}
-                  defaultOpen={i === 0}
-                  renderTask={renderTask} />
-              ))
-            : (
-              <div className="flex flex-col">
-                <div className="flex items-center justify-between py-1.5">
-                  <span className="text-xs font-bold text-sub uppercase tracking-wider">
-                    Pending — {allPending.length}
-                  </span>
+        <div className="flex flex-col gap-4">
+          {showGroups ? (
+            <>
+              {/* Project folder cards */}
+              {projects.some(proj => allPending.some(t => t.projectId === proj.id)) && (
+                <div className="flex flex-col gap-2">
+                  {projects.map(proj => {
+                    const projTasks = tasks.filter(t => t.projectId === proj.id)
+                    if (!allPending.some(t => t.projectId === proj.id)) return null
+                    return (
+                      <ProjectCard
+                        key={proj.id}
+                        project={proj}
+                        tasks={projTasks}
+                        onClick={() => setActiveProject(proj)} />
+                    )
+                  })}
                 </div>
-                <div className="h-px bg-border mb-1" style={{ opacity: 0.5 }} />
-                {allPending.map(task => renderTask(task))}
+              )}
+
+              {/* Unassigned tasks — flat */}
+              {unassigned.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-bold text-sub uppercase tracking-wider px-1">
+                    No project
+                  </span>
+                  <div className="flex flex-col gap-1.5">
+                    {unassigned.map(task => renderTask(task))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between py-1.5">
+                <span className="text-xs font-bold text-sub uppercase tracking-wider">
+                  Pending — {allPending.length}
+                </span>
               </div>
-            )
-          }
+              <div className="h-px bg-border mb-1" style={{ opacity: 0.5 }} />
+              {allPending.map(task => renderTask(task))}
+            </div>
+          )}
         </div>
       )}
 
