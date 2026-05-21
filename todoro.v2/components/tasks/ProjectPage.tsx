@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { HiArrowLeft, HiPlus, HiChevronDown, HiFolder } from "react-icons/hi2"
+import { HiArrowLeft, HiPlus, HiChevronDown, HiFolder, HiPencil } from "react-icons/hi2"
 import TaskCard, { type Task } from "./TaskCard"
 import TaskModal, { type Project } from "./TaskModal"
 import { usePinnedTasks } from "../../hooks/usePinnedTasks"
@@ -24,16 +24,17 @@ interface ProjectPageProps {
   onSetActive: (t: Task) => void
   onNavToTimer: () => void
   onSaveProject: (p: Project) => void
+  onEditProject?: (p: Project) => void   // opens ProjectModal in parent
 }
 
 export default function ProjectPage({
   project, allTasks, activeTask, running, dark, projects,
   onBack, onSave, onDelete, onToggle, onToggleSub,
-  onSetActive, onNavToTimer, onSaveProject,
+  onSetActive, onNavToTimer, onSaveProject, onEditProject,
 }: ProjectPageProps) {
-  const tasks   = allTasks.filter(t => t.projectId === project.id)
-  const pending = tasks.filter(t => !t.done)
-  const done    = tasks.filter(t => t.done)
+  const tasks    = allTasks.filter(t => t.projectId === project.id)
+  const pending  = tasks.filter(t => !t.done)
+  const done     = tasks.filter(t => t.done)
   const progress = tasks.length > 0 ? done.length / tasks.length : 0
 
   const [modalTask,  setModalTask]  = useState<Task | undefined>()
@@ -53,7 +54,6 @@ export default function ProjectPage({
 
   const handleSave = useCallback((task: Task) => {
     const isNew = !allTasks.find(t => t.id === task.id)
-    // Always assign to this project
     onSave({ ...task, projectId: project.id })
     showToast(isNew ? "created" : "saved", isNew ? "Task created" : "Changes saved", task.title)
     setShowModal(false)
@@ -121,15 +121,32 @@ export default function ProjectPage({
           className="p-2 rounded-xl border border-border bg-surface2 text-sub hover:text-tx hover:border-accent/40 transition-colors">
           <HiArrowLeft size={15} />
         </button>
+
+        {/* Folder icon */}
         <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-          style={{ backgroundColor: `${project.color}20` }}>
-          <HiFolder size={16} style={{ color: project.color }} />
+          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+          style={{ backgroundColor: `${project.color}22` }}>
+          <HiFolder size={17} style={{ color: project.color }} />
         </div>
+
+        {/* Name + counts */}
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-black text-tx truncate">{project.name}</h1>
           <p className="text-xs text-sub">{pending.length} pending · {done.length} done</p>
         </div>
+
+        {/* Edit project button */}
+        {onEditProject && (
+          <button
+            onClick={() => onEditProject(project)}
+            className="p-2 rounded-xl border border-border bg-surface2 text-sub
+              hover:text-accent hover:border-accent/40 transition-colors"
+            title="Edit project">
+            <HiPencil size={14} />
+          </button>
+        )}
+
+        {/* New task */}
         <button
           onClick={() => { setModalTask(undefined); setShowModal(true) }}
           className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent text-white text-xs font-black hover:bg-accent-hover transition-all">
@@ -207,7 +224,7 @@ export default function ProjectPage({
         </div>
       )}
 
-      {/* Modal — pre-assigned to this project */}
+      {/* Task modal — pre-assigned to this project */}
       {showModal && (
         <TaskModal
           task={modalTask}

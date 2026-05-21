@@ -271,6 +271,10 @@ export default function Home() {
   const handleReset  = () => { setRunning(false); setTime(phase === "focus" ? focusMins * 60 : currentBreakMins * 60) }
   const handleSkip   = () => advanceRef.current(false)
   const handleToggle = () => setRunning(r => !r)
+  const handleDelete = (projectId: string) => {
+    setProjects(ps => ps.filter(p => p.id !== projectId))
+    setTasks(ts => ts.map(t => t.projectId === projectId ? { ...t, projectId: undefined } : t))
+  }
 
   const handleToggleTask = (id: string) =>
     setTasks(ts => ts.map(t => t.id === id ? { ...t, done: !t.done } : t))
@@ -346,7 +350,7 @@ export default function Home() {
       {tab === "tasks" && (
         <TasksPage
           dark={dark} tasks={tasks} activeTask={activeTask} running={running}
-          projects={projects}
+          projects={projects} onDeleteProject={handleDelete}
           onSave={handleSaveTask} onDelete={handleDeleteTask}
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
           onSetActive={setActiveTask} onNavToTimer={() => setTab("timer")}

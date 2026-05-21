@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen } from "react-icons/hi2"
+import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiPencil } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import TaskModal from "../components/tasks/TaskModal"
 import ProjectCard from "../components/tasks/ProjectCard"
+import ProjectModal from "../components/tasks/ProjectModal"
 import ProjectPage from "../components/tasks/ProjectPage"
 import { type Project } from "../components/tasks/TaskModal"
 import { type Priority, getPriority } from "../lib/theme"
@@ -20,6 +21,7 @@ interface TasksPageProps {
   onToggle: (id: string) => void; onToggleSub: (tId: string, sId: string) => void
   onSetActive: (t: Task) => void; onNavToTimer: () => void
   onSaveProject: (p: Project) => void
+  onDeleteProject: (id: string) => void
   dark: boolean
 }
 
@@ -30,86 +32,10 @@ const PRIORITIES: { key: Priority; label: string }[] = [
 
 type Filter = Priority | "all" | "done"
 
-// A collapsible group of tasks under a project header
-function ProjectGroup({
-  label, color, tasks, defaultOpen = true,
-  renderTask,
-}: {
-  label: string
-  color?: string
-  tasks: Task[]
-  defaultOpen?: boolean
-  renderTask: (task: Task) => React.ReactNode
-}) {
-  const [open, setOpen] = useState(defaultOpen)
-  const pending = tasks.filter(t => !t.done).length
-  const done    = tasks.filter(t => t.done).length
-  const total   = tasks.length
-  const progress = total > 0 ? done / total : 0
-
-  return (
-    <div className="flex flex-col gap-1.5">
-
-      {/* Header */}
-      <button
-        onClick={() => setOpen(v => !v)}
-        className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl border
-          transition-colors duration-150
-          bg-surface2 border-border hover:border-accent/30 group`}>
-
-        {/* Project color dot */}
-        <span
-          className="w-2.5 h-2.5 rounded-full shrink-0"
-          style={{ backgroundColor: color ?? "#888" }} />
-
-        {/* Label */}
-        <span className="text-[13px] font-semibold text-tx flex-1 text-left truncate">
-          {label}
-        </span>
-
-        {/* Progress bar + count */}
-        {total > 0 && (
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Mini progress bar */}
-            <div className="w-16 h-1 rounded-full bg-border overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${progress * 100}%`,
-                  backgroundColor: color ?? "var(--accent)",
-                }} />
-            </div>
-            <span className="text-[11px] text-sub tabular-nums w-14 text-right">
-              {pending > 0 ? `${pending} pending` : "all done"}
-            </span>
-          </div>
-        )}
-
-        <HiChevronDown
-          size={13}
-          className="text-sub transition-transform duration-200 shrink-0 ml-1"
-          style={{ transform: open ? "rotate(180deg)" : "none" }} />
-      </button>
-
-      {/* Tasks */}
-      {open && (
-        <div className="flex flex-col gap-1.5 pl-2 border-l-2 border-border ml-3">
-          {tasks.length === 0 ? (
-            <p className="text-[12px] text-sub px-3 py-2">No tasks</p>
-          ) : (
-            tasks.map(task => renderTask(task))
-          )}
-        </div>
-      )}
-
-    </div>
-  )
-}
-
 export default function TasksPage({
   tasks, activeTask, running, projects,
   onSave, onDelete, onToggle, onToggleSub,
-  onSetActive, onNavToTimer, onSaveProject, dark,
+  onSetActive, onNavToTimer, onSaveProject, onDeleteProject, dark,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Filter>("all")
@@ -117,6 +43,9 @@ export default function TasksPage({
   const [showModal, setShowModal] = useState(false)
   const [showDone,  setShowDone]  = useState(false)
   const [showSessionToast, setShowSessionToast] = useState(false)
+
+  // Project modal state
+  const [projectModal, setProjectModal] = useState<{ open: boolean; project?: Project }>({ open: false })
 
   const { toast, show: showToast, dismiss: dismissToast, EMOJI } = useToast()
   const { pinned, togglePin } = usePinnedTasks()
@@ -146,6 +75,22 @@ export default function TasksPage({
     onSetActive(task); onNavToTimer()
   }, [running, onSetActive, onNavToTimer])
 
+  // Project handlers
+  const handleSaveProject = useCallback((p: Project) => {
+    const isNew = !projects.find(x => x.id === p.id)
+    onSaveProject(p)
+    showToast(isNew ? "created" : "saved",
+      isNew ? "Project created" : "Project updated", p.name)
+    setProjectModal({ open: false })
+  }, [projects, onSaveProject, showToast])
+
+  const handleDeleteProject = useCallback((id: string) => {
+    const proj = projects.find(p => p.id === id)
+    onDeleteProject(id)
+    showToast("deleted", `"${proj?.name ?? "Project"}" deleted`, "Project removed")
+    setProjectModal({ open: false })
+  }, [projects, onDeleteProject, showToast])
+
   // Base filtered set
   const visible = tasks.filter(t => {
     if (t.id === deletePending?.id) return false
@@ -158,24 +103,9 @@ export default function TasksPage({
   const allPending = useSortedTasks(visible.filter(t => !t.done), activeTask.id, pinned)
   const done       = visible.filter(t => t.done)
 
-  // Group pending tasks by project
-  const grouped: { projectId: string | null; label: string; color?: string; tasks: Task[] }[] = []
-
-  // Build groups in project order, then unassigned
-  const seenProjects = new Set<string>()
-  for (const proj of projects) {
-    const pts = allPending.filter(t => t.projectId === proj.id)
-    if (pts.length === 0) continue
-    seenProjects.add(proj.id)
-    grouped.push({ projectId: proj.id, label: proj.name, color: proj.color, tasks: pts })
-  }
-  const unassigned = allPending.filter(t => !t.projectId || !seenProjects.has(t.projectId))
-  if (unassigned.length > 0) {
-    grouped.push({ projectId: null, label: "No project", color: undefined, tasks: unassigned })
-  }
-
-  // Only show groups when there's more than one (or when a filter is set)
-  const showGroups = projects.length > 0
+  // Group unassigned tasks
+  const assignedIds = new Set(projects.map(p => p.id))
+  const unassigned  = allPending.filter(t => !t.projectId || !assignedIds.has(t.projectId))
 
   const renderTask = (task: Task) => (
     <TaskCard key={task.id} task={task}
@@ -192,10 +122,13 @@ export default function TasksPage({
   const pendingCount = tasks.filter(t => !t.done).length
   const doneCount    = tasks.filter(t => t.done).length
 
+  // ── Project detail page ──────────────────────────────────────────────────
   if (activeProject) {
-  return (
+    // keep activeProject in sync if it was just edited
+    const liveProject = projects.find(p => p.id === activeProject.id) ?? activeProject
+    return (
       <ProjectPage
-        project={activeProject}
+        project={liveProject}
         allTasks={tasks}
         activeTask={activeTask}
         running={running}
@@ -208,10 +141,14 @@ export default function TasksPage({
         onToggleSub={onToggleSub}
         onSetActive={onSetActive}
         onNavToTimer={onNavToTimer}
-        onSaveProject={onSaveProject} />
+        onSaveProject={onSaveProject}
+        // Pass edit/delete so the project page header can open the modal too
+        onEditProject={p => setProjectModal({ open: true, project: p })}
+      />
     )
   }
 
+  // ── Main tasks page ──────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-4">
 
@@ -251,7 +188,7 @@ export default function TasksPage({
         <button
           onClick={() => { setModalTask(undefined); setShowModal(true) }}
           className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover active:scale-95 transition-all">
-          <HiPlus size={14} /> New
+          <HiPlus size={14} /> New task
         </button>
       </div>
 
@@ -301,49 +238,73 @@ export default function TasksPage({
         </button>
       </div>
 
-      {/* Pending tasks — project folder cards + unassigned flat */}
-      {allPending.length > 0 && (
-        <div className="flex flex-col gap-4">
-          {showGroups ? (
-            <>
-              {/* Project folder cards */}
-              {projects.some(proj => allPending.some(t => t.projectId === proj.id)) && (
-                <div className="flex flex-col gap-2">
-                  {projects.map(proj => {
-                    const projTasks = tasks.filter(t => t.projectId === proj.id)
-                    if (!allPending.some(t => t.projectId === proj.id)) return null
-                    return (
-                      <ProjectCard
-                        key={proj.id}
-                        project={proj}
-                        tasks={projTasks}
-                        onClick={() => setActiveProject(proj)} />
-                    )
-                  })}
-                </div>
-              )}
+      {/* ── Projects section ───────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-2">
 
-              {/* Unassigned tasks — flat */}
-              {unassigned.length > 0 && (
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-bold text-sub uppercase tracking-wider px-1">
-                    No project
-                  </span>
-                  <div className="flex flex-col gap-1.5">
-                    {unassigned.map(task => renderTask(task))}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
+        {/* Section header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <HiFolder size={13} className="text-sub" />
+            <span className="text-xs font-bold text-sub uppercase tracking-wider">
+              Projects · {projects.length}
+            </span>
+          </div>
+          <button
+            onClick={() => setProjectModal({ open: true, project: undefined })}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border bg-surface2
+              text-xs font-bold text-sub hover:text-accent hover:border-accent/40 transition-colors">
+            <HiPlus size={12} /> New
+          </button>
+        </div>
+
+        {/* Project cards */}
+        {projects.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            {projects.map(proj => (
+              <div key={proj.id} className="relative group/proj">
+                <ProjectCard
+                  project={proj}
+                  tasks={tasks.filter(t => t.projectId === proj.id)}
+                  onClick={() => setActiveProject(proj)} />
+
+                {/* Edit pencil — appears on hover */}
+                <button
+                  onClick={e => { e.stopPropagation(); setProjectModal({ open: true, project: proj }) }}
+                  className="absolute right-9 top-1/2 -translate-y-1/2
+                    opacity-0 group-hover/proj:opacity-100
+                    p-1.5 rounded-lg bg-surface border border-border text-sub
+                    hover:text-accent hover:border-accent/40
+                    transition-all duration-150 z-10">
+                  <HiPencil size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <button
+            onClick={() => setProjectModal({ open: true, project: undefined })}
+            className="flex flex-col items-center gap-1.5 py-6 rounded-xl border border-dashed
+              border-border text-sub hover:border-accent/40 hover:text-accent/70 transition-colors">
+            <HiFolderOpen size={22} />
+            <span className="text-xs font-semibold">No projects yet — create one</span>
+          </button>
+        )}
+      </div>
+
+      {/* ── Pending tasks ─────────────────────────────────────────────────── */}
+      {allPending.length > 0 && (
+        <div className="flex flex-col gap-2">
+
+          {/* Unassigned tasks */}
+          {unassigned.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between py-1.5">
+              <div className="flex items-center justify-between py-1">
                 <span className="text-xs font-bold text-sub uppercase tracking-wider">
-                  Pending — {allPending.length}
+                  {projects.length > 0 ? "No project" : `Pending — ${allPending.length}`}
                 </span>
               </div>
               <div className="h-px bg-border mb-1" style={{ opacity: 0.5 }} />
-              {allPending.map(task => renderTask(task))}
+              {unassigned.map(task => renderTask(task))}
             </div>
           )}
         </div>
@@ -360,7 +321,7 @@ export default function TasksPage({
             <HiChevronDown size={12} className="text-sub transition-transform duration-200"
               style={{ transform: showDone ? "rotate(180deg)" : "none" }} />
           </button>
-          <div className="h-px bg-border mb-1 gap-2" style={{ opacity: 0.5 }} />
+          <div className="h-px bg-border mb-2" style={{ opacity: 0.5 }} />
           {showDone && (
             <div className="flex flex-col gap-2">
               {done.map(task => (
@@ -386,7 +347,7 @@ export default function TasksPage({
         </div>
       )}
 
-      {/* Modal */}
+      {/* Task modal */}
       {showModal && (
         <TaskModal
           task={modalTask}
@@ -396,6 +357,15 @@ export default function TasksPage({
           onClose={() => setShowModal(false)}
           onCreateProject={onSaveProject}
           dark={dark} />
+      )}
+
+      {/* Project modal */}
+      {projectModal.open && (
+        <ProjectModal
+          project={projectModal.project}
+          onSave={handleSaveProject}
+          onDelete={handleDeleteProject}
+          onClose={() => setProjectModal({ open: false })} />
       )}
     </div>
   )
