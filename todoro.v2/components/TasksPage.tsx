@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiPencil } from "react-icons/hi2"
+import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import TaskModal from "../components/tasks/TaskModal"
 import ProjectCard from "../components/tasks/ProjectCard"
@@ -142,7 +142,7 @@ export default function TasksPage({
         onSetActive={onSetActive}
         onNavToTimer={onNavToTimer}
         onSaveProject={onSaveProject}
-        // Pass edit/delete so the project page header can open the modal too
+        onDeleteProject={id => { handleDeleteProject(id); setActiveProject(null) }}
         onEditProject={p => setProjectModal({ open: true, project: p })}
       />
     )
@@ -259,24 +259,13 @@ export default function TasksPage({
 
         {/* Project cards */}
         {projects.length > 0 ? (
-          <div className="flex flex-col gap-1.5">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {projects.map(proj => (
-              <div key={proj.id} className="relative group/proj">
+              <div key={proj.id} className="relative group/proj shrink-0 w-52 snap-start">
                 <ProjectCard
                   project={proj}
                   tasks={tasks.filter(t => t.projectId === proj.id)}
                   onClick={() => setActiveProject(proj)} />
-
-                {/* Edit pencil — appears on hover */}
-                <button
-                  onClick={e => { e.stopPropagation(); setProjectModal({ open: true, project: proj }) }}
-                  className="absolute right-9 top-1/2 -translate-y-1/2
-                    opacity-0 group-hover/proj:opacity-100
-                    p-1.5 rounded-lg bg-surface border border-border text-sub
-                    hover:text-accent hover:border-accent/40
-                    transition-all duration-150 z-10">
-                  <HiPencil size={12} />
-                </button>
               </div>
             ))}
           </div>
@@ -365,7 +354,8 @@ export default function TasksPage({
           project={projectModal.project}
           onSave={handleSaveProject}
           onDelete={handleDeleteProject}
-          onClose={() => setProjectModal({ open: false })} />
+          onClose={() => setProjectModal({ open: false })}
+          dark={dark} />
       )}
     </div>
   )

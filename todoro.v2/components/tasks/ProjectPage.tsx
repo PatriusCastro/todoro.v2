@@ -4,6 +4,7 @@ import { useState, useCallback } from "react"
 import { HiArrowLeft, HiPlus, HiChevronDown, HiFolder, HiPencil } from "react-icons/hi2"
 import TaskCard, { type Task } from "./TaskCard"
 import TaskModal, { type Project } from "./TaskModal"
+import ProjectModal from "./ProjectModal"
 import { usePinnedTasks } from "../../hooks/usePinnedTasks"
 import { useSortedTasks } from "../../hooks/useTaskSort"
 import { useUndo } from "../../hooks/useUndo"
@@ -24,13 +25,14 @@ interface ProjectPageProps {
   onSetActive: (t: Task) => void
   onNavToTimer: () => void
   onSaveProject: (p: Project) => void
+  onDeleteProject: (id: string) => void
   onEditProject?: (p: Project) => void   // opens ProjectModal in parent
 }
 
 export default function ProjectPage({
   project, allTasks, activeTask, running, dark, projects,
   onBack, onSave, onDelete, onToggle, onToggleSub,
-  onSetActive, onNavToTimer, onSaveProject, onEditProject,
+  onSetActive, onNavToTimer, onSaveProject, onDeleteProject, onEditProject,
 }: ProjectPageProps) {
   const tasks    = allTasks.filter(t => t.projectId === project.id)
   const pending  = tasks.filter(t => !t.done)
@@ -41,6 +43,7 @@ export default function ProjectPage({
   const [showModal,  setShowModal]  = useState(false)
   const [showDone,   setShowDone]   = useState(false)
   const [showSessionToast, setShowSessionToast] = useState(false)
+  const [projectModal, setProjectModal] = useState(false)
 
   const { toast, show: showToast, dismiss: dismissToast, EMOJI } = useToast()
   const { pinned, togglePin } = usePinnedTasks()
@@ -136,15 +139,13 @@ export default function ProjectPage({
         </div>
 
         {/* Edit project button */}
-        {onEditProject && (
-          <button
-            onClick={() => onEditProject(project)}
-            className="p-2 rounded-xl border border-border bg-surface2 text-sub
-              hover:text-accent hover:border-accent/40 transition-colors"
-            title="Edit project">
-            <HiPencil size={14} />
-          </button>
-        )}
+        <button
+          onClick={() => setProjectModal(true)}
+          className="p-2 rounded-xl border border-border bg-surface2 text-sub
+            hover:text-accent hover:border-accent/40 transition-colors"
+          title="Edit project">
+          <HiPencil size={14} />
+        </button>
 
         {/* New task */}
         <button
@@ -233,6 +234,16 @@ export default function ProjectPage({
           onDelete={id => { onDelete(id); setShowModal(false) }}
           onClose={() => setShowModal(false)}
           onCreateProject={onSaveProject}
+          dark={dark} />
+      )}
+
+      {/* Project modal */}
+      {projectModal && (
+        <ProjectModal
+          project={project}
+          onSave={p => { onSaveProject(p); setProjectModal(false) }}
+          onDelete={id => { onDeleteProject(id); onBack() }}
+          onClose={() => setProjectModal(false)}
           dark={dark} />
       )}
     </div>
