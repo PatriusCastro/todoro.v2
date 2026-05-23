@@ -11,13 +11,25 @@ interface SettingsPageProps {
   dailyGoal: number; onDailyGoal:(v: number) => void
   avatarUrl: string; onAvatarUrl:(v: string) => void
   quickMode: boolean; onQuickMode: (v: boolean) => void
+  accentTheme: string; onAccentTheme: (v: string) => void  // ← add
 }
 
 export default function SettingsPage({
   userName, onUserName, dark, onDark, sound, onSound, dailyGoal, onDailyGoal,
-  avatarUrl, onAvatarUrl, quickMode, onQuickMode,
+  avatarUrl, onAvatarUrl, quickMode, onQuickMode, accentTheme, onAccentTheme,
 }: SettingsPageProps) {
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const ACCENT_THEMES = [
+  { id: "blue",    color: "#5B8CFF", label: "Blue (default)" },
+  { id: "violet",  color: "#8B5CF6", label: "Violet" },
+  { id: "rose",    color: "#F43F5E", label: "Rose" },
+  { id: "amber",   color: "#F59E0B", label: "Amber" },
+  { id: "emerald", color: "#10B981", label: "Emerald" },
+  { id: "cyan",    color: "#06B6D4", label: "Cyan" },
+  { id: "pink",    color: "#EC4899", label: "Pink" },
+  { id: "orange",  color: "#F97316", label: "Orange" },
+]
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -74,6 +86,28 @@ export default function SettingsPage({
 
       <Section label="Appearance">
         <ToggleRow label="Dark Mode" icon={<HiMoon size={18} className="text-sub shrink-0" />} value={dark} onChange={onDark} />
+      </Section>
+
+      <Section label="Accent Color">
+        <div className="px-4 py-4">
+          <div className="grid grid-cols-8 gap-2.5">
+            {ACCENT_THEMES.map(({ id, color, label }) => (
+              <button
+                key={id}
+                title={label}
+                onClick={() => onAccentTheme(id)}
+                className="relative w-8 h-8 rounded-full transition-transform duration-150 active:scale-90 hover:scale-110"
+                style={{ background: color }}
+              >
+                {accentTheme === id && (
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <span className="w-2.5 h-2.5 rounded-full bg-white/90 shadow" />
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </Section>
 
       <Section label="Focus">

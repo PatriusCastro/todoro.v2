@@ -117,6 +117,8 @@ export default function Home() {
   const [focusMins, setFocusMins] = useState<number>(() => load("todoro:focusMins", 25))
   const [breakMins, setBreakMins] = useState<number>(() => load("todoro:breakMins", 5))
 
+  const [accentTheme, setAccentTheme] = useState<string>(() => load("todoro:accentTheme", "blue"))
+
   const [phase,   setPhase]   = useState<Phase>("focus")
   // In reverse mode the initial time is 0 (counts up); normal mode starts at focusMins * 60
   const [time,    setTime]    = useState(() => load("todoro:reverseMode", false) ? 0 : load("todoro:focusMins", 25) * 60)
@@ -206,9 +208,16 @@ export default function Home() {
   useEffect(() => { save("todoro:tasks",       tasks)       }, [tasks])
   useEffect(() => { save("todoro:points",      totalPoints) }, [totalPoints])
   useEffect(() => { save("todoro:history",     allHistory)  }, [allHistory])
+  useEffect(() => { save("todoro:accentTheme", accentTheme) }, [accentTheme])
 
   useWakeLock(running)
   useDocumentTitle(time, phase, running)
+
+  useEffect(() => {
+    const html = document.documentElement
+    if (accentTheme === "blue") html.removeAttribute("data-theme")
+    else html.setAttribute("data-theme", accentTheme)
+  }, [accentTheme])
 
   const playChime = useCallback((isFocus: boolean) => {
     if (!sound) return
@@ -431,12 +440,13 @@ export default function Home() {
 
       {tab === "settings" && (
         <SettingsPage
-          userName={userName}   onUserName={setUserName}
-          dark={dark}           onDark={setDark}
-          sound={sound}         onSound={setSound}
-          dailyGoal={dailyGoal} onDailyGoal={setDailyGoal}
-          avatarUrl={avatarUrl} onAvatarUrl={setAvatarUrl}
-          quickMode={quickMode} onQuickMode={setQuickMode} />
+          userName={userName}     onUserName={setUserName}
+          dark={dark}             onDark={setDark}
+          sound={sound}           onSound={setSound}
+          dailyGoal={dailyGoal}   onDailyGoal={setDailyGoal}
+          avatarUrl={avatarUrl}   onAvatarUrl={setAvatarUrl}
+          quickMode={quickMode}   onQuickMode={setQuickMode}
+          accentTheme={accentTheme} onAccentTheme={setAccentTheme} />
       )}
 
       {tab === "calendar" && (
