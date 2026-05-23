@@ -19,24 +19,29 @@ interface TimerPageProps {
   running: boolean; progress: number
   sessions: number; totalSessions: number; cycleCount: number
   tasks: Task[]; activeTask: Task; quickMode: boolean; allHistory: SessionRecord[]
+  reverseMode: boolean
   onToggle: () => void; onReset: () => void; onSkip: () => void
   onModeChange: (mode: Mode, fm: number, bm: number) => void
   onTaskChange: (task: Task) => void
   onToggleSub: (taskId: string, subId: string) => void
   onFocusedChange?: (focused: boolean) => void
   onQuickMode: (v: boolean) => void
+  onStopAndRest: () => void
+  onReverseMode: (v: boolean) => void
 }
 
 const PHASE = {
-  focus: { label: "Focus", color: undefined, badge: "bg-accent/10 text-accent border-accent/20", dot: "bg-accent" },
-  break: { label: "Break", color: "#51CF66", badge: "bg-priority-low/10 text-priority-low border-priority-low/20", dot: "bg-priority-low" },
-  longbreak: { label: "Long Break", color: "#51CF66", badge: "bg-priority-low/10 text-priority-low border-priority-low/20", dot: "bg-priority-low" },
+  focus:     { label: "Focus",      color: undefined,  badge: "bg-accent/10 text-accent border-accent/20",                   dot: "bg-accent"       },
+  break:     { label: "Break",      color: "#51CF66",  badge: "bg-priority-low/10 text-priority-low border-priority-low/20", dot: "bg-priority-low" },
+  longbreak: { label: "Long Break", color: "#51CF66",  badge: "bg-priority-low/10 text-priority-low border-priority-low/20", dot: "bg-priority-low" },
 }
 
 export default function TimerPage({
   time, phase, mode, focusMins, breakMins, longBreakMins, running, progress,
   sessions, totalSessions, cycleCount, tasks, activeTask, quickMode, allHistory,
-  onToggle, onReset, onSkip, onModeChange, onTaskChange, onToggleSub, onFocusedChange, onQuickMode
+  reverseMode,
+  onToggle, onReset, onSkip, onModeChange, onTaskChange, onToggleSub,
+  onFocusedChange, onQuickMode, onStopAndRest, onReverseMode,
 }: TimerPageProps) {
   const [focused, setFocused] = useState(false)
   const isDesktop = useIsDesktop()
@@ -52,8 +57,10 @@ export default function TimerPage({
   const spentLabel = `${Math.floor(spentSecs / 60)}:${(spentSecs % 60).toString().padStart(2, "0")} elapsed`
   const allDone = tasks.every(t => t.done)
   const { label, color, badge, dot } = PHASE[phase]
-  
-  // Get today's sessions for active task
+
+  // Badge label shows "↑ Focus" in reverse mode focus phase
+  const badgeLabel = reverseMode && phase === "focus" ? "↑ Focus" : label
+
   const localDate = (ts: number = Date.now()) => {
     const d = new Date(ts)
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
@@ -61,9 +68,16 @@ export default function TimerPage({
   const todayKey = localDate()
   const todaySessionsForTask = allHistory.filter(s => s.taskId === activeTask.id && localDate(s.at) === todayKey).length
 
+  // Rolling 25-min cycle progress for the progress bar in reverse mode
+  const REVERSE_CYCLE = 25 * 60
+  const reverseBarProgress = reverseMode && phase === "focus"
+    ? ((time % REVERSE_CYCLE) / REVERSE_CYCLE) * 100
+    : progress * 100
+
   const SubtaskList = () => <>{activeTask.subtasks.map(s => (
     <div key={s.id} className="flex items-center gap-3">
-      <button onMouseDown={() => onToggleSub(activeTask.id, s.id)} className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center ${s.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
+      <button onMouseDown={() => onToggleSub(activeTask.id, s.id)}
+        className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center ${s.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
         {s.done && <span className="text-white text-[8px] font-black">✓</span>}
       </button>
       <span className={`text-xs truncate flex-1 ${s.done ? "line-through text-sub" : "text-tx"}`}>{s.title}</span>
@@ -86,7 +100,7 @@ export default function TimerPage({
       <div className="text-center">
         <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-3 border ${badge}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${dot} ${running ? "animate-pulse" : ""}`} />
-          {label}
+          {badgeLabel}
         </div>
         {quickMode && !activeTask.title ? (
           <p className="text-sm font-semibold text-tx">Quick Mode</p>
@@ -99,8 +113,14 @@ export default function TimerPage({
           </>
         )}
       </div>
-      <TimerRing minutes={minutes} seconds={seconds} progress={progress} label={label} spentLabel={spentLabel} size={isDesktop ? 320 : 260} color={color} />
-      <TimerControls running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip} phase={phase} />
+      <TimerRing
+        minutes={minutes} seconds={seconds} progress={progress}
+        label={badgeLabel} spentLabel={spentLabel}
+        size={isDesktop ? 320 : 260} color={color}
+        reverseMode={reverseMode && phase === "focus"} />
+      <TimerControls
+        running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip}
+        phase={phase} reverseMode={reverseMode} onStopAndRest={onStopAndRest} />
       <button onClick={() => setFocused(false)} className="flex items-center gap-1.5 text-xs text-sub hover:text-tx">
         <HiChevronLeft size={14} /> Exit focus view
       </button>
@@ -125,12 +145,22 @@ export default function TimerPage({
         <div className="flex flex-col items-center gap-3 sm:min-w-2xl shrink-0 bg-surface border border-border rounded-2xl py-6">
           <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold border ${badge}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${dot} ${running ? "animate-pulse" : ""}`} />
-            {label}
+            {badgeLabel}
             <span className="text-sub">·</span>
-            <span className="text-sub">{!allDone && phase === "focus" ? focusMins : phase === "longbreak" ? longBreakMins : breakMins} min</span>
+            <span className="text-sub">
+              {reverseMode && phase === "focus"
+                ? "open-ended"
+                : `${!allDone && phase === "focus" ? focusMins : phase === "longbreak" ? longBreakMins : breakMins} min`}
+            </span>
           </div>
-          <TimerRing minutes={minutes} seconds={seconds} progress={progress} label={label} spentLabel={spentLabel} size={isDesktop ? 280 : 220} color={color} />
-          <TimerControls running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip} phase={phase} />
+          <TimerRing
+            minutes={minutes} seconds={seconds} progress={progress}
+            label={badgeLabel} spentLabel={spentLabel}
+            size={isDesktop ? 280 : 220} color={color}
+            reverseMode={reverseMode && phase === "focus"} />
+          <TimerControls
+            running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip}
+            phase={phase} reverseMode={reverseMode} onStopAndRest={onStopAndRest} />
           {/* Quick Mode Toggle */}
           <button onClick={() => onQuickMode(!quickMode)}
             className="w-full py-3.5 rounded-xl text-sub text-sm font-black active:scale-95 transition-all duration-150">
@@ -143,8 +173,11 @@ export default function TimerPage({
         <div className="flex flex-col-reverse lg:flex-col flex-1 gap-5">
           <div className="flex flex-col gap-3 bg-surface border border-border rounded-2xl px-5 py-4">
             <TaskSelector tasks={tasks} active={activeTask} running={running} onChange={onTaskChange} onStop={onReset} quickMode={quickMode} />
-            <ModeSelector active={mode} customFocus={focusMins} customBreak={breakMins} onChange={onModeChange} />
-
+            <ModeSelector
+              active={mode} customFocus={focusMins} customBreak={breakMins}
+              onChange={onModeChange}
+              reverseMode={reverseMode}
+              onReverseMode={onReverseMode} />
             {isDesktop && (
               <div className="flex items-center justify-center gap-4">
                 {[["Space", "Play/Pause"], ["R", "Reset"], ["S", "Skip"]].map(([k, a]) => (
@@ -156,13 +189,26 @@ export default function TimerPage({
               </div>
             )}
           </div>
+
           <div className="rounded-2xl border border-border bg-surface px-5 py-4 flex flex-col gap-3">
             <div className="flex justify-between text-xs font-semibold text-sub">
-              <span>{!allDone && phase === "focus" ? `Focus — ${focusMins} min` : phase === "longbreak" ? `Long Break — ${longBreakMins} min` : `Break — ${currentBreakMins} min`}</span>
-              <span>{Math.round(progress * 100)}%</span>
+              <span>
+                {reverseMode && phase === "focus"
+                  ? "↑ Counting up"
+                  : !allDone && phase === "focus" ? `Focus — ${focusMins} min`
+                  : phase === "longbreak" ? `Long Break — ${longBreakMins} min`
+                  : `Break — ${currentBreakMins} min`}
+              </span>
+              <span>
+                {reverseMode && phase === "focus"
+                  ? `${minutes}m elapsed`
+                  : `${Math.round(progress * 100)}%`}
+              </span>
             </div>
             <div className="h-2 rounded-full bg-ring overflow-hidden">
-              <div className={`h-full rounded-full transition-all duration-1000 ease-linear ${phase === "focus" ? "bg-accent" : "bg-priority-low"}`} style={{ width: `${progress * 100}%` }} />
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ease-linear ${phase === "focus" ? "bg-accent" : "bg-priority-low"}`}
+                style={{ width: `${reverseBarProgress}%` }} />
             </div>
             {!allDone && phase === "focus" && (
               <div className="border-t border-border pt-3 flex flex-col gap-3">
@@ -194,9 +240,7 @@ export default function TimerPage({
             )}
           </div>
         </div>
-        
       </div>
-
     </div>
   )
 }

@@ -34,8 +34,8 @@ const INITIAL_TASKS: Task[] = [
     dueDate: new Date().toISOString().slice(0, 10), dueTime: "", dueLabel: "Due today",
     done: false, estimatedSessions: 2, completedSessions: 0,
     subtasks: [
-      { id: uid(), title: "Pick a task to work on",    done: false },
-      { id: uid(), title: "Hit Start and stay focused", done: false },
+      { id: uid(), title: "Pick a task to work on",     done: false },
+      { id: uid(), title: "Hit Start and stay focused",  done: false },
     ],
   },
   {
@@ -111,13 +111,15 @@ export default function Home() {
   const [dailyGoal, setDailyGoal] = useState(() => load("todoro:dailyGoal", 5))
   const [avatarUrl, setAvatarUrl] = useState(() => load("todoro:avatarUrl", ""))
   const [quickMode, setQuickMode] = useState(() => load("todoro:quickMode", false))
+  const [reverseMode, setReverseMode] = useState(() => load("todoro:reverseMode", false))
 
   const [mode,      setMode]      = useState<Mode>(()   => load("todoro:mode",      "25/5"))
   const [focusMins, setFocusMins] = useState<number>(() => load("todoro:focusMins", 25))
   const [breakMins, setBreakMins] = useState<number>(() => load("todoro:breakMins", 5))
 
   const [phase,   setPhase]   = useState<Phase>("focus")
-  const [time,    setTime]    = useState(focusMins * 60)
+  // In reverse mode the initial time is 0 (counts up); normal mode starts at focusMins * 60
+  const [time,    setTime]    = useState(() => load("todoro:reverseMode", false) ? 0 : load("todoro:focusMins", 25) * 60)
   const [running, setRunning] = useState(false)
 
   const [cycleCount,  setCycleCount]  = useState(0)
@@ -158,7 +160,12 @@ export default function Home() {
 
   const currentBreakMins = phase === "longbreak" ? LONG_BREAK_MINS : breakMins
   const maxTime  = phase === "focus" ? focusMins * 60 : currentBreakMins * 60
-  const progress = maxTime > 0 ? (maxTime - time) / maxTime : 0
+
+  // Progress: in reverse focus mode, use a rolling 25-min cycle for the ring/bar
+  const REVERSE_CYCLE = 25 * 60
+  const progress = reverseMode && phase === "focus"
+    ? (time % REVERSE_CYCLE) / REVERSE_CYCLE
+    : maxTime > 0 ? (maxTime - time) / maxTime : 0
 
   useEffect(() => {
     const updated = tasks.find(t => t.id === activeTask.id)
@@ -179,18 +186,26 @@ export default function Home() {
     }
   }, [quickMode, tasks])
 
-  useEffect(() => { save("todoro:userName",  userName)    }, [userName])
-  useEffect(() => { save("todoro:dark",      dark)        }, [dark])
-  useEffect(() => { save("todoro:sound",     sound)       }, [sound])
-  useEffect(() => { save("todoro:dailyGoal", dailyGoal)   }, [dailyGoal])
-  useEffect(() => { save("todoro:avatarUrl", avatarUrl)   }, [avatarUrl])
-  useEffect(() => { save("todoro:quickMode", quickMode)   }, [quickMode])
-  useEffect(() => { save("todoro:mode",      mode)        }, [mode])
-  useEffect(() => { save("todoro:focusMins", focusMins)   }, [focusMins])
-  useEffect(() => { save("todoro:breakMins", breakMins)   }, [breakMins])
-  useEffect(() => { save("todoro:tasks",     tasks)       }, [tasks])
-  useEffect(() => { save("todoro:points",    totalPoints) }, [totalPoints])
-  useEffect(() => { save("todoro:history",   allHistory)  }, [allHistory])
+  // When reverseMode changes, reset timer to the right starting point
+  useEffect(() => {
+    setRunning(false)
+    setPhase("focus")
+    setTime(reverseMode ? 0 : focusMins * 60)
+  }, [reverseMode])
+
+  useEffect(() => { save("todoro:userName",    userName)    }, [userName])
+  useEffect(() => { save("todoro:dark",        dark)        }, [dark])
+  useEffect(() => { save("todoro:sound",       sound)       }, [sound])
+  useEffect(() => { save("todoro:dailyGoal",   dailyGoal)   }, [dailyGoal])
+  useEffect(() => { save("todoro:avatarUrl",   avatarUrl)   }, [avatarUrl])
+  useEffect(() => { save("todoro:quickMode",   quickMode)   }, [quickMode])
+  useEffect(() => { save("todoro:reverseMode", reverseMode) }, [reverseMode])
+  useEffect(() => { save("todoro:mode",        mode)        }, [mode])
+  useEffect(() => { save("todoro:focusMins",   focusMins)   }, [focusMins])
+  useEffect(() => { save("todoro:breakMins",   breakMins)   }, [breakMins])
+  useEffect(() => { save("todoro:tasks",       tasks)       }, [tasks])
+  useEffect(() => { save("todoro:points",      totalPoints) }, [totalPoints])
+  useEffect(() => { save("todoro:history",     allHistory)  }, [allHistory])
 
   useWakeLock(running)
   useDocumentTitle(time, phase, running)
@@ -240,35 +255,90 @@ export default function Home() {
       }
     } else {
       if (completed) playChime(true)
-      setPhase("focus"); setTime(focusMins * 60)
+      setPhase("focus")
+      setTime(reverseMode ? 0 : focusMins * 60)
     }
-  }, [phase, cycleCount, focusMins, breakMins, activeTask, playChime])
+  }, [phase, cycleCount, focusMins, breakMins, activeTask, playChime, reverseMode])
 
   const advanceRef  = useRef(advancePhase)
   const hasAdvanced = useRef(false)
   useEffect(() => { advanceRef.current = advancePhase }, [advancePhase])
 
+  // Separate ref so the interval closure always has the current reverseMode + phase
+  const reverseModeRef = useRef(reverseMode)
+  const phaseRef       = useRef(phase)
+  useEffect(() => { reverseModeRef.current = reverseMode }, [reverseMode])
+  useEffect(() => { phaseRef.current = phase }, [phase])
+
   useEffect(() => {
     if (!running) return
     hasAdvanced.current = false
     const id = setInterval(() => {
-      setTime(t => {
-        if (t <= 1) {
-          if (!hasAdvanced.current) { hasAdvanced.current = true; advanceRef.current(true) }
-          return 0
-        }
-        return t - 1
-      })
+      if (reverseModeRef.current && phaseRef.current === "focus") {
+        // Reverse mode focus: count UP — no auto-advance, user controls the end
+        setTime(t => t + 1)
+      } else {
+        setTime(t => {
+          if (t <= 1) {
+            if (!hasAdvanced.current) { hasAdvanced.current = true; advanceRef.current(true) }
+            return 0
+          }
+          return t - 1
+        })
+      }
     }, 1000)
     return () => clearInterval(id)
   }, [running])
 
+  // ── handleStopAndRest ─────────────────────────────────────────────
+  // Called in reverse mode when user is done focusing. Calculates an
+  // earned break = focusedSeconds / 5 (Pomodoro 1:5 ratio), min 60s.
+  const handleStopAndRest = useCallback(() => {
+    setRunning(false)
+    const focusedSecs      = time                                   // time has been counting up
+    const earnedBreakSecs  = Math.max(60, Math.round(focusedSecs / 5))
+    const earnedFocusMins  = Math.max(1, Math.round(focusedSecs / 60))
+
+    const nextCycle = cycleCount + 1
+    setCycleCount(nextCycle)
+    setTotalPoints(p => p + 5)
+    setAllHistory(h => {
+      const next = [...h, {
+        taskId:    activeTask.id,
+        taskTitle: activeTask.title,
+        focusMins: earnedFocusMins,
+        at:        Date.now(),
+      }]
+      const newStreak = computeStreak(next)
+      setTimeout(() => { setToast({ points: 5, streak: newStreak }); setTimeout(() => setToast(null), 3500) }, 300)
+      return next
+    })
+    setTasks(ts => ts.map(t => t.id === activeTask.id
+      ? { ...t, completedSessions: t.completedSessions + 1 }
+      : t))
+    playChime(false)
+
+    if (nextCycle % LONG_BREAK_INTERVAL === 0) {
+      setPhase("longbreak")
+      setTime(LONG_BREAK_MINS * 60)
+    } else {
+      setPhase("break")
+      setTime(earnedBreakSecs)
+    }
+  }, [time, cycleCount, activeTask, playChime])
+  // ─────────────────────────────────────────────────────────────────
+
   const handleModeChange = (m: Mode, fm: number, bm: number) => {
     setMode(m); setFocusMins(fm); setBreakMins(bm)
-    setRunning(false); setPhase("focus"); setTime(fm * 60)
+    setRunning(false); setPhase("focus")
+    setTime(reverseMode ? 0 : fm * 60)
   }
 
-  const handleReset  = () => { setRunning(false); setTime(phase === "focus" ? focusMins * 60 : currentBreakMins * 60) }
+  const handleReset = () => {
+    setRunning(false)
+    if (reverseMode && phase === "focus") setTime(0)
+    else setTime(phase === "focus" ? focusMins * 60 : currentBreakMins * 60)
+  }
   const handleSkip   = () => advanceRef.current(false)
   const handleToggle = () => setRunning(r => !r)
   const handleDelete = (projectId: string) => {
@@ -292,8 +362,8 @@ export default function Home() {
   const handleDeleteTask = (id: string) => {
     setTasks(ts => ts.filter(t => t.id !== id))
     if (activeTask.id === id) {
-      const remaining    = tasks.filter(t => t.id !== id)
-      const nextPending  = remaining.find(t => !t.done)
+      const remaining   = tasks.filter(t => t.id !== id)
+      const nextPending = remaining.find(t => !t.done)
       setActiveTask(nextPending ?? remaining[0] ?? INITIAL_TASKS[0])
     }
   }
@@ -342,9 +412,11 @@ export default function Home() {
       {tab === "timer" && (
         <TimerPage {...timerProps}
           tasks={tasks} activeTask={activeTask} quickMode={quickMode}
+          reverseMode={reverseMode}
           onToggle={handleToggle} onReset={handleReset} onSkip={handleSkip}
           onModeChange={handleModeChange} onTaskChange={setActiveTask} onQuickMode={setQuickMode}
-          onToggleSub={handleToggleSub} onFocusedChange={setFocusedView} allHistory={allHistory} />
+          onToggleSub={handleToggleSub} onFocusedChange={setFocusedView} allHistory={allHistory}
+          onStopAndRest={handleStopAndRest} onReverseMode={setReverseMode} />
       )}
 
       {tab === "tasks" && (

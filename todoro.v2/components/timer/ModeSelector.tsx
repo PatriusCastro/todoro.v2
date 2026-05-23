@@ -1,13 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import { HiArrowPath } from "react-icons/hi2"
 
 export type Mode = "25/5" | "50/10" | "custom"
 
 export interface ModeConfig {
-  label:         string
-  focusMins:     number
-  breakMins:     number
+  label:     string
+  focusMins: number
+  breakMins: number
 }
 
 export const PRESET_MODES: Record<"25/5" | "50/10", ModeConfig> = {
@@ -16,13 +17,18 @@ export const PRESET_MODES: Record<"25/5" | "50/10", ModeConfig> = {
 }
 
 interface ModeSelectorProps {
-  active:        Mode
-  customFocus:   number
-  customBreak:   number
-  onChange:      (mode: Mode, focusMins: number, breakMins: number) => void
+  active:         Mode
+  customFocus:    number
+  customBreak:    number
+  onChange:       (mode: Mode, focusMins: number, breakMins: number) => void
+  reverseMode?:   boolean
+  onReverseMode?: (v: boolean) => void
 }
 
-export default function ModeSelector({ active, customFocus, customBreak, onChange }: ModeSelectorProps) {
+export default function ModeSelector({
+  active, customFocus, customBreak, onChange,
+  reverseMode = false, onReverseMode,
+}: ModeSelectorProps) {
   const [cf, setCf] = useState(customFocus)
   const [cb, setCb] = useState(customBreak)
 
@@ -37,7 +43,7 @@ export default function ModeSelector({ active, customFocus, customBreak, onChang
             else onChange(m, PRESET_MODES[m].focusMins, PRESET_MODES[m].breakMins)
           }}
             className={`flex-1 py-2 rounded-xl text-sm font-bold border transition-all duration-200
-              ${active === m
+              ${active === m && !reverseMode
                 ? "bg-accent text-white border-accent"
                 : "bg-transparent text-sub border-border hover:border-accent/50 hover:text-tx"}`}>
             {m === "custom" ? "Custom" : m}
@@ -45,7 +51,7 @@ export default function ModeSelector({ active, customFocus, customBreak, onChang
         ))}
       </div>
 
-      {active === "custom" && (
+      {active === "custom" && !reverseMode && (
         <div className="flex gap-3 bg-surface2 rounded-xl p-3 border border-border">
           <div className="flex-1 flex flex-col gap-1">
             <span className="text-[11px] font-semibold text-sub uppercase tracking-wide">Focus</span>
@@ -70,6 +76,27 @@ export default function ModeSelector({ active, customFocus, customBreak, onChang
           </div>
         </div>
       )}
+
+      {/* Reverse Mode toggle — always rendered when onReverseMode is provided */}
+      <button
+        onClick={() => onReverseMode?.(!reverseMode)}
+        className={`w-full flex items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-all duration-200
+          ${reverseMode
+            ? "bg-accent/10 border-accent/40"
+            : "bg-transparent border-border hover:border-accent/30 hover:text-tx"}`}
+      >
+        <div className="flex items-center gap-2.5">
+          <HiArrowPath size={15} className={reverseMode ? "text-accent" : "text-sub"} />
+          <div className="text-left">
+            <p className={`text-xs font-bold ${reverseMode ? "text-accent" : "text-tx"}`}>Reverse Mode</p>
+            <p className="text-[11px] text-sub">Count up · break = focus ÷ 5</p>
+          </div>
+        </div>
+        {/* Toggle pill */}
+        <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 ${reverseMode ? "bg-accent" : "bg-ring"}`}>
+          <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${reverseMode ? "translate-x-4" : "translate-x-0"}`} />
+        </div>
+      </button>
     </div>
   )
 }
