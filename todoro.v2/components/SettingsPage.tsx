@@ -2,6 +2,7 @@
 
 import { useRef } from "react"
 import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray, HiBolt } from "react-icons/hi2"
+import { MdColorLens } from "react-icons/md";
 import { FaBullseye } from "react-icons/fa"
 
 interface SettingsPageProps {
@@ -29,6 +30,7 @@ export default function SettingsPage({
   { id: "cyan",    color: "#06B6D4", label: "Cyan" },
   { id: "pink",    color: "#EC4899", label: "Pink" },
   { id: "orange",  color: "#F97316", label: "Orange" },
+  { id: "gray",    color: "#6B7280", label: "Gray"}
 ]
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,27 +88,17 @@ export default function SettingsPage({
 
       <Section label="Appearance">
         <ToggleRow label="Dark Mode" icon={<HiMoon size={18} className="text-sub shrink-0" />} value={dark} onChange={onDark} />
-      </Section>
+        <div className="flex items-center justify-between px-4 py-4">
+          <MdColorLens size={18} className="text-sub shrink-0" />
+          <span className="ml-3 flex-1 text-sm font-medium text-tx">Accent Color</span>
 
-      <Section label="Accent Color">
-        <div className="px-4 py-4">
-          <div className="grid grid-cols-8 gap-2.5">
-            {ACCENT_THEMES.map(({ id, color, label }) => (
-              <button
-                key={id}
-                title={label}
-                onClick={() => onAccentTheme(id)}
-                className="relative w-8 h-8 rounded-full transition-transform duration-150 active:scale-90 hover:scale-110"
-                style={{ background: color }}
-              >
-                {accentTheme === id && (
-                  <span className="absolute inset-0 flex items-center justify-center">
-                    <span className="w-2.5 h-2.5 rounded-full bg-white/90 shadow" />
-                  </span>
-                )}
-              </button>
+          <select value={accentTheme} onChange={e => onAccentTheme(e.target.value)}
+            className="w-44 bg-surface2 border border-border rounded-xl px-3 py-2 text-sm text-tx
+              outline-none focus:border-accent transition-colors">
+            {ACCENT_THEMES.map(({ id, label }) => (
+              <option key={id} value={id}>{label}</option>
             ))}
-          </div>
+          </select>
         </div>
       </Section>
 
