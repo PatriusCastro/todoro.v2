@@ -23,7 +23,7 @@
 [data-theme="cyan"]    { --accent: #06B6D4; --accent-hover: #0891B2; --accent-dim: rgba(6,182,212,0.15);  --accent-glow: rgba(6,182,212,0.45);  }
 [data-theme="pink"]    { --accent: #EC4899; --accent-hover: #DB2777; --accent-dim: rgba(236,72,153,0.15); --accent-glow: rgba(236,72,153,0.45); }
 [data-theme="orange"]  { --accent: #F97316; --accent-hover: #EA580C; --accent-dim: rgba(249,115,22,0.15); --accent-glow: rgba(249,115,22,0.45); }
-
+[data-theme="gray"]    { --accent: #6B7280; --accent-hover: #4B5563; --accent-dim: rgba(107,114,128,0.15); --accent-glow: rgba(107,114,128,0.45); }
 
 :root {
   --bg:      #F8F7F4;
