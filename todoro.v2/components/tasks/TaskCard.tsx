@@ -176,9 +176,13 @@ export default function TaskCard({
                   {Array.from({ length: task.estimatedSessions }).map((_, i) => (
                     <div
                       key={i}
-                      className="h-1.5 flex-1 rounded-full transition-colors duration-300"
-                      style={{ backgroundColor: i < task.completedSessions ? dot : undefined }}
-                      {...(i >= task.completedSessions ? { className: "h-1.5 flex-1 rounded-full bg-border" } : {})}
+                      className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+                        i >= task.completedSessions ? "bg-border" : ""
+                      }`}
+                      style={{
+                        backgroundColor:
+                          i < task.completedSessions ? dot : undefined,
+                      }}
                     />
                   ))}
                 </div>
