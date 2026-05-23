@@ -19,7 +19,7 @@ export default function ProjectCard({ project, tasks, onClick }: ProjectCardProp
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-3.5 px-4 py-3.5 rounded-xl border
+      className="flex flex-col items-center gap-3.5 px-4 py-3.5 rounded-xl border w-44 group-hover/proj:bg-surface2 group-hover/proj:border-accent/40
         bg-surface2 border-border hover:border-accent/40
         active:scale-[0.985] transition-all duration-150 text-left group">
       {/* Folder icon block */}
