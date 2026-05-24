@@ -157,9 +157,9 @@ export default function AppShell({
           <div className={`fixed bottom-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none
             transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}>
             <div ref={navContainerRef}
-              className="w-full pointer-events-auto relative flex items-center justify-between bg-surface/95 backdrop-blur-md border border-border rounded-3xl p-2">
+              className="w-full pointer-events-auto relative flex items-center justify-between backdrop-blur-md border border-border rounded-3xl p-2">
               {pill.ready && (
-                <div className="absolute top-1.5 bottom-1.5 bg-surface2 rounded-2xl pointer-events-none"
+                <div className="absolute top-1.5 bottom-1.5 bg-gray-500/10 rounded-2xl pointer-events-none"
                   style={{ left: pill.left, width: pill.width, transition: pillTrans }} />
               )}
               {NAV.map(({ id, label }) => {
