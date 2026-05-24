@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray, HiBolt } from "react-icons/hi2"
+import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray, HiBolt, HiBell } from "react-icons/hi2"
 import { MdColorLens } from "react-icons/md";
 import { FaBullseye } from "react-icons/fa"
 
@@ -12,14 +12,24 @@ interface SettingsPageProps {
   dailyGoal: number; onDailyGoal:(v: number) => void
   avatarUrl: string; onAvatarUrl:(v: string) => void
   quickMode: boolean; onQuickMode: (v: boolean) => void
-  accentTheme: string; onAccentTheme: (v: string) => void  // ← add
+  accentTheme: string; onAccentTheme: (v: string) => void
+  notifications: boolean; onNotifications: (v: boolean) => void
 }
 
 export default function SettingsPage({
   userName, onUserName, dark, onDark, sound, onSound, dailyGoal, onDailyGoal,
-  avatarUrl, onAvatarUrl, quickMode, onQuickMode, accentTheme, onAccentTheme,
+  avatarUrl, onAvatarUrl, quickMode, onQuickMode, accentTheme, onAccentTheme, notifications, onNotifications
 }: SettingsPageProps) {
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const handleNotificationsToggle = async (v: boolean) => {
+    if (v && "Notification" in window && Notification.permission !== "granted") {
+      const result = await Notification.requestPermission()
+      if (result !== "granted") return   // don't enable if user denied
+    }
+    onNotifications(v)
+  }
+
 
   const ACCENT_THEMES = [
   { id: "blue",    color: "#5B8CFF", label: "Blue (default)" },
@@ -104,6 +114,7 @@ export default function SettingsPage({
 
       <Section label="Focus">
         <ToggleRow label="Sound Effects" icon={<HiSpeakerWave size={18} className="text-sub shrink-0" />} value={sound} onChange={onSound} />
+        <ToggleRow label="Push Notifications" icon={<HiBell size={18} className="text-sub shrink-0" />} value={notifications} onChange={handleNotificationsToggle} />
         <ToggleRow label="Quick Mode" icon={<HiBolt size={18} className="text-sub shrink-0" />} value={quickMode} onChange={onQuickMode} />
         <div className="flex items-center gap-3 px-4 py-4">
           <FaBullseye size={18} className="text-sub shrink-0" />

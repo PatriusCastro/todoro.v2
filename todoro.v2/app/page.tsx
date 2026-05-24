@@ -12,6 +12,7 @@ import { type Task } from "../components/tasks/TaskCard"
 import { type Project } from "../components/tasks/TaskModal"
 import { useWakeLock } from "../hooks/useWakeLock"
 import { useDocumentTitle } from "../hooks/useDocumentTitle"
+import { useNotifications } from "../hooks/useNotifications"
 
 type Tab   = "home" | "tasks" | "timer" | "settings" | "calendar"
 type Phase = "focus" | "break" | "longbreak"
@@ -112,6 +113,7 @@ export default function Home() {
   const [avatarUrl, setAvatarUrl] = useState(() => load("todoro:avatarUrl", ""))
   const [quickMode, setQuickMode] = useState(() => load("todoro:quickMode", false))
   const [reverseMode, setReverseMode] = useState(() => load("todoro:reverseMode", false))
+  const [notifications, setNotifications] = useState(() => load("todoro:notifications", false))
 
   const [mode,      setMode]      = useState<Mode>(()   => load("todoro:mode",      "25/5"))
   const [focusMins, setFocusMins] = useState<number>(() => load("todoro:focusMins", 25))
@@ -209,6 +211,7 @@ export default function Home() {
   useEffect(() => { save("todoro:points",      totalPoints) }, [totalPoints])
   useEffect(() => { save("todoro:history",     allHistory)  }, [allHistory])
   useEffect(() => { save("todoro:accentTheme", accentTheme) }, [accentTheme])
+  useEffect(() => { save("todoro:notifications", notifications) }, [notifications])
 
   useWakeLock(running)
   useDocumentTitle(time, phase, running)
@@ -218,6 +221,8 @@ export default function Home() {
     if (accentTheme === "blue") html.removeAttribute("data-theme")
     else html.setAttribute("data-theme", accentTheme)
   }, [accentTheme])
+
+  const { notify } = useNotifications(notifications)
 
   const playChime = useCallback((isFocus: boolean) => {
     if (!sound) return
@@ -255,6 +260,13 @@ export default function Home() {
           : t))
         playChime(false)
         if (nextCycle % LONG_BREAK_INTERVAL === 0) {
+          notify("🍅 Focus complete!", "Great work — time for a long break.")
+          setPhase("longbreak"); setTime(LONG_BREAK_MINS * 60)
+        } else {
+          notify("🍅 Focus complete!", "Nice session — take a short break.")
+          setPhase("break"); setTime(breakMins * 60)
+        }
+        if (nextCycle % LONG_BREAK_INTERVAL === 0) {
           setPhase("longbreak"); setTime(LONG_BREAK_MINS * 60)
         } else {
           setPhase("break"); setTime(breakMins * 60)
@@ -263,7 +275,11 @@ export default function Home() {
         setPhase("break"); setTime(breakMins * 60)
       }
     } else {
-      if (completed) playChime(true)
+      if (completed) {
+        playChime(true)
+        notify("⚡ Break's over!", "Ready to focus? Let's get back to it.")
+        setPhase("focus"); setTime(focusMins * 60)
+      }
       setPhase("focus")
       setTime(reverseMode ? 0 : focusMins * 60)
     }
@@ -446,7 +462,8 @@ export default function Home() {
           dailyGoal={dailyGoal}   onDailyGoal={setDailyGoal}
           avatarUrl={avatarUrl}   onAvatarUrl={setAvatarUrl}
           quickMode={quickMode}   onQuickMode={setQuickMode}
-          accentTheme={accentTheme} onAccentTheme={setAccentTheme} />
+          accentTheme={accentTheme} onAccentTheme={setAccentTheme}
+          notifications={notifications} onNotifications={setNotifications} />
       )}
 
       {tab === "calendar" && (
