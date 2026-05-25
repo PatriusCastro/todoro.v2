@@ -37,8 +37,8 @@
  
 .dark {
   --bg:      #0F1115;
-  --surface: #151821;
-  --surface2:#1B2030;
+  --surface: #0F0F0F;
+  --surface2:#111111;
   --border:  #ffffff0f;
   --tx:      #E6EAF2;
   --sub:     #9AA4B2;
