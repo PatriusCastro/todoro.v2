@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { HiArrowsPointingOut, HiChevronLeft, HiBolt } from "react-icons/hi2"
+import { HiArrowsPointingOut, HiChevronLeft, HiBolt, HiArrowTopRightOnSquare } from "react-icons/hi2"
 import TimerRing from "../components/timer/TimerRing"
 import ModeSelector, { type Mode } from "../components/timer/ModeSelector"
 import TimerControls from "../components/timer/TimerControls"
 import TaskSelector from "../components/timer/TaskSelector"
 import { useTimerKeys } from "../hooks/useTimerKeys"
 import { useIsDesktop } from "../hooks/useMediaQuery"
+import { usePiP } from "../hooks/usePiP"
 import { type Task } from "../components/tasks/TaskCard"
 import { type SessionRecord } from "../app/page"
 
@@ -19,7 +20,7 @@ interface TimerPageProps {
   running: boolean; progress: number
   sessions: number; totalSessions: number; cycleCount: number
   tasks: Task[]; activeTask: Task; quickMode: boolean; allHistory: SessionRecord[]
-  reverseMode: boolean
+  reverseMode: boolean; dark: boolean;
   onToggle: () => void; onReset: () => void; onSkip: () => void
   onModeChange: (mode: Mode, fm: number, bm: number) => void
   onTaskChange: (task: Task) => void
@@ -39,11 +40,12 @@ const PHASE = {
 export default function TimerPage({
   time, phase, mode, focusMins, breakMins, longBreakMins, running, progress,
   sessions, totalSessions, cycleCount, tasks, activeTask, quickMode, allHistory,
-  reverseMode,
+  reverseMode, dark,
   onToggle, onReset, onSkip, onModeChange, onTaskChange, onToggleSub,
   onFocusedChange, onQuickMode, onStopAndRest, onReverseMode,
 }: TimerPageProps) {
   const [focused, setFocused] = useState(false)
+  const [pipActive,  setPipActive]  = useState(false)
   const isDesktop = useIsDesktop()
   useTimerKeys({ onToggle, onReset, onSkip })
 
@@ -67,6 +69,25 @@ export default function TimerPage({
   }
   const todayKey = localDate()
   const todaySessionsForTask = allHistory.filter(s => s.taskId === activeTask.id && localDate(s.at) === todayKey).length
+
+  const taskTitle = quickMode && !activeTask.title ? "" : activeTask.title
+
+  // ── PiP state (kept stable so we can sync into PiP window) ──────
+  const pipState = {
+    time, phase, running, progress,
+    taskTitle: taskTitle ?? "",
+    dark,
+  }
+  const pip = usePiP(pipState, { onToggle, onSkip })
+
+  const handlePiP = async () => {
+    if (pipActive) { pip.close(); setPipActive(false); return }
+    if (pip.supportsPiP) {
+      const ok = await pip.open()
+      if (ok) { setPipActive(true); return }
+    }
+    alert("Picture-in-Picture is not supported in this browser.")
+  }
 
   // Rolling 25-min cycle progress for the progress bar in reverse mode
   const REVERSE_CYCLE = 25 * 60
@@ -124,6 +145,14 @@ export default function TimerPage({
       <button onClick={() => setFocused(false)} className="flex items-center gap-1.5 text-xs text-sub hover:text-tx">
         <HiChevronLeft size={14} /> Exit focus view
       </button>
+      <button onClick={handlePiP}
+        className={`flex items-center gap-1.5 text-xs transition-colors
+          ${pipActive ? "text-accent" : "text-sub hover:text-tx"}`}>
+        <HiArrowTopRightOnSquare size={14} />
+        {pip.supportsPiP
+          ? (pipActive ? "Close PiP" : "Picture-in-Picture")
+          : ("PiP not supported")}
+      </button>
     </div>
   )
 
@@ -136,9 +165,22 @@ export default function TimerPage({
             {allDone ? "All tasks completed 🎉" : `Session ${sessions + 1}/${totalSessions}`}
           </p>
         </div>
-        <button onClick={() => setFocused(true)} className="flex items-center gap-2 p-3 rounded-xl bg-surface2 border border-border text-sm font-semibold text-sub hover:text-accent hover:border-accent/40">
-          <HiArrowsPointingOut size={16} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* PiP / Float button */}
+          <button onClick={handlePiP}
+            title={pip.supportsPiP ? "Picture-in-Picture" : "Float window (not supported)"}
+            className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-semibold transition-all
+              ${pipActive
+                ? "bg-accent/10 border-accent/40 text-accent"
+                : "bg-surface border-border text-sub hover:text-accent hover:border-accent/40"}`}>
+            <HiArrowTopRightOnSquare size={16} />
+          </button>
+          {/* Focus view */}
+          <button onClick={() => setFocused(true)}
+            className="flex items-center gap-2 p-3 rounded-xl bg-surface2 border border-border text-sm font-semibold text-sub hover:text-accent hover:border-accent/40">
+            <HiArrowsPointingOut size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col-reverse lg:flex-row gap-4">

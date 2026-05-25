@@ -437,7 +437,7 @@ export default function Home() {
       {tab === "timer" && (
         <TimerPage {...timerProps}
           tasks={tasks} activeTask={activeTask} quickMode={quickMode}
-          reverseMode={reverseMode}
+          reverseMode={reverseMode} dark={dark}
           onToggle={handleToggle} onReset={handleReset} onSkip={handleSkip}
           onModeChange={handleModeChange} onTaskChange={setActiveTask} onQuickMode={setQuickMode}
           onToggleSub={handleToggleSub} onFocusedChange={setFocusedView} allHistory={allHistory}
