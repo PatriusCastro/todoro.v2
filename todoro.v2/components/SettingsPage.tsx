@@ -103,7 +103,7 @@ export default function SettingsPage({
           <span className="ml-3 flex-1 text-sm font-medium text-tx">Accent Color</span>
 
           <select value={accentTheme} onChange={e => onAccentTheme(e.target.value)}
-            className="w-44 bg-surface2 border border-border rounded-xl px-3 py-2 text-sm text-tx
+            className="w-36 bg-surface2 border border-border rounded-xl px-3 py-2 text-sm text-tx
               outline-none focus:border-accent transition-colors">
             {ACCENT_THEMES.map(({ id, label }) => (
               <option key={id} value={id}>{label}</option>
@@ -131,7 +131,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.2.1" />
+        <InfoRow label="Version" value="2.2.4" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
     </div>

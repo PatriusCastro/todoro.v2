@@ -259,7 +259,7 @@ export default function TasksPage({
 
         {/* Project cards */}
         {projects.length > 0 ? (
-          <div className="flex gap-4 pb-1 -mx-1 px-1 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-4 pb-1 -mx-1 px-1 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {projects.map(proj => (
               <div key={proj.id} className="relative group/proj shrink-0 snap-start">
                 <ProjectCard
