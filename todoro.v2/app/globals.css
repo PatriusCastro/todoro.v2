@@ -11,7 +11,8 @@
   --color-priority-mid:  #FBBF24;
   --color-priority-low:  #34D399;
   --color-priority-none: #6B7280;
-  --font-sans: var(--font-dm-sans), 'Segoe UI', sans-serif;
+  --font-sans:    var(--font-geist), 'Segoe UI', sans-serif;
+  --font-display: var(--font-display), serif;
 }
 
 /* ── Accent themes (data-theme on <html>) ── */
@@ -44,6 +45,8 @@
   --sub:     #9AA4B2;
   --ring: #ffffff14;
 }
+
+.font-display { font-family: var(--font-display); }
 
 @theme inline {
   --color-accent:       var(--accent);
