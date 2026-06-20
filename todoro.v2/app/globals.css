@@ -11,7 +11,7 @@
   --color-priority-mid:  #FBBF24;
   --color-priority-low:  #34D399;
   --color-priority-none: #6B7280;
-  --font-sans: var(--font-dm-sans), 'Segoe UI', sans-serif;
+  --font-sans: var(--font-poppins), 'Segoe UI', sans-serif;
 }
 
 /* ── Accent themes (data-theme on <html>) ── */
@@ -26,23 +26,36 @@
 [data-theme="gray"]    { --accent: #6B7280; --accent-hover: #4B5563; --accent-dim: rgba(107,114,128,0.15); --accent-glow: rgba(107,114,128,0.45); }
 
 :root {
-  --bg:      #F8F7F4;
+  --bg:      #F4F6F8;
   --surface: #FFFFFF;
-  --surface2:#F1EFEA;
-  --border:  #E5E1D8;
-  --tx:      #1C1917;
-  --sub:     #78716C;
-  --ring:    #e7e3dc;
+  --surface2:#EDEFF3;
+  --border:  #E2E5EB;
+  --tx:      #181A1F;
+  --sub:     #697079;
+  --ring:    #E2E5EB;
+
+  /* Neutral glass — translucent light surface, soft neutral edge & shadow */
+  --glass-bg:     rgba(255,255,255,0.60);
+  --glass-strong: rgba(255,255,255,0.74);
+  --glass-border: rgba(24,26,31,0.08);
+  --glass-shadow: 0 8px 30px -14px rgba(24,30,50,0.20), inset 0 1px 0 rgba(255,255,255,0.65);
+  --glass-blur:   14px;
 }
- 
+
 .dark {
   --bg:      #0F1115;
-  --surface: #0F0F0F;
-  --surface2:#111111;
-  --border:  #ffffff0f;
+  --surface: #171A21;
+  --surface2:#1E222B;
+  --border:  #ffffff14;
   --tx:      #E6EAF2;
   --sub:     #9AA4B2;
   --ring: #ffffff14;
+
+  /* Neutral glass — translucent slate (never pure black) */
+  --glass-bg:     rgba(28,32,42,0.52);
+  --glass-strong: rgba(23,27,36,0.72);
+  --glass-border: rgba(255,255,255,0.09);
+  --glass-shadow: 0 10px 34px -16px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
 @theme inline {
@@ -61,11 +74,46 @@
 
 *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { height: 100%; }
-body { margin: 0; min-height: 100dvh; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; overscroll-behavior: none; background: var(--bg); color: var(--tx); transition: background 0.3s, color 0.3s; }
+body {
+  margin: 0; min-height: 100dvh;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  color: var(--tx);
+  background:
+    radial-gradient(1100px 620px at 50% -12%, color-mix(in srgb, var(--surface) 70%, transparent), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  transition: background 0.3s, color 0.3s;
+}
 ::-webkit-scrollbar { display: none; }
 * { scrollbar-width: none; }
 button { cursor: pointer; user-select: none; font-family: inherit; }
 input, textarea { font-family: inherit; }
+
+/* ── Glass component language ──────────────────────────────────────────
+   Frosted translucent surface + neutral edge + soft shadow. `.glass` for
+   cards & modals; `.glass-strong` (more opaque, deeper blur) for the
+   bottom navbar and desktop header so content stays legible underneath. */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}
+.glass-strong {
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+}
+
+/* Browsers without backdrop-filter fall back to a near-opaque surface */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass, .glass-strong { background: var(--surface); }
+}
 
 @keyframes tabenter {
   from { opacity: 0; transform: translateY(6px); }

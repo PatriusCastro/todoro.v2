@@ -18,12 +18,6 @@ const DURATION: Record<ToastType, number> = {
   deleted: 4000,
 }
 
-const EMOJI: Record<ToastType, string> = {
-  created: "✅",
-  saved:   "✏️",
-  deleted: "🗑️",
-}
-
 let _id = 0
 
 export function useToast() {
@@ -47,5 +41,5 @@ export function useToast() {
     timer.current = setTimeout(() => setToast(null), DURATION[type])
   }, [])
 
-  return { toast, show, dismiss, EMOJI }
+  return { toast, show, dismiss }
 }

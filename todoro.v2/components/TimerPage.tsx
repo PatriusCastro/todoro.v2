@@ -186,7 +186,7 @@ export default function TimerPage({
       </div>
 
       <div className="flex flex-col-reverse lg:flex-row gap-4">
-        <div className="flex flex-col items-center gap-3 sm:min-w-2xl shrink-0 bg-surface border border-border rounded-2xl py-6">
+        <div className="glass flex flex-col items-center gap-3 sm:min-w-2xl shrink-0 rounded-2xl py-6">
           <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold border ${badge}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${dot} ${running ? "animate-pulse" : ""}`} />
             {badgeLabel}
@@ -208,7 +208,7 @@ export default function TimerPage({
         </div>
 
         <div className="flex flex-col-reverse lg:flex-col flex-1 gap-5">
-          <div className="flex flex-col gap-3 bg-surface border border-border rounded-2xl px-5 py-4">
+          <div className="glass flex flex-col gap-3 rounded-2xl px-5 py-4">
             <TaskSelector tasks={tasks} active={activeTask} onChange={onTaskChange} quickMode={quickMode} />
             <ModeSelector
               active={mode} customFocus={focusMins} customBreak={breakMins}
@@ -229,7 +229,7 @@ export default function TimerPage({
             )}
           </div>
 
-          <div className="rounded-2xl border border-border bg-surface px-5 py-4 flex flex-col gap-3">
+          <div className="glass rounded-2xl px-5 py-4 flex flex-col gap-3">
             <div className="flex justify-between text-xs font-semibold text-sub">
               <span>
                 {reverseMode && phase === "focus"

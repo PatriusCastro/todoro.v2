@@ -1,8 +1,10 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiArrowsRightLeft } from "react-icons/hi2"
+import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiArrowsRightLeft, HiCalendarDays } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
+import TasksCalendar, { FocusHistory } from "../components/tasks/TasksCalendar"
+import { type SessionRecord } from "../app/page"
 import TaskModal from "../components/tasks/TaskModal"
 import ProjectCard from "../components/tasks/ProjectCard"
 import ProjectModal from "../components/tasks/ProjectModal"
@@ -22,7 +24,14 @@ interface TasksPageProps {
   onOpenTask: (t: Task) => void; onStartFocus: (t: Task) => void
   onSaveProject: (p: Project) => void
   onDeleteProject: (id: string) => void
+  allHistory: SessionRecord[]
+  initialDate?: string | null
   dark: boolean
+}
+
+function localDate(ts: number = Date.now()) {
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
 const PRIORITIES: { key: Priority; label: string }[] = [
@@ -35,10 +44,12 @@ type Filter = Priority | "all" | "done"
 export default function TasksPage({
   tasks, activeTask, projects,
   onSave, onDelete, onToggle, onToggleSub,
-  onOpenTask, onStartFocus, onSaveProject, onDeleteProject, dark,
+  onOpenTask, onStartFocus, onSaveProject, onDeleteProject,
+  allHistory, initialDate, dark,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Filter>("all")
+  const [selectedDate, setSelectedDate] = useState<string | null>(initialDate ?? null)
   const [modalTask, setModalTask] = useState<Task | undefined>()
   const [showModal, setShowModal] = useState(false)
   const [showDone,  setShowDone]  = useState(false)
@@ -46,7 +57,7 @@ export default function TasksPage({
   // Project modal state
   const [projectModal, setProjectModal] = useState<{ open: boolean; project?: Project }>({ open: false })
 
-  const { toast, show: showToast, dismiss: dismissToast, EMOJI } = useToast()
+  const { toast, show: showToast, dismiss: dismissToast } = useToast()
   const { pinned, togglePin } = usePinnedTasks()
   const { pending: deletePending, stage: stageDelete, undo } = useUndo(onDelete)
   const [activeProject, setActiveProject] = useState<Project | null>(null)
@@ -97,14 +108,19 @@ export default function TasksPage({
     setProjectModal({ open: false })
   }, [projects, onDeleteProject, showToast])
 
-  // Base filtered set
+  // Base filtered set — a selected calendar day narrows to tasks due that day
   const visible = tasks.filter(t => {
     if (t.id === deletePending?.id) return false
     if (!t.title.toLowerCase().includes(search.toLowerCase())) return false
+    if (selectedDate) return t.dueDate === selectedDate
     if (filter === "done") return t.done
     if (filter === "all")  return true
     return t.priority === filter && !t.done
   })
+
+  const daySessions = selectedDate
+    ? allHistory.filter(s => localDate(s.at) === selectedDate).length
+    : 0
 
   const allPending = useSortedTasks(visible.filter(t => !t.done), activeTask.id, pinned)
   const done       = visible.filter(t => t.done)
@@ -160,8 +176,8 @@ export default function TasksPage({
       {/* Task action toast */}
       <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 transition-all duration-300
         ${toast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
-        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-          <span className="text-base">{toast ? EMOJI[toast.type] : "✅"}</span>
+        <div className="glass flex items-center gap-3 px-5 py-3 rounded-2xl whitespace-nowrap">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-tx">{toast?.title}</span>
             {toast?.sub && <span className="text-xs text-sub">{toast.sub}</span>}
@@ -188,7 +204,7 @@ export default function TasksPage({
       </div>
 
       {/* Search */}
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5">
+      <div className="glass flex items-center gap-3 rounded-xl px-4 py-2.5">
         <HiMagnifyingGlass size={14} className="text-sub shrink-0" />
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks…"
           className="bg-transparent outline-none text-sm text-tx placeholder:text-sub flex-1" />
@@ -198,6 +214,24 @@ export default function TasksPage({
           </button>
         )}
       </div>
+
+      {/* Calendar — tap a day to filter the list below */}
+      <TasksCalendar tasks={tasks} allHistory={allHistory} selected={selectedDate} onSelect={setSelectedDate} />
+
+      {selectedDate ? (
+        <div className="flex items-center gap-3 glass rounded-xl px-4 py-2.5">
+          <HiCalendarDays size={15} className="text-accent shrink-0" />
+          <span className="flex-1 text-sm font-semibold text-tx truncate">
+            {new Date(selectedDate + "T00:00").toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}
+          </span>
+          {daySessions > 0 && (
+            <span className="text-xs text-sub shrink-0">{daySessions} session{daySessions > 1 ? "s" : ""}</span>
+          )}
+          <button onClick={() => setSelectedDate(null)}
+            className="text-xs font-semibold text-accent hover:underline shrink-0">Show all</button>
+        </div>
+      ) : (
+        <>
 
       {/* Filter pills */}
       <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-1 px-1">
@@ -277,23 +311,21 @@ export default function TasksPage({
           </button>
         )}
       </div>
+        </>
+      )}
 
       {/* ── Pending tasks ─────────────────────────────────────────────────── */}
-      {allPending.length > 0 && (
-        <div className="flex flex-col gap-2">
-
-          {/* Unassigned tasks */}
-          {unassigned.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between py-1">
-                <span className="text-xs font-bold text-sub">
-                  {projects.length > 0 ? "No project" : `Pending — ${allPending.length}`}
-                </span>
-              </div>
-              <div className="h-px bg-border mb-1" style={{ opacity: 0.5 }} />
-              {unassigned.map(task => renderTask(task))}
-            </div>
-          )}
+      {(selectedDate ? allPending.length > 0 : unassigned.length > 0) && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between py-1">
+            <span className="text-xs font-bold text-sub">
+              {selectedDate
+                ? `Due this day — ${allPending.length}`
+                : projects.length > 0 ? "No project" : `Pending — ${allPending.length}`}
+            </span>
+          </div>
+          <div className="h-px bg-border mb-1" style={{ opacity: 0.5 }} />
+          {(selectedDate ? allPending : unassigned).map(task => renderTask(task))}
         </div>
       )}
 
@@ -324,15 +356,18 @@ export default function TasksPage({
 
       {/* Empty state */}
       {visible.length === 0 && !deletePending && (
-        <div className="rounded-2xl border border-border bg-surface px-5 py-12 text-center">
+        <div className="glass rounded-2xl px-5 py-12 text-center">
           <HiFolderOpen size={28} className="text-sub mx-auto mb-3" />
-          <p className="text-sub text-sm">No tasks found</p>
+          <p className="text-sub text-sm">{selectedDate ? "No tasks due this day" : "No tasks found"}</p>
           <button onClick={() => { setModalTask(undefined); setShowModal(true) }}
             className="mt-3 text-sm text-accent font-semibold hover:underline">
             Create one →
           </button>
         </div>
       )}
+
+      {/* Focus-session heatmap */}
+      <FocusHistory allHistory={allHistory} />
 
       {/* Task modal */}
       {showModal && (

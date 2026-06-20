@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react"
 import { useIsTablet } from "../hooks/useMediaQuery"
 import { usePillAnimation } from "../hooks/usePillAnimation"
-import { HiHome, HiOutlineHome, HiClipboardList, HiOutlineClipboardList, HiClock, HiOutlineClock, HiCog, HiOutlineCog, HiOutlineCalendar, HiCalendar } from "react-icons/hi"
+import { HiHome, HiOutlineHome, HiClipboardList, HiOutlineClipboardList, HiClock, HiOutlineClock, HiCog, HiOutlineCog } from "react-icons/hi"
 import { HiPlus } from "react-icons/hi2"
 
-type Tab   = "home" | "tasks" | "timer" | "settings" | "calendar"
+type Tab   = "home" | "tasks" | "timer" | "settings"
 type Phase = "focus" | "break" | "longbreak"
 
 interface AppShellProps {
@@ -27,7 +27,6 @@ const NAV: { id: Tab; label: string }[] = [
   { id: "home",     label: "Home"     },
   { id: "tasks",    label: "Tasks"    },
   { id: "timer",    label: "Timer"    },
-  { id: "calendar", label: "Calendar" },
   { id: "settings", label: "Settings" },
 ]
 
@@ -37,7 +36,6 @@ function NavIcon({ id, active }: { id: Tab; active: boolean }) {
     case "home":     return active ? <HiHome size={sz} />          : <HiOutlineHome size={sz} />
     case "tasks":    return active ? <HiClipboardList size={sz} /> : <HiOutlineClipboardList size={sz} />
     case "timer":    return active ? <HiClock size={sz} />         : <HiOutlineClock size={sz} />
-    case "calendar": return active ? <HiCalendar size={sz} />      : <HiOutlineCalendar size={sz} />
     case "settings": return active ? <HiCog size={sz} />           : <HiOutlineCog size={sz} />
   }
 }
@@ -80,13 +78,46 @@ export default function AppShell({
     </div>
   )
 
+  // Mobile nav button — shared by the two halves either side of the center add
+  const renderNavButton = ({ id, label }: { id: Tab; label: string }) => {
+    const active = activeTab === id
+    const isMe   = id === "settings"
+    return (
+      <div key={id} className="flex-1 flex justify-center">
+      <button
+        ref={el => { if (el) btnRefs.current.set(id, el); else btnRefs.current.delete(id) }}
+        onClick={() => handleTabChange(id)}
+        className={`relative z-10 flex flex-col items-center justify-center gap-0.5
+          px-4 py-2 select-none transition-colors duration-300
+          ${active ? "text-accent scale-105" : "text-sub hover:text-tx"}`}>
+        {isMe
+          ? <span className={`w-5 h-5 rounded-lg overflow-hidden border block
+                ${active ? "border-border" : "border-border/50"}`}>
+              {avatarUrl
+                ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+                : <span className="w-full h-full flex items-center justify-center font-semibold text-[8px] bg-surface2 text-sub">
+                    {initials}
+                  </span>
+              }
+            </span>
+          : <NavIcon id={id} active={active} />
+        }
+        <span className="font-semibold leading-none text-[9px]">{label}</span>
+        {id === "timer" && running && (
+          <span className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${dotColor}`} />
+        )}
+      </button>
+      </div>
+    )
+  }
+
   return (
-    <div className={dark ? "dark" : ""}>
+    <div>
       <div className="min-h-dvh bg-bg text-tx flex flex-col">
 
         {/* Desktop header */}
         {isTablet && !hideNavbar && (
-          <header className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 w-full py-2 mx-auto bg-surface border-b border-border
+          <header className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 w-full py-2 mx-auto glass-strong
               transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
             <div className="max-w-7xl w-full h-12 mx-auto flex px-4 lg:px-8">
               <div className="flex items-center gap-2 px-3 py-2 shrink-0">
@@ -152,52 +183,29 @@ export default function AppShell({
           <div className={`fixed bottom-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none
             transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}>
             <div ref={navContainerRef}
-              className="w-full pointer-events-auto relative flex items-center justify-between bg-surface border border-border rounded-3xl p-2">
+              className="w-full pointer-events-auto relative flex items-center glass-strong rounded-3xl p-2">
               {pill.ready && (
                 <div className="absolute top-1.5 bottom-1.5 bg-gray-500/10 rounded-2xl pointer-events-none"
                   style={{ left: pill.left, width: pill.width, transition: pillTrans }} />
               )}
-              {NAV.map(({ id, label }) => {
-                const active = activeTab === id
-                const isMe   = id === "settings"
-                return (
-                  <button key={id}
-                    ref={el => { if (el) btnRefs.current.set(id, el); else btnRefs.current.delete(id) }}
-                    onClick={() => handleTabChange(id)}
-                    className={`relative z-10 flex flex-col items-center justify-center gap-0.5
-                      px-4 py-2 select-none transition-colors duration-300
-                      ${active ? "text-accent scale-105" : "text-sub hover:text-tx"}`}>
-                    {isMe
-                      ? <span className={`w-5 h-5 rounded-lg overflow-hidden border block
-                            ${active ? "border-border" : "border-border/50"}`}>
-                          {avatarUrl
-                            ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-                            : <span className="w-full h-full flex items-center justify-center font-semibold text-[8px] bg-surface2 text-sub">
-                                {initials}
-                              </span>
-                          }
-                        </span>
-                      : <NavIcon id={id} active={active} />
-                    }
-                    <span className="font-semibold leading-none text-[9px]">{label}</span>
-                    {id === "timer" && running && (
-                      <span className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${dotColor}`} />
-                    )}
-                  </button>
-                )
-              })}
+              {NAV.slice(0, 2).map(renderNavButton)}
+
+              {/* Center quick-add — frosted accent that echoes the glass bar */}
+              <div className="flex-1 flex justify-center">
+                <button onClick={onQuickAdd} aria-label="Add task"
+                  className="relative z-20 shrink-0 flex items-center justify-center
+                    w-11 h-11 rounded-full text-white
+                    bg-linear-to-b from-accent to-accent-hover
+                    ring-1 ring-inset ring-white/20
+                    shadow-[0_6px_18px_-7px_var(--color-accent-glow)]
+                    hover:brightness-105 active:scale-95 transition-all">
+                  <HiPlus size={20} />
+                </button>
+              </div>
+
+              {NAV.slice(2).map(renderNavButton)}
             </div>
           </div>
-        )}
-
-        {/* Mobile FAB — quick-add from Home & Tasks */}
-        {!isTablet && (activeTab === "tasks" || activeTab === "home") && (
-          <button
-            onClick={onQuickAdd}
-            aria-label="Add task"
-            className="fixed bottom-24 right-4 z-40 flex items-center justify-center w-12 h-12 rounded-full bg-accent text-white shadow-lg hover:bg-accent-hover active:scale-95 transition-all">
-            <HiPlus size={16} />
-          </button>
         )}
 
       </div>

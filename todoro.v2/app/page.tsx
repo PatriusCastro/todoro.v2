@@ -6,7 +6,6 @@ import HomePage     from "../components/HomePage"
 import TimerPage    from "../components/TimerPage"
 import TasksPage    from "../components/TasksPage"
 import SettingsPage from "../components/SettingsPage"
-import CalendarPage from "../components/CalendarPage"
 import Onboarding   from "../components/Onboarding"
 import NotifPrompt  from "../components/NotifPrompt"
 import ShopModal    from "../components/ShopModal"
@@ -17,8 +16,9 @@ import { useWakeLock } from "../hooks/useWakeLock"
 import { useDocumentTitle } from "../hooks/useDocumentTitle"
 import { useNotifications } from "../hooks/useNotifications"
 
-type Tab   = "home" | "tasks" | "timer" | "settings" | "calendar"
+type Tab   = "home" | "tasks" | "timer" | "settings"
 type Phase = "focus" | "break" | "longbreak"
+type Theme = "system" | "light" | "dark"
 
 export interface SessionRecord {
   taskId:    string
@@ -88,6 +88,21 @@ function load<T>(key: string, fallback: T): T {
 
 function save(key: string, value: unknown) {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
+}
+
+// Tri-state theme with one-time migration from the old boolean `todoro:dark`.
+function loadTheme(): Theme {
+  try {
+    const t = localStorage.getItem("todoro:theme")
+    if (t === "system" || t === "light" || t === "dark") return t
+    const old = localStorage.getItem("todoro:dark")
+    if (old !== null) return JSON.parse(old) ? "dark" : "light"
+  } catch {}
+  return "system"
+}
+
+function systemPrefersDark(): boolean {
+  try { return window.matchMedia("(prefers-color-scheme: dark)").matches } catch { return true }
 }
 
 // Subtle haptic tap (mobile) — no-op where unsupported
@@ -169,7 +184,7 @@ export default function Home() {
   useEffect(() => { setHydrated(true) }, [])
 
   const [tab,       setTab]       = useState<Tab>("home")
-  const [calendarDate, setCalendarDate] = useState<string | null>(null)
+  const [tasksDate, setTasksDate] = useState<string | null>(null)
   const [showAdd,   setShowAdd]   = useState(false)
   const [onboarded, setOnboarded] = useState(() => {
     if (load("todoro:onboarded", false)) return true
@@ -178,7 +193,9 @@ export default function Home() {
   })
   const [notifPrompt, setNotifPrompt] = useState(false)
   const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Bossing"))
-  const [dark,      setDark]      = useState(() => load("todoro:dark",      true))
+  const [theme,      setTheme]      = useState<Theme>(loadTheme)
+  const [systemDark, setSystemDark] = useState(systemPrefersDark)
+  const dark = theme === "system" ? systemDark : theme === "dark"
   const [sound,     setSound]     = useState(() => load("todoro:sound",     true))
   const [dailyGoal, setDailyGoal] = useState(() => load("todoro:dailyGoal", 5))
   const [avatarUrl, setAvatarUrl] = useState(() => load("todoro:avatarUrl", ""))
@@ -283,7 +300,7 @@ export default function Home() {
   }, [reverseMode])
 
   useEffect(() => { save("todoro:userName",    userName)    }, [userName])
-  useEffect(() => { save("todoro:dark",        dark)        }, [dark])
+  useEffect(() => { save("todoro:theme",       theme)       }, [theme])
   useEffect(() => { save("todoro:sound",       sound)       }, [sound])
   useEffect(() => { save("todoro:dailyGoal",   dailyGoal)   }, [dailyGoal])
   useEffect(() => { save("todoro:avatarUrl",   avatarUrl)   }, [avatarUrl])
@@ -322,6 +339,20 @@ export default function Home() {
     if (accentTheme === "blue") html.removeAttribute("data-theme")
     else html.setAttribute("data-theme", accentTheme)
   }, [accentTheme])
+
+  // Track the OS color-scheme so "system" stays live as the user flips it
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)")
+    const onChange = () => setSystemDark(mq.matches)
+    onChange()
+    mq.addEventListener("change", onChange)
+    return () => mq.removeEventListener("change", onChange)
+  }, [])
+
+  // Apply the resolved theme on <html> so portals, scrim and chrome inherit it
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark)
+  }, [dark])
 
   const { notify } = useNotifications(notifications)
 
@@ -552,13 +583,13 @@ export default function Home() {
     setActiveTask(task)
   }
 
-  // Tab nav: opening Calendar from the navbar clears any deep-linked date
+  // Tab nav: opening Tasks from the navbar clears any deep-linked calendar day
   const goToTab = (t: Tab) => {
-    if (t === "calendar") setCalendarDate(null)
+    if (t === "tasks") setTasksDate(null)
     setTab(t)
   }
-  // Deep-link into Calendar focused on a specific day (from the Home mini-calendar)
-  const goToCalendar = (date?: string) => { setCalendarDate(date ?? null); setTab("calendar") }
+  // Deep-link into the merged Tasks page focused on a day (Home mini-calendar)
+  const goToTasksDate = (date?: string) => { setTasksDate(date ?? null); setTab("tasks") }
 
   const handleBuyFreeze = () => {
     if (totalPoints < FREEZE_COST) return
@@ -604,7 +635,7 @@ export default function Home() {
       {tab === "home" && (
         <HomePage {...timerProps}
           onTimerToggle={handleToggle} onNavToTimer={() => setTab("timer")}
-          tasks={tasks} activeTask={activeTask} onNavToCalendar={goToCalendar}
+          tasks={tasks} activeTask={activeTask} onNavToCalendar={goToTasksDate}
           onToggleTask={handleToggleTask} onToggleSub={handleToggleSub}
           onNavToTasks={() => setTab("tasks")} onOpenTask={handleOpenTask}
           onStartFocus={handleStartFocus} onQuickAdd={() => setShowAdd(true)}
@@ -631,23 +662,20 @@ export default function Home() {
           onSave={handleSaveTask} onDelete={handleDeleteTask}
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
           onOpenTask={handleOpenTask} onStartFocus={handleStartFocus}
-          onSaveProject={handleSaveProject} />
+          onSaveProject={handleSaveProject}
+          allHistory={allHistory} initialDate={tasksDate} />
       )}
 
       {tab === "settings" && (
         <SettingsPage
           userName={userName}     onUserName={setUserName}
-          dark={dark}             onDark={setDark}
+          theme={theme}           onTheme={setTheme}
           sound={sound}           onSound={setSound}
           dailyGoal={dailyGoal}   onDailyGoal={setDailyGoal}
           avatarUrl={avatarUrl}   onAvatarUrl={setAvatarUrl}
           accentTheme={accentTheme} onAccentTheme={setAccentTheme}
           notifications={notifications} onNotifications={setNotifications}
           autoStart={autoStart} onAutoStart={setAutoStart} />
-      )}
-
-      {tab === "calendar" && (
-        <CalendarPage tasks={tasks} allHistory={allHistory} initialDate={calendarDate} />
       )}
 
       {/* Global quick-add task modal (mobile FAB + Home) */}

@@ -1,11 +1,22 @@
 import type { Metadata, Viewport } from "next"
-import { DM_Sans } from "next/font/google"
+import { Poppins } from "next/font/google"
 import "./globals.css"
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 })
+
+// Runs before first paint: resolves the saved theme (with legacy migration) and
+// the OS preference, then sets the .dark class on <html> so there's no flash and
+// portals/scrim inherit the right tokens.
+const themeScript = `(function(){try{
+var t=localStorage.getItem('todoro:theme');
+if(t==null){var d=localStorage.getItem('todoro:dark');t=(d==null)?'system':(JSON.parse(d)?'dark':'light');}
+var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+document.documentElement.classList.toggle('dark',dark);
+}catch(e){}})();`
 
 export const metadata: Metadata = {
   title: "Todoro",
@@ -24,7 +35,10 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#0F1115",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F4F6F8" },
+    { media: "(prefers-color-scheme: dark)",  color: "#0F1115" },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -37,8 +51,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`${dmSans.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body className={`${poppins.variable} antialiased`}>
         {children}
       </body>
     </html>

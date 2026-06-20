@@ -10,7 +10,7 @@ interface StatCardProps {
 
 export default function StatCard({ label, value, suffix, icon, accent = false }: StatCardProps) {
   return (
-    <div className="rounded-2xl border border-border bg-surface px-4 py-4 flex flex-col gap-2">
+    <div className="glass rounded-2xl px-4 py-4 flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-sub">{label}</span>
         {icon && <span className="text-lg">{icon}</span>}

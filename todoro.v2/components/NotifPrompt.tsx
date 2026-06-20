@@ -15,7 +15,7 @@ export default function NotifPrompt({ dark, onEnable, onDismiss }: NotifPromptPr
       <div
         className="fixed inset-0 z-9999 flex items-end md:items-center justify-center p-4 bg-black/70"
         onClick={e => { if (e.target === e.currentTarget) onDismiss() }}>
-        <div className="w-full max-w-sm bg-surface border border-border rounded-3xl flex flex-col gap-4 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
+        <div className="w-full max-w-sm glass-strong rounded-3xl flex flex-col gap-4 p-6">
 
           <div className="flex items-start gap-3">
             <div className="w-11 h-11 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">

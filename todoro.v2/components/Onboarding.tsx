@@ -19,7 +19,7 @@ export default function Onboarding({ dark, initialName, onComplete }: Onboarding
   return createPortal(
     <div className={dark ? "dark" : ""}>
       <div className="fixed inset-0 z-9999 flex items-end md:items-center justify-center p-4 bg-black/70">
-        <div className="w-full max-w-md bg-surface border border-border rounded-3xl flex flex-col gap-5 p-6 shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
+        <div className="w-full max-w-md glass-strong rounded-3xl flex flex-col gap-5 p-6">
 
           {/* Header */}
           <div className="flex flex-col items-center gap-3 text-center">

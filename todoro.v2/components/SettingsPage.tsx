@@ -1,13 +1,15 @@
 "use client"
 
 import { useRef } from "react"
-import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward, HiTrash } from "react-icons/hi2"
+import { HiUser, HiMoon, HiSun, HiComputerDesktop, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward, HiTrash } from "react-icons/hi2"
 import { MdColorLens } from "react-icons/md";
 import { FaBullseye } from "react-icons/fa"
 
+type Theme = "system" | "light" | "dark"
+
 interface SettingsPageProps {
   userName: string;  onUserName: (v: string) => void
-  dark: boolean;     onDark:     (v: boolean) => void
+  theme: Theme;      onTheme:    (v: Theme) => void
   sound: boolean;    onSound:    (v: boolean) => void
   dailyGoal: number; onDailyGoal:(v: number) => void
   avatarUrl: string; onAvatarUrl:(v: string) => void
@@ -16,8 +18,14 @@ interface SettingsPageProps {
   autoStart: boolean; onAutoStart: (v: boolean) => void
 }
 
+const THEMES: { id: Theme; label: string; icon: React.ReactNode }[] = [
+  { id: "system", label: "System", icon: <HiComputerDesktop size={15} /> },
+  { id: "light",  label: "Light",  icon: <HiSun size={15} /> },
+  { id: "dark",   label: "Dark",   icon: <HiMoon size={15} /> },
+]
+
 export default function SettingsPage({
-  userName, onUserName, dark, onDark, sound, onSound, dailyGoal, onDailyGoal,
+  userName, onUserName, theme, onTheme, sound, onSound, dailyGoal, onDailyGoal,
   avatarUrl, onAvatarUrl, accentTheme, onAccentTheme, notifications, onNotifications,
   autoStart, onAutoStart
 }: SettingsPageProps) {
@@ -165,7 +173,22 @@ export default function SettingsPage({
       </Section>
 
       <Section label="Appearance">
-        <ToggleRow label="Dark Mode" icon={<HiMoon size={18} className="text-sub shrink-0" />} value={dark} onChange={onDark} />
+        <div className="flex flex-col gap-3 px-4 py-4">
+          <div className="flex items-center gap-3">
+            <HiSun size={18} className="text-sub shrink-0" />
+            <span className="flex-1 text-sm font-medium text-tx">Theme</span>
+          </div>
+          <div className="flex items-center gap-1 bg-surface2 rounded-xl p-1">
+            {THEMES.map(({ id, label, icon }) => (
+              <button key={id} onClick={() => onTheme(id)}
+                aria-pressed={theme === id}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-colors
+                  ${theme === id ? "bg-surface text-tx shadow-sm" : "text-sub hover:text-tx"}`}>
+                {icon} {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="flex flex-col gap-3 px-4 py-4">
           <div className="flex items-center gap-3">
             <MdColorLens size={18} className="text-sub shrink-0" />
@@ -236,7 +259,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.2.4" />
+        <InfoRow label="Version" value="2.3.0" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
     </div>
@@ -247,7 +270,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   return (
     <div className="flex flex-col gap-2">
       <span className="text-xs font-bold text-sub px-1">{label}</span>
-      <div className="rounded-2xl border border-border bg-surface overflow-hidden divide-y divide-border">
+      <div className="glass rounded-2xl overflow-hidden divide-y divide-border">
         {children}
       </div>
     </div>

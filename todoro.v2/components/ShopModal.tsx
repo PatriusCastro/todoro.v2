@@ -29,7 +29,7 @@ export default function ShopModal({
       <div
         className="fixed inset-0 z-9999 flex items-end md:items-center justify-center p-4 bg-black/70"
         onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-        <div className="w-full max-w-md bg-surface border border-border rounded-3xl flex flex-col gap-4 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.5)] max-h-[90dvh] overflow-y-auto">
+        <div className="w-full max-w-md glass-strong rounded-3xl flex flex-col gap-4 p-5 max-h-[90dvh] overflow-y-auto">
 
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -83,7 +83,7 @@ export default function ShopModal({
           )}
 
           {/* Streak Freeze item */}
-          <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface px-4 py-4">
+          <div className="flex flex-col gap-3 rounded-2xl glass px-4 py-4">
             <div className="flex items-start gap-3">
               <div className="w-11 h-11 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
                 <HiFire size={20} className="text-accent" />

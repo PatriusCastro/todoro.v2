@@ -124,7 +124,7 @@ function StatTile({ icon, label, value, sub, accent }: {
   icon: React.ReactNode; label: string; value: string | number; sub?: string; accent?: string
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface px-5 py-4 flex flex-col gap-2">
+    <div className="glass rounded-2xl px-5 py-4 flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <span className="text-sub">{icon}</span>
         <span className="text-xs font-bold text-sub">{label}</span>
@@ -224,7 +224,7 @@ export default function HomePage({
           </div>
 
         {/* Timer */}
-        <div className="col-span-12 max-h-fit lg:max-h-full md:col-span-6 lg:col-span-5 rounded-2xl border border-border bg-surface overflow-hidden">
+        <div className="glass col-span-12 max-h-fit lg:max-h-full md:col-span-6 lg:col-span-5 rounded-2xl overflow-hidden">
 
           <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
@@ -333,7 +333,7 @@ export default function HomePage({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
             {/* Up Next */}
-            <div className="rounded-2xl border border-border bg-surface px-5 py-4 flex flex-col gap-3">
+            <div className="glass rounded-2xl px-5 py-4 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <HiListBullet size={14} className="text-sub" />
@@ -371,7 +371,7 @@ export default function HomePage({
             </div>
 
             {/* Calendar */}
-            <div className="rounded-2xl border border-border bg-surface px-5 py-4 flex flex-col">
+            <div className="glass rounded-2xl px-5 py-4 flex flex-col">
               <MiniCalendar allHistory={allHistory} onNavToCalendar={onNavToCalendar} />
             </div>
 

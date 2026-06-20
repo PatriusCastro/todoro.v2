@@ -43,7 +43,7 @@ export default function ProjectPage({
   const [showDone,   setShowDone]   = useState(false)
   const [projectModal, setProjectModal] = useState(false)
 
-  const { toast, show: showToast, dismiss: dismissToast, EMOJI } = useToast()
+  const { toast, show: showToast, dismiss: dismissToast } = useToast()
   const { pinned, togglePin } = usePinnedTasks()
   const { pending: deletePending, stage: stageDelete, undo } = useUndo(onDelete)
 
@@ -91,8 +91,8 @@ export default function ProjectPage({
       {/* Task toast */}
       <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 transition-all duration-300
         ${toast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
-        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-          <span className="text-base">{toast ? EMOJI[toast.type] : "✅"}</span>
+        <div className="glass flex items-center gap-3 px-5 py-3 rounded-2xl whitespace-nowrap">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-tx">{toast?.title}</span>
             {toast?.sub && <span className="text-xs text-sub">{toast.sub}</span>}
