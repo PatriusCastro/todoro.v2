@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { HiArrowsPointingOut, HiChevronLeft, HiBolt, HiArrowTopRightOnSquare } from "react-icons/hi2"
+import { HiArrowsPointingOut, HiChevronLeft, HiArrowTopRightOnSquare } from "react-icons/hi2"
 import TimerRing from "../components/timer/TimerRing"
 import ModeSelector, { type Mode } from "../components/timer/ModeSelector"
 import TimerControls from "../components/timer/TimerControls"
@@ -203,13 +203,6 @@ export default function TimerPage({
           <TimerControls
             running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip}
             phase={phase} reverseMode={reverseMode} onStopAndRest={onStopAndRest} />
-          {/* Quick Mode Toggle */}
-          <button onClick={() => onQuickMode(!quickMode)}
-            className="w-full py-3.5 rounded-xl text-sub text-sm font-black active:scale-95 transition-all duration-150">
-            <span className={`flex items-center justify-center gap-2 ${quickMode ? "text-[#FFBA00] hover:text-[#FFBA00]/80" : "text-sub hover:text-[#FFBA00]/80"}`}>
-              <HiBolt size={18} /><span className="text-xs font-semibold uppercase tracking-widest">Quick Mode</span>
-            </span>
-          </button>
         </div>
 
         <div className="flex flex-col-reverse lg:flex-col flex-1 gap-5">
@@ -219,7 +212,9 @@ export default function TimerPage({
               active={mode} customFocus={focusMins} customBreak={breakMins}
               onChange={onModeChange}
               reverseMode={reverseMode}
-              onReverseMode={onReverseMode} />
+              onReverseMode={onReverseMode}
+              quickMode={quickMode}
+              onQuickMode={onQuickMode} />
             {isDesktop && (
               <div className="flex items-center justify-center gap-4">
                 {[["Space", "Play/Pause"], ["R", "Reset"], ["S", "Skip"]].map(([k, a]) => (

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { HiBolt, HiStar, HiPlayCircle, HiPauseCircle, HiChevronRight, HiChevronLeft, HiFire, HiClock, HiCheckCircle, HiListBullet } from "react-icons/hi2"
+import { HiStar, HiPlayCircle, HiPauseCircle, HiChevronRight, HiChevronLeft, HiFire, HiClock, HiCheckCircle, HiListBullet } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import { type Mode } from "../components/timer/ModeSelector"
 import { colors, getPriority } from "../lib/theme"
@@ -20,7 +20,7 @@ interface HomePageProps {
   streak: number; totalPoints: number; greeting: string; userName: string
   avatarUrl: string; onNavToSettings: () => void
   allHistory: { taskId: string; taskTitle: string; focusMins: number; at: number }[]
-  onNavToCalendar: () => void,   quickMode: boolean; onQuickMode: (v: boolean) => void
+  onNavToCalendar: (date?: string) => void;   quickMode: boolean
 }
 
 function phaseLabel(phase: Phase) {
@@ -43,7 +43,7 @@ const DAY_LABELS   = ["S","M","T","W","T","F","S"]
 
 function MiniCalendar({
   allHistory, onNavToCalendar,
-}: { allHistory: HomePageProps["allHistory"]; onNavToCalendar: () => void }) {
+}: { allHistory: HomePageProps["allHistory"]; onNavToCalendar: (date?: string) => void }) {
   const today   = new Date()
   const [year,  setYear]  = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
@@ -98,6 +98,7 @@ function MiniCalendar({
 
           return (
             <button key={i}
+              onClick={() => onNavToCalendar(ds)}
               className={`relative flex flex-col items-center justify-center rounded-lg h-8
                 ${isToday ? "bg-accent/15" : "hover:bg-surface2"}
                 transition-colors duration-100`}>
@@ -138,7 +139,7 @@ export default function HomePage({
   sessions, totalSessions, onTimerToggle, onNavToTimer, onNavToCalendar,
   tasks, activeTask, onToggleTask, allHistory, onToggleSub,
   onNavToTasks, onSetActive, streak, totalPoints, greeting, userName,
-  avatarUrl, onNavToSettings, quickMode, onQuickMode
+  avatarUrl, onNavToSettings, quickMode
 }: HomePageProps) {
   const minutes  = Math.floor(time / 60)
   const seconds  = time % 60
@@ -285,12 +286,6 @@ export default function HomePage({
               </span>
             </button>
                         
-            <button onClick={() => onQuickMode(!quickMode)}
-              className="w-full py-3.5 rounded-xl text-sub text-sm font-black active:scale-95 transition-all duration-150">
-              <span className={`flex items-center justify-center gap-2 ${quickMode ? "text-[#FFBA00] hover:text-[#FFBA00]/80" : "text-sub hover:text-[#FFBA00]/80"}`}>
-                <HiBolt size={18} /><span className="text-xs font-semibold uppercase tracking-widest">Quick Mode</span>
-              </span>
-            </button>
           </div>
         </div>
 

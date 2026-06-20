@@ -232,7 +232,7 @@ export default function ProjectPage({
           task={modalTask}
           projects={projects}
           onSave={handleSave}
-          onDelete={id => { onDelete(id); setShowModal(false) }}
+          onDelete={id => { const t = allTasks.find(x => x.id === id); if (t) handleDelete(t) }}
           onClose={() => setShowModal(false)}
           onCreateProject={onSaveProject}
           dark={dark} />

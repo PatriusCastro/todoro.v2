@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { HiArrowPath } from "react-icons/hi2"
+import { HiArrowPath, HiBolt } from "react-icons/hi2"
 
 export type Mode = "25/5" | "50/10" | "custom"
 
@@ -23,11 +23,14 @@ interface ModeSelectorProps {
   onChange:       (mode: Mode, focusMins: number, breakMins: number) => void
   reverseMode?:   boolean
   onReverseMode?: (v: boolean) => void
+  quickMode?:     boolean
+  onQuickMode?:   (v: boolean) => void
 }
 
 export default function ModeSelector({
   active, customFocus, customBreak, onChange,
   reverseMode = false, onReverseMode,
+  quickMode = false, onQuickMode,
 }: ModeSelectorProps) {
   const [cf, setCf] = useState(customFocus)
   const [cb, setCb] = useState(customBreak)
@@ -75,6 +78,27 @@ export default function ModeSelector({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quick Mode toggle — focus without picking a task */}
+      {onQuickMode && (
+        <button
+          onClick={() => onQuickMode(!quickMode)}
+          className={`w-full flex items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-all duration-200
+            ${quickMode
+              ? "bg-[#FFBA00]/10 border-[#FFBA00]/40"
+              : "bg-transparent border-border hover:border-accent/30 hover:text-tx"}`}>
+          <div className="flex items-center gap-2.5">
+            <HiBolt size={15} className={quickMode ? "text-[#FFBA00]" : "text-sub"} />
+            <div className="text-left">
+              <p className={`text-xs font-bold ${quickMode ? "text-[#FFBA00]" : "text-tx"}`}>Quick Mode</p>
+              <p className="text-[11px] text-sub">Focus without picking a task</p>
+            </div>
+          </div>
+          <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 ${quickMode ? "bg-[#FFBA00]" : "bg-ring"}`}>
+            <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${quickMode ? "translate-x-4" : "translate-x-0"}`} />
+          </div>
+        </button>
       )}
 
       {/* Reverse Mode toggle — always rendered when onReverseMode is provided */}

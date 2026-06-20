@@ -344,7 +344,7 @@ export default function TasksPage({
           task={modalTask}
           projects={projects}
           onSave={handleSave}
-          onDelete={id => { onDelete(id); setShowModal(false) }}
+          onDelete={id => { const t = tasks.find(x => x.id === id); if (t) handleDelete(t) }}
           onClose={() => setShowModal(false)}
           onCreateProject={onSaveProject}
           dark={dark} />

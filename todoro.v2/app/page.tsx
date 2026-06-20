@@ -106,6 +106,7 @@ export default function Home() {
   useEffect(() => { setHydrated(true) }, [])
 
   const [tab,       setTab]       = useState<Tab>("home")
+  const [calendarDate, setCalendarDate] = useState<string | null>(null)
   const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Bossing"))
   const [dark,      setDark]      = useState(() => load("todoro:dark",      true))
   const [sound,     setSound]     = useState(() => load("todoro:sound",     true))
@@ -402,6 +403,14 @@ export default function Home() {
     setTab("timer")
   }
 
+  // Tab nav: opening Calendar from the navbar clears any deep-linked date
+  const goToTab = (t: Tab) => {
+    if (t === "calendar") setCalendarDate(null)
+    setTab(t)
+  }
+  // Deep-link into Calendar focused on a specific day (from the Home mini-calendar)
+  const goToCalendar = (date?: string) => { setCalendarDate(date ?? null); setTab("calendar") }
+
   const timerProps = {
     time, phase, mode, focusMins, breakMins, longBreakMins: LONG_BREAK_MINS,
     running, progress, sessions, totalSessions: dailyGoal, cycleCount,
@@ -409,7 +418,7 @@ export default function Home() {
 
   if (!hydrated) {
     return (
-      <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask} projects={projects} onSaveProject={handleSaveProject}>
+      <AppShell activeTab={tab} onTabChange={goToTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask} projects={projects} onSaveProject={handleSaveProject}>
         <div className="flex items-center justify-center h-96 text-sub">
           <p>Loading...</p>
         </div>
@@ -418,7 +427,7 @@ export default function Home() {
   }
 
   return (
-    <AppShell activeTab={tab} onTabChange={setTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask} projects={projects} onSaveProject={handleSaveProject}>
+    <AppShell activeTab={tab} onTabChange={goToTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask} projects={projects} onSaveProject={handleSaveProject}>
 
       {/* Session complete toast */}
       <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 pointer-events-none transition-all duration-300
@@ -435,12 +444,12 @@ export default function Home() {
       {tab === "home" && (
         <HomePage {...timerProps}
           onTimerToggle={handleToggle} onNavToTimer={() => setTab("timer")}
-          tasks={tasks} activeTask={activeTask} onNavToCalendar={() => setTab("calendar")}
+          tasks={tasks} activeTask={activeTask} onNavToCalendar={goToCalendar}
           onToggleTask={handleToggleTask} onToggleSub={handleToggleSub}
           onNavToTasks={() => setTab("tasks")} onSetActive={setActiveTask}
           streak={streak} totalPoints={totalPoints} allHistory={allHistory}
           avatarUrl={avatarUrl} onNavToSettings={() => setTab("settings")}
-          greeting={getGreeting()} userName={userName} quickMode={quickMode} onQuickMode={setQuickMode} />
+          greeting={getGreeting()} userName={userName} quickMode={quickMode} />
       )}
 
       {tab === "timer" && (
@@ -471,13 +480,12 @@ export default function Home() {
           sound={sound}           onSound={setSound}
           dailyGoal={dailyGoal}   onDailyGoal={setDailyGoal}
           avatarUrl={avatarUrl}   onAvatarUrl={setAvatarUrl}
-          quickMode={quickMode}   onQuickMode={setQuickMode}
           accentTheme={accentTheme} onAccentTheme={setAccentTheme}
           notifications={notifications} onNotifications={setNotifications} />
       )}
 
       {tab === "calendar" && (
-        <CalendarPage tasks={tasks} allHistory={allHistory} />
+        <CalendarPage tasks={tasks} allHistory={allHistory} initialDate={calendarDate} />
       )}
 
     </AppShell>
