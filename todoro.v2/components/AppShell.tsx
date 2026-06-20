@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react"
 import { useIsTablet } from "../hooks/useMediaQuery"
 import { usePillAnimation } from "../hooks/usePillAnimation"
-import TaskModal, { type Project } from "./tasks/TaskModal"
-import { type Task } from "./tasks/TaskCard"
 import { HiHome, HiOutlineHome, HiClipboardList, HiOutlineClipboardList, HiClock, HiOutlineClock, HiCog, HiOutlineCog, HiOutlineCalendar, HiCalendar } from "react-icons/hi"
 import { HiPlus } from "react-icons/hi2"
 
@@ -22,9 +20,7 @@ interface AppShellProps {
   phase:         Phase
   hideNavbar?:   boolean
   avatarUrl?:    string
-  onAddTask:     (task: Task) => void
-  projects:      Project[]
-  onSaveProject: (p: Project) => void
+  onQuickAdd:    () => void
 }
 
 const NAV: { id: Tab; label: string }[] = [
@@ -49,12 +45,11 @@ function NavIcon({ id, active }: { id: Tab; active: boolean }) {
 export default function AppShell({
   children, activeTab, onTabChange, dark,
   userName, streak, running, phase, hideNavbar, avatarUrl,
-  onAddTask, projects, onSaveProject,
+  onQuickAdd,
 }: AppShellProps) {
   const isTablet  = useIsTablet()
   const initials  = userName ? userName.slice(0, 2).toUpperCase() : "–"
   const [mounted,  setMounted]  = useState(false)
-  const [showAdd,  setShowAdd]  = useState(false)
   const [animKey,  setAnimKey]  = useState(0)
   useEffect(() => { setTimeout(() => setMounted(true), 50) }, [])
 
@@ -195,25 +190,13 @@ export default function AppShell({
           </div>
         )}
 
-        {/* Mobile FAB — only on tasks tab */}
-        {!isTablet && activeTab === "tasks" && (
+        {/* Mobile FAB — quick-add from Home & Tasks */}
+        {!isTablet && (activeTab === "tasks" || activeTab === "home") && (
           <button
-            onClick={() => setShowAdd(true)}
-            className={`fixed bottom-24 right-4 z-40 flex items-center justify-center w-12 h-12 rounded-full bg-accent text-white shadow-lg hover:bg-accent-hover active:scale-95 transition-all
-              ${running ? "opacity-50 pointer-events-none" : ""}`}>
+            onClick={onQuickAdd}
+            className="fixed bottom-24 right-4 z-40 flex items-center justify-center w-12 h-12 rounded-full bg-accent text-white shadow-lg hover:bg-accent-hover active:scale-95 transition-all">
             <HiPlus size={16} />
           </button>
-        )}
-
-        {/* Quick-add modal (FAB) */}
-        {showAdd && (
-          <TaskModal
-            dark={dark}
-            projects={projects}
-            onSave={task => { onAddTask(task); setShowAdd(false) }}
-            onClose={() => setShowAdd(false)}
-            onCreateProject={onSaveProject}
-          />
         )}
 
       </div>

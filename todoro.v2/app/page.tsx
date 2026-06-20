@@ -9,7 +9,7 @@ import SettingsPage from "../components/SettingsPage"
 import CalendarPage from "../components/CalendarPage"
 import { type Mode } from "../components/timer/ModeSelector"
 import { type Task } from "../components/tasks/TaskCard"
-import { type Project } from "../components/tasks/TaskModal"
+import TaskModal, { type Project } from "../components/tasks/TaskModal"
 import { useWakeLock } from "../hooks/useWakeLock"
 import { useDocumentTitle } from "../hooks/useDocumentTitle"
 import { useNotifications } from "../hooks/useNotifications"
@@ -107,6 +107,7 @@ export default function Home() {
 
   const [tab,       setTab]       = useState<Tab>("home")
   const [calendarDate, setCalendarDate] = useState<string | null>(null)
+  const [showAdd,   setShowAdd]   = useState(false)
   const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Bossing"))
   const [dark,      setDark]      = useState(() => load("todoro:dark",      true))
   const [sound,     setSound]     = useState(() => load("todoro:sound",     true))
@@ -403,6 +404,20 @@ export default function Home() {
     setTab("timer")
   }
 
+  // Open a task in the Timer (paused). Switching mid-session pauses rather than
+  // resetting, so elapsed time is preserved and nothing is lost.
+  const handleOpenTask = (task: Task) => {
+    setRunning(false)
+    setActiveTask(task)
+    setTab("timer")
+  }
+
+  // Switch the active task in place (Timer dropdown) — pauses if running
+  const handleSelectTask = (task: Task) => {
+    setRunning(false)
+    setActiveTask(task)
+  }
+
   // Tab nav: opening Calendar from the navbar clears any deep-linked date
   const goToTab = (t: Tab) => {
     if (t === "calendar") setCalendarDate(null)
@@ -418,7 +433,7 @@ export default function Home() {
 
   if (!hydrated) {
     return (
-      <AppShell activeTab={tab} onTabChange={goToTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask} projects={projects} onSaveProject={handleSaveProject}>
+      <AppShell activeTab={tab} onTabChange={goToTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onQuickAdd={() => setShowAdd(true)}>
         <div className="flex items-center justify-center h-96 text-sub">
           <p>Loading...</p>
         </div>
@@ -427,7 +442,7 @@ export default function Home() {
   }
 
   return (
-    <AppShell activeTab={tab} onTabChange={goToTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onAddTask={handleSaveTask} projects={projects} onSaveProject={handleSaveProject}>
+    <AppShell activeTab={tab} onTabChange={goToTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onQuickAdd={() => setShowAdd(true)}>
 
       {/* Session complete toast */}
       <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 pointer-events-none transition-all duration-300
@@ -446,7 +461,8 @@ export default function Home() {
           onTimerToggle={handleToggle} onNavToTimer={() => setTab("timer")}
           tasks={tasks} activeTask={activeTask} onNavToCalendar={goToCalendar}
           onToggleTask={handleToggleTask} onToggleSub={handleToggleSub}
-          onNavToTasks={() => setTab("tasks")} onSetActive={setActiveTask}
+          onNavToTasks={() => setTab("tasks")} onOpenTask={handleOpenTask}
+          onStartFocus={handleStartFocus} onQuickAdd={() => setShowAdd(true)}
           streak={streak} totalPoints={totalPoints} allHistory={allHistory}
           avatarUrl={avatarUrl} onNavToSettings={() => setTab("settings")}
           greeting={getGreeting()} userName={userName} quickMode={quickMode} />
@@ -457,19 +473,18 @@ export default function Home() {
           tasks={tasks} activeTask={activeTask} quickMode={quickMode}
           reverseMode={reverseMode} dark={dark}
           onToggle={handleToggle} onReset={handleReset} onSkip={handleSkip}
-          onModeChange={handleModeChange} onTaskChange={setActiveTask} onQuickMode={setQuickMode}
+          onModeChange={handleModeChange} onTaskChange={handleSelectTask} onQuickMode={setQuickMode}
           onToggleSub={handleToggleSub} onFocusedChange={setFocusedView} allHistory={allHistory}
           onStopAndRest={handleStopAndRest} onReverseMode={setReverseMode} />
       )}
 
       {tab === "tasks" && (
         <TasksPage
-          dark={dark} tasks={tasks} activeTask={activeTask} running={running}
+          dark={dark} tasks={tasks} activeTask={activeTask}
           projects={projects} onDeleteProject={handleDelete}
           onSave={handleSaveTask} onDelete={handleDeleteTask}
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
-          onSetActive={setActiveTask} onNavToTimer={() => setTab("timer")}
-          onStartFocus={handleStartFocus}
+          onOpenTask={handleOpenTask} onStartFocus={handleStartFocus}
           onSaveProject={handleSaveProject} />
       )}
 
@@ -486,6 +501,16 @@ export default function Home() {
 
       {tab === "calendar" && (
         <CalendarPage tasks={tasks} allHistory={allHistory} initialDate={calendarDate} />
+      )}
+
+      {/* Global quick-add task modal (mobile FAB + Home) */}
+      {showAdd && (
+        <TaskModal
+          dark={dark}
+          projects={projects}
+          onSave={t => { handleSaveTask(t); setShowAdd(false) }}
+          onClose={() => setShowAdd(false)}
+          onCreateProject={handleSaveProject} />
       )}
 
     </AppShell>

@@ -15,12 +15,11 @@ import { useSortedTasks } from "../hooks/useTaskSort"
 import { useToast } from "../hooks/useToast"
 
 interface TasksPageProps {
-  tasks: Task[]; activeTask: Task; running: boolean
+  tasks: Task[]; activeTask: Task
   projects: Project[]
   onSave: (t: Task) => void; onDelete: (id: string) => void
   onToggle: (id: string) => void; onToggleSub: (tId: string, sId: string) => void
-  onSetActive: (t: Task) => void; onNavToTimer: () => void
-  onStartFocus: (t: Task) => void
+  onOpenTask: (t: Task) => void; onStartFocus: (t: Task) => void
   onSaveProject: (p: Project) => void
   onDeleteProject: (id: string) => void
   dark: boolean
@@ -34,16 +33,15 @@ const PRIORITIES: { key: Priority; label: string }[] = [
 type Filter = Priority | "all" | "done"
 
 export default function TasksPage({
-  tasks, activeTask, running, projects,
+  tasks, activeTask, projects,
   onSave, onDelete, onToggle, onToggleSub,
-  onSetActive, onNavToTimer, onStartFocus, onSaveProject, onDeleteProject, dark,
+  onOpenTask, onStartFocus, onSaveProject, onDeleteProject, dark,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Filter>("all")
   const [modalTask, setModalTask] = useState<Task | undefined>()
   const [showModal, setShowModal] = useState(false)
   const [showDone,  setShowDone]  = useState(false)
-  const [showSessionToast, setShowSessionToast] = useState(false)
 
   // Project modal state
   const [projectModal, setProjectModal] = useState<{ open: boolean; project?: Project }>({ open: false })
@@ -67,14 +65,12 @@ export default function TasksPage({
   }, [tasks, onSave, showToast])
 
   const handleQuickStart = useCallback((task: Task) => {
-    if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
     onStartFocus(task)
-  }, [running, onStartFocus])
+  }, [onStartFocus])
 
   const handleTaskClick = useCallback((task: Task) => {
-    if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
-    onSetActive(task); onNavToTimer()
-  }, [running, onSetActive, onNavToTimer])
+    onOpenTask(task)
+  }, [onOpenTask])
 
   // Project handlers
   const handleSaveProject = useCallback((p: Project) => {
@@ -132,7 +128,6 @@ export default function TasksPage({
         project={liveProject}
         allTasks={tasks}
         activeTask={activeTask}
-        running={running}
         dark={dark}
         projects={projects}
         onBack={() => setActiveProject(null)}
@@ -140,8 +135,7 @@ export default function TasksPage({
         onDelete={onDelete}
         onToggle={onToggle}
         onToggleSub={onToggleSub}
-        onSetActive={onSetActive}
-        onNavToTimer={onNavToTimer}
+        onOpenTask={onOpenTask}
         onStartFocus={onStartFocus}
         onSaveProject={onSaveProject}
         onDeleteProject={id => { handleDeleteProject(id); setActiveProject(null) }}
@@ -171,16 +165,6 @@ export default function TasksPage({
         </div>
       </div>
 
-      {/* Session-in-progress toast */}
-      <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-200 transition-all duration-300
-        ${showSessionToast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-surface border border-border shadow-[0_8px_32px_rgba(0,0,0,0.3)] whitespace-nowrap">
-          <span className="w-2 h-2 rounded-full bg-priority-low animate-pulse shrink-0" />
-          <span className="text-sm font-semibold text-tx">Focus session in progress</span>
-          <span className="text-sm text-sub">— finish or pause first</span>
-        </div>
-      </div>
-
       {/* Page header */}
       <div className="flex items-start justify-between">
         <div>
@@ -193,16 +177,6 @@ export default function TasksPage({
           <HiPlus size={14} /> New task
         </button>
       </div>
-
-      {/* Running banner */}
-      {running && (
-        <div className="flex items-center gap-3 rounded-xl bg-priority-low/5 border border-priority-low/20 px-4 py-3">
-          <span className="w-2 h-2 rounded-full bg-priority-low animate-pulse shrink-0" />
-          <p className="text-xs font-semibold text-tx flex-1">
-            Focus session active — task switching is disabled until you pause or finish.
-          </p>
-        </div>
-      )}
 
       {/* Search */}
       <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5">

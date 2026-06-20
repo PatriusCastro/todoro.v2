@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { HiStar, HiPlayCircle, HiPauseCircle, HiChevronRight, HiChevronLeft, HiFire, HiClock, HiCheckCircle, HiListBullet } from "react-icons/hi2"
+import { HiStar, HiPlayCircle, HiPauseCircle, HiChevronRight, HiChevronLeft, HiFire, HiClock, HiCheckCircle, HiListBullet, HiPlus } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import { type Mode } from "../components/timer/ModeSelector"
 import { colors, getPriority } from "../lib/theme"
@@ -16,7 +16,8 @@ interface HomePageProps {
   onTimerToggle: () => void; onNavToTimer: () => void
   tasks: Task[]; activeTask: Task
   onToggleTask: (id: string) => void; onToggleSub: (tId: string, sId: string) => void
-  onNavToTasks: () => void; onSetActive: (t: Task) => void
+  onNavToTasks: () => void; onOpenTask: (t: Task) => void
+  onStartFocus: (t: Task) => void; onQuickAdd: () => void
   streak: number; totalPoints: number; greeting: string; userName: string
   avatarUrl: string; onNavToSettings: () => void
   allHistory: { taskId: string; taskTitle: string; focusMins: number; at: number }[]
@@ -111,7 +112,7 @@ function MiniCalendar({
         })}
       </div>
 
-      <button onClick={onNavToCalendar} className="mt-auto flex items-center justify-center gap-2 text-xs text-sub hover:text-accent transition-colors self-center">
+      <button onClick={() => onNavToCalendar()} className="mt-auto flex items-center justify-center gap-2 text-xs text-sub hover:text-accent transition-colors self-center">
         View Calendar <HiChevronRight size={11} />
       </button>
     </div>
@@ -138,7 +139,7 @@ export default function HomePage({
   time, phase, mode, focusMins, breakMins, longBreakMins, running, progress,
   sessions, totalSessions, onTimerToggle, onNavToTimer, onNavToCalendar,
   tasks, activeTask, onToggleTask, allHistory, onToggleSub,
-  onNavToTasks, onSetActive, streak, totalPoints, greeting, userName,
+  onNavToTasks, onOpenTask, onStartFocus, onQuickAdd, streak, totalPoints, greeting, userName,
   avatarUrl, onNavToSettings, quickMode
 }: HomePageProps) {
   const minutes  = Math.floor(time / 60)
@@ -325,10 +326,16 @@ export default function HomePage({
                   <HiListBullet size={14} className="text-sub" />
                   <span className="text-xs font-bold text-sub uppercase tracking-widest">Up Next</span>
                 </div>
-                <button onClick={onNavToTasks}
-                  className="text-xs text-accent hover:underline flex items-center gap-0.5">
-                  All <HiChevronRight size={11} />
-                </button>
+                <div className="flex items-center gap-3">
+                  <button onClick={onQuickAdd}
+                    className="hidden md:flex items-center gap-0.5 text-xs text-sub hover:text-accent transition-colors">
+                    <HiPlus size={11} /> Add
+                  </button>
+                  <button onClick={onNavToTasks}
+                    className="text-xs text-accent hover:underline flex items-center gap-0.5">
+                    All <HiChevronRight size={11} />
+                  </button>
+                </div>
               </div>
 
               {pendingTasks.length === 0
@@ -338,7 +345,7 @@ export default function HomePage({
                 : <div className="flex flex-col gap-2">
                     {pendingTasks.slice(0, 3).map(t => (
                       <TaskCard key={t.id} task={t} onToggle={onToggleTask}
-                        onClick={running && phase === "focus" ? undefined : () => onSetActive(t)} compact />
+                        onClick={() => onOpenTask(t)} onQuickStart={onStartFocus} compact />
                     ))}
                     {pendingTasks.length > 3 && (
                       <button onClick={onNavToTasks}

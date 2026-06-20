@@ -207,7 +207,7 @@ export default function TimerPage({
 
         <div className="flex flex-col-reverse lg:flex-col flex-1 gap-5">
           <div className="flex flex-col gap-3 bg-surface border border-border rounded-2xl px-5 py-4">
-            <TaskSelector tasks={tasks} active={activeTask} running={running} onChange={onTaskChange} onStop={onReset} quickMode={quickMode} />
+            <TaskSelector tasks={tasks} active={activeTask} onChange={onTaskChange} quickMode={quickMode} />
             <ModeSelector
               active={mode} customFocus={focusMins} customBreak={breakMins}
               onChange={onModeChange}

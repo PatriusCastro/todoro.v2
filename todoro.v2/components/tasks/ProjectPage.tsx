@@ -14,7 +14,6 @@ interface ProjectPageProps {
   project: Project
   allTasks: Task[]
   activeTask: Task
-  running: boolean
   dark: boolean
   projects: Project[]
   onBack: () => void
@@ -22,8 +21,7 @@ interface ProjectPageProps {
   onDelete: (id: string) => void
   onToggle: (id: string) => void
   onToggleSub: (tId: string, sId: string) => void
-  onSetActive: (t: Task) => void
-  onNavToTimer: () => void
+  onOpenTask: (t: Task) => void
   onStartFocus: (t: Task) => void
   onSaveProject: (p: Project) => void
   onDeleteProject: (id: string) => void
@@ -31,9 +29,9 @@ interface ProjectPageProps {
 }
 
 export default function ProjectPage({
-  project, allTasks, activeTask, running, dark, projects,
+  project, allTasks, activeTask, dark, projects,
   onBack, onSave, onDelete, onToggle, onToggleSub,
-  onSetActive, onNavToTimer, onStartFocus, onSaveProject, onDeleteProject, onEditProject,
+  onOpenTask, onStartFocus, onSaveProject, onDeleteProject, onEditProject,
 }: ProjectPageProps) {
   const tasks    = allTasks.filter(t => t.projectId === project.id)
   const pending  = tasks.filter(t => !t.done)
@@ -43,7 +41,6 @@ export default function ProjectPage({
   const [modalTask,  setModalTask]  = useState<Task | undefined>()
   const [showModal,  setShowModal]  = useState(false)
   const [showDone,   setShowDone]   = useState(false)
-  const [showSessionToast, setShowSessionToast] = useState(false)
   const [projectModal, setProjectModal] = useState(false)
 
   const { toast, show: showToast, dismiss: dismissToast, EMOJI } = useToast()
@@ -64,14 +61,12 @@ export default function ProjectPage({
   }, [allTasks, onSave, showToast, project.id])
 
   const handleQuickStart = useCallback((task: Task) => {
-    if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
     onStartFocus(task)
-  }, [running, onStartFocus])
+  }, [onStartFocus])
 
   const handleTaskClick = useCallback((task: Task) => {
-    if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
-    onSetActive(task); onNavToTimer()
-  }, [running, onSetActive, onNavToTimer])
+    onOpenTask(task)
+  }, [onOpenTask])
 
   const sorted = useSortedTasks(
     pending.filter(t => t.id !== deletePending?.id),
@@ -105,16 +100,6 @@ export default function ProjectPage({
           {toast?.undoFn && (
             <button onClick={toast.undoFn} className="ml-2 text-sm font-black text-accent hover:underline">Undo</button>
           )}
-        </div>
-      </div>
-
-      {/* Session toast */}
-      <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-200 transition-all duration-300
-        ${showSessionToast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap">
-          <span className="w-2 h-2 rounded-full bg-priority-low animate-pulse shrink-0" />
-          <span className="text-sm font-semibold text-tx">Focus session in progress</span>
-          <span className="text-sm text-sub">— finish or pause first</span>
         </div>
       </div>
 
@@ -167,16 +152,6 @@ export default function ProjectPage({
           <span className="text-[11px] text-sub tabular-nums shrink-0">
             {done.length}/{tasks.length} done
           </span>
-        </div>
-      )}
-
-      {/* Running banner */}
-      {running && (
-        <div className="flex items-center gap-3 rounded-xl bg-priority-low/5 border border-priority-low/20 px-4 py-3">
-          <span className="w-2 h-2 rounded-full bg-priority-low animate-pulse shrink-0" />
-          <p className="text-xs font-semibold text-tx flex-1">
-            Focus session active — task switching is disabled.
-          </p>
         </div>
       )}
 

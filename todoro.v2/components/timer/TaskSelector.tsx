@@ -8,28 +8,22 @@ import { getPriority } from "../../lib/theme"
 interface TaskSelectorProps {
   tasks:    Task[]
   active:   Task
-  running:  boolean
   onChange: (task: Task) => void
-  onStop:   () => void
   quickMode?: boolean
 }
 
-export default function TaskSelector({ tasks, active, running, onChange, onStop, quickMode = false }: TaskSelectorProps) {
-  const [open,    setOpen]    = useState(false)
-  const [pending, setPending] = useState<Task | null>(null)
+export default function TaskSelector({ tasks, active, onChange, quickMode = false }: TaskSelectorProps) {
+  const [open, setOpen] = useState(false)
 
   const pendingTasks = tasks.filter(t => !t.done)
   const allDone      = pendingTasks.length === 0
 
+  // Switching pauses the running session (handled by the parent) and never
+  // resets — elapsed time is preserved, so no confirmation is needed.
   const handleSelect = (task: Task) => {
     setOpen(false)
     if (task.id === active.id) return
-    if (running) { setPending(task); return }
     onChange(task)
-  }
-
-  const confirmSwitch = () => {
-    if (pending) { onStop(); onChange(pending); setPending(null) }
   }
 
   const isQuickModeActive = quickMode && active.title === ""
@@ -77,41 +71,6 @@ export default function TaskSelector({ tasks, active, running, onChange, onStop,
           </div>
         )}
       </div>
-
-      {/* Switch confirmation modal */}
-      {pending && (
-        <div className="fixed inset-0 z-200 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
-          onClick={() => setPending(null)}>
-          <div className="w-full max-w-sm bg-surface border border-border rounded-2xl p-5 flex flex-col gap-4"
-            onClick={e => e.stopPropagation()}>
-
-            <div>
-              <h3 className="text-sm font-black text-tx">Switch task?</h3>
-              <p className="text-xs text-sub mt-1">Your current focus session will end.</p>
-            </div>
-
-            <div className="rounded-xl bg-surface2 border border-border px-4 py-3 flex flex-col gap-1">
-              <span className="text-[11px] font-semibold text-sub uppercase tracking-wide">Switching to</span>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(pending.priority) }} />
-                <span className="text-sm font-semibold text-tx truncate">{pending.title}</span>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button onClick={() => setPending(null)}
-                className="flex-1 py-2.5 rounded-xl border border-border text-sm font-semibold text-sub hover:text-tx transition-all">
-                Cancel
-              </button>
-              <button onClick={confirmSwitch}
-                className="flex-1 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover transition-all">
-                Switch Task
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
     </>
   )
 }
