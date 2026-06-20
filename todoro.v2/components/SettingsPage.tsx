@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward } from "react-icons/hi2"
+import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward, HiTrash } from "react-icons/hi2"
 import { MdColorLens } from "react-icons/md";
 import { FaBullseye } from "react-icons/fa"
 
@@ -83,6 +83,19 @@ export default function SettingsPage({
     a.download = `todoro-backup-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const handleResetData = () => {
+    if (!confirm("This erases ALL Todoro data on this device — tasks, history, settings, everything. This can't be undone. Continue?")) return
+    try {
+      const keys: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i)
+        if (k && k.startsWith("todoro:")) keys.push(k)
+      }
+      keys.forEach(k => localStorage.removeItem(k))
+    } catch {}
+    location.reload()
   }
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -211,6 +224,14 @@ export default function SettingsPage({
           </div>
         </button>
         <input ref={importRef} type="file" accept="application/json,.json" className="hidden" onChange={handleImport} />
+        <button onClick={handleResetData}
+          className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-priority-high/5 transition-colors">
+          <HiTrash size={18} className="text-priority-high shrink-0" />
+          <div className="flex-1">
+            <span className="text-sm font-medium text-priority-high">Reset all data</span>
+            <p className="text-xs text-sub">Erase all tasks, history &amp; settings on this device</p>
+          </div>
+        </button>
       </Section>
 
       <Section label="About">

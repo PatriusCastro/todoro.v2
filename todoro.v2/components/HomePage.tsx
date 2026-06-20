@@ -75,11 +75,11 @@ function MiniCalendar({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-3">
-        <button onClick={prevMonth} className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
+        <button onClick={prevMonth} aria-label="Previous month" className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
           <HiChevronLeft size={15} />
         </button>
         <span className="text-sm font-black text-tx">{MONTHS_SHORT[month]} {year}</span>
-        <button onClick={nextMonth} className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
+        <button onClick={nextMonth} aria-label="Next month" className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
           <HiChevronRight size={15} />
         </button>
       </div>
@@ -211,7 +211,7 @@ export default function HomePage({
           <div className={`sm:hidden col-span-12 rounded-2xl border bg-surface px-5 py-4 transition-colors duration-300
             ${goalHit ? "border-priority-low/40 bg-priority-low/5" : "border-border"}`}>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-sub uppercase tracking-widest">Today's Goal</span>
+              <span className="text-xs font-bold text-sub uppercase tracking-widest">Today&apos;s Goal</span>
               <span className={`text-sm font-bold ${goalHit ? "text-priority-low" : "text-sub"}`}>
                 {sessions} / {totalSessions} sessions {goalHit && "✓"}
               </span>
@@ -312,7 +312,7 @@ export default function HomePage({
           <div className={`hidden sm:grid rounded-2xl border bg-surface px-5 py-4 transition-colors duration-300
             ${goalHit ? "border-priority-low/40 bg-priority-low/5" : "border-border"}`}>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-sub uppercase tracking-widest">Today's Goal</span>
+              <span className="text-xs font-bold text-sub uppercase tracking-widest">Today&apos;s Goal</span>
               <span className={`text-sm font-bold ${goalHit ? "text-priority-low" : "text-sub"}`}>
                 {sessions} / {totalSessions} sessions {goalHit && "✓"}
               </span>

@@ -168,6 +168,7 @@ export default function TimerPage({
         <div className="flex items-center gap-2">
           {/* PiP / Float button */}
           <button onClick={handlePiP}
+            aria-label="Picture-in-Picture"
             title={pip.supportsPiP ? "Picture-in-Picture" : "Float window (not supported)"}
             className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-semibold transition-all
               ${pipActive
@@ -177,6 +178,7 @@ export default function TimerPage({
           </button>
           {/* Focus view */}
           <button onClick={() => setFocused(true)}
+            aria-label="Enter focus view"
             className="flex items-center gap-2 p-3 rounded-xl bg-surface2 border border-border text-sm font-semibold text-sub hover:text-accent hover:border-accent/40">
             <HiArrowsPointingOut size={16} />
           </button>

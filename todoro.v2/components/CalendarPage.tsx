@@ -96,12 +96,12 @@ export default function CalendarPage({ tasks, allHistory, initialDate }: Calenda
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <button onClick={prevMonth}
+          <button onClick={prevMonth} aria-label="Previous month"
             className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
             <HiChevronLeft size={18} />
           </button>
           <span className="text-sm font-black text-tx">{MONTHS[month]} {year}</span>
-          <button onClick={nextMonth}
+          <button onClick={nextMonth} aria-label="Next month"
             className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
             <HiChevronRight size={18} />
           </button>

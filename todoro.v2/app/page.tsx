@@ -90,6 +90,11 @@ function save(key: string, value: unknown) {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
 }
 
+// Subtle haptic tap (mobile) — no-op where unsupported
+function buzz(ms: number) {
+  try { navigator.vibrate?.(ms) } catch {}
+}
+
 function computeStreak(history: SessionRecord[], protectedDates: string[] = []): number {
   const dates = new Set([...history.map(s => localDate(s.at)), ...protectedDates])
   if (!dates.size) return 0
@@ -359,6 +364,7 @@ export default function Home() {
           ? { ...t, completedSessions: t.completedSessions + 1 }
           : t))
         playChime(false)
+        buzz(20)
         if (nextCycle % LONG_BREAK_INTERVAL === 0) {
           notify("🍅 Focus complete!", "Great work — time for a long break.")
           setPhase("longbreak"); setTime(LONG_BREAK_MINS * 60)
@@ -462,6 +468,7 @@ export default function Home() {
       ? { ...t, completedSessions: t.completedSessions + 1 }
       : t))
     playChime(false)
+    buzz(20)
 
     if (nextCycle % LONG_BREAK_INTERVAL === 0) {
       setPhase("longbreak")

@@ -163,7 +163,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
           {/* Header */}
           <div className="flex items-center justify-between">
             <h2 className="font-black text-lg text-tx">{task ? "Edit Task" : "New Task"}</h2>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors">
+            <button onClick={onClose} aria-label="Close" className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors">
               <HiXMark size={16} />
             </button>
           </div>

@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next"
 import { DM_Sans } from "next/font/google"
-// @ts-ignore: CSS side-effect import without type declarations
 import "./globals.css"
 
 const dmSans = DM_Sans({

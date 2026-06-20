@@ -25,7 +25,7 @@ export default function NotifPrompt({ dark, onEnable, onDismiss }: NotifPromptPr
               <h3 className="text-sm font-black text-tx">Nice — first session done! 🎉</h3>
               <p className="text-xs text-sub mt-1">Want a heads-up when your focus and break timers end? Turn on notifications so you never miss a switch.</p>
             </div>
-            <button onClick={onDismiss}
+            <button onClick={onDismiss} aria-label="Dismiss"
               className="w-7 h-7 rounded-lg bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors shrink-0">
               <HiXMark size={14} />
             </button>

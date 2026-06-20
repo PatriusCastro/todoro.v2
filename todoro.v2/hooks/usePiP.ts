@@ -125,7 +125,7 @@ export function usePiP(state: PiPState, { onToggle, onSkip }: UsePiPOptions) {
   const open = useCallback(async () => {
     if (!supportsPiP) return false
     try {
-      // @ts-ignore — documentPictureInPicture not yet in TS lib
+      // @ts-expect-error — documentPictureInPicture not yet in TS lib
       const pip = await window.documentPictureInPicture.requestWindow({
         width: 200, height: 260,
       })

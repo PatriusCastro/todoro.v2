@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback } from "react"
 import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiArrowsRightLeft } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import TaskModal from "../components/tasks/TaskModal"
@@ -51,11 +51,10 @@ export default function TasksPage({
   const { pending: deletePending, stage: stageDelete, undo } = useUndo(onDelete)
   const [activeProject, setActiveProject] = useState<Project | null>(null)
 
-  // One-time coaching for the swipe gestures (pin / delete)
-  const [showSwipeHint, setShowSwipeHint] = useState(false)
-  useEffect(() => {
-    try { if (!localStorage.getItem("todoro:swipeHintSeen")) setShowSwipeHint(true) } catch {}
-  }, [])
+  // One-time coaching for the swipe gestures (pin / delete) — read once on mount
+  const [showSwipeHint, setShowSwipeHint] = useState(() => {
+    try { return !localStorage.getItem("todoro:swipeHintSeen") } catch { return false }
+  })
   const dismissSwipeHint = useCallback(() => {
     setShowSwipeHint(false)
     try { localStorage.setItem("todoro:swipeHintSeen", "1") } catch {}
@@ -194,7 +193,7 @@ export default function TasksPage({
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks…"
           className="bg-transparent outline-none text-sm text-tx placeholder:text-sub flex-1" />
         {search && (
-          <button onClick={() => setSearch("")} className="text-sub hover:text-tx">
+          <button onClick={() => setSearch("")} aria-label="Clear search" className="text-sub hover:text-tx">
             <HiXMark size={13} />
           </button>
         )}

@@ -194,6 +194,7 @@ export default function AppShell({
         {!isTablet && (activeTab === "tasks" || activeTab === "home") && (
           <button
             onClick={onQuickAdd}
+            aria-label="Add task"
             className="fixed bottom-24 right-4 z-40 flex items-center justify-center w-12 h-12 rounded-full bg-accent text-white shadow-lg hover:bg-accent-hover active:scale-95 transition-all">
             <HiPlus size={16} />
           </button>

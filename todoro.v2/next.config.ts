@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error — next-pwa ships without type declarations
 import withPWAInit from "next-pwa";
 
 const withPWA = withPWAInit({
