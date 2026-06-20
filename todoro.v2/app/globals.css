@@ -120,6 +120,12 @@ input, textarea { font-family: inherit; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Bottom-sheet slide-up (month calendar). Neutralized by the reduced-motion block below. */
+@keyframes sheetup {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* Respect users who prefer reduced motion — neutralize animations & transitions */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
