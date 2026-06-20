@@ -16,7 +16,7 @@ export default function StatCard({ label, value, suffix, icon, accent = false }:
         {icon && <span className="text-lg">{icon}</span>}
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className={`text-2xl font-black leading-none ${accent ? "text-accent" : "text-tx"}`}>{value}</span>
+        <span className={`text-2xl font-semibold leading-none ${accent ? "text-accent" : "text-tx"}`}>{value}</span>
         {suffix && <span className="text-xs text-sub">{suffix}</span>}
       </div>
     </div>

@@ -156,13 +156,13 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
   return createPortal(
     <div className={dark ? "dark" : ""}>
       <div
-        className="fixed inset-0 z-9999 flex items-end md:items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+        className="fixed inset-0 z-9999 flex items-end md:items-center justify-center p-4 bg-black/70"
         onClick={e => { if (e.target === e.currentTarget) onClose() }}>
         <div className="w-full max-w-md bg-surface border border-border rounded-3xl flex flex-col gap-4 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.5)] max-h-[90dvh] overflow-y-auto">
 
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h2 className="font-black text-lg text-tx">{task ? "Edit Task" : "New Task"}</h2>
+            <h2 className="font-semibold text-lg text-tx">{task ? "Edit Task" : "New Task"}</h2>
             <button onClick={onClose} aria-label="Close" className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors">
               <HiXMark size={16} />
             </button>
@@ -188,7 +188,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
 
           {/* Project picker */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">Project</span>
+            <span className="text-xs font-bold text-sub">Project</span>
 
             <div className="flex flex-wrap gap-2">
               {/* No project option */}
@@ -264,7 +264,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
             <div className="flex items-center gap-2">
               <button onClick={() => setEstimatedSessions(n => Math.max(0, n - 1))} disabled={estimatedSessions <= 0}
                 className="w-7 h-7 rounded-xl border border-border text-sub flex items-center justify-center font-bold hover:border-accent/50 hover:text-tx disabled:opacity-30 transition-all">−</button>
-              <span className="text-sm font-black text-tx w-6 text-center tabular-nums">{estimatedSessions}</span>
+              <span className="text-sm font-semibold text-tx w-6 text-center tabular-nums">{estimatedSessions}</span>
               <button onClick={() => setEstimatedSessions(n => Math.min(20, n + 1))} disabled={estimatedSessions >= 20}
                 className="w-7 h-7 rounded-xl border border-border text-sub flex items-center justify-center font-bold hover:border-accent/50 hover:text-tx disabled:opacity-30 transition-all">+</button>
             </div>
@@ -272,7 +272,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
 
           {/* Date picker */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">Due Date</span>
+            <span className="text-xs font-bold text-sub">Due Date</span>
             <div role="button" tabIndex={0} onClick={() => setShowCal(v => !v)}
               onKeyDown={e => e.key === "Enter" && setShowCal(v => !v)}
               className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3 cursor-pointer transition-colors select-none
@@ -301,7 +301,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
 
           {/* Repeat */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">Repeat</span>
+            <span className="text-xs font-bold text-sub">Repeat</span>
             <div className="flex gap-2">
               {(["none", "daily", "weekly"] as Repeat[]).map(r => (
                 <button key={r} type="button" onClick={() => setRepeat(r)}
@@ -315,7 +315,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
 
           {/* Subtasks */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">Subtasks</span>
+            <span className="text-xs font-bold text-sub">Subtasks</span>
             {subtasks.map(sub => (
               <div key={sub.id} className="flex items-center gap-3 bg-surface2 rounded-xl px-3 py-2.5 border border-border">
                 <span className="flex-1 text-sm text-tx truncate min-w-0">{sub.title}</span>
@@ -345,7 +345,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
             )}
             <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-border text-sub text-sm font-semibold hover:text-tx transition-all">Cancel</button>
             <button onClick={handleSave} disabled={!title.trim()}
-              className="flex-1 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover disabled:opacity-40 transition-all">
+              className="flex-1 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover disabled:opacity-40 transition-all">
               {task ? "Save" : "Create"}
             </button>
           </div>

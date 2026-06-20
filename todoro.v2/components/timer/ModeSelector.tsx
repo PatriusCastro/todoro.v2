@@ -57,7 +57,7 @@ export default function ModeSelector({
       {active === "custom" && !reverseMode && (
         <div className="flex gap-3 bg-surface2 rounded-xl p-3 border border-border">
           <div className="flex-1 flex flex-col gap-1">
-            <span className="text-[11px] font-semibold text-sub uppercase tracking-wide">Focus</span>
+            <span className="text-[11px] font-semibold text-sub">Focus</span>
             <div className="flex items-center gap-2">
               <input type="number" value={cf} min={1} max={180}
                 onChange={e => setCf(Number(e.target.value))}
@@ -68,7 +68,7 @@ export default function ModeSelector({
           </div>
           <div className="w-px bg-border" />
           <div className="flex-1 flex flex-col gap-1">
-            <span className="text-[11px] font-semibold text-sub uppercase tracking-wide">Break</span>
+            <span className="text-[11px] font-semibold text-sub">Break</span>
             <div className="flex items-center gap-2">
               <input type="number" value={cb} min={1} max={60}
                 onChange={e => setCb(Number(e.target.value))}
@@ -86,16 +86,16 @@ export default function ModeSelector({
           onClick={() => onQuickMode(!quickMode)}
           className={`w-full flex items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-all duration-200
             ${quickMode
-              ? "bg-[#FFBA00]/10 border-[#FFBA00]/40"
+              ? "bg-accent/10 border-accent/40"
               : "bg-transparent border-border hover:border-accent/30 hover:text-tx"}`}>
           <div className="flex items-center gap-2.5">
-            <HiBolt size={15} className={quickMode ? "text-[#FFBA00]" : "text-sub"} />
+            <HiBolt size={15} className={quickMode ? "text-accent" : "text-sub"} />
             <div className="text-left">
-              <p className={`text-xs font-bold ${quickMode ? "text-[#FFBA00]" : "text-tx"}`}>Quick Mode</p>
+              <p className={`text-xs font-bold ${quickMode ? "text-accent" : "text-tx"}`}>Quick Mode</p>
               <p className="text-[11px] text-sub">Focus without picking a task</p>
             </div>
           </div>
-          <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 ${quickMode ? "bg-[#FFBA00]" : "bg-ring"}`}>
+          <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 ${quickMode ? "bg-accent" : "bg-ring"}`}>
             <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${quickMode ? "translate-x-4" : "translate-x-0"}`} />
           </div>
         </button>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { HiArrowsPointingOut, HiChevronLeft, HiArrowTopRightOnSquare } from "react-icons/hi2"
+import { HiArrowsPointingOut, HiChevronLeft, HiArrowTopRightOnSquare, HiCheck } from "react-icons/hi2"
 import TimerRing from "../components/timer/TimerRing"
 import ModeSelector, { type Mode } from "../components/timer/ModeSelector"
 import TimerControls from "../components/timer/TimerControls"
@@ -99,7 +99,7 @@ export default function TimerPage({
     <div key={s.id} className="flex items-center gap-3">
       <button onMouseDown={() => onToggleSub(activeTask.id, s.id)}
         className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center ${s.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
-        {s.done && <span className="text-white text-[8px] font-black">✓</span>}
+        {s.done && <HiCheck size={9} className="text-white" />}
       </button>
       <span className={`text-xs truncate flex-1 ${s.done ? "line-through text-sub" : "text-tx"}`}>{s.title}</span>
     </div>
@@ -109,7 +109,7 @@ export default function TimerPage({
     <div className="flex items-center gap-2">
       <div className="flex gap-1 flex-1">
         {Array.from({ length: activeTask.estimatedSessions }).map((_, i) => (
-          <div key={i} className={`h-1.5 flex-1 rounded-full ${i < activeTask.completedSessions ? "bg-accent" : "bg-ring"}`} />
+          <div key={i} className={`h-1.5 flex-1 rounded-full ${i < activeTask.completedSessions ? "bg-tx" : "bg-ring"}`} />
         ))}
       </div>
       <span className="text-[11px] text-sub">{activeTask.completedSessions}/{activeTask.estimatedSessions}</span>
@@ -127,7 +127,7 @@ export default function TimerPage({
           <p className="text-sm font-semibold text-tx">Quick Mode</p>
         ) : (
           <>
-            <p className="text-sm font-semibold text-tx">{allDone ? "All tasks completed 🎉" : activeTask.title}</p>
+            <p className="text-sm font-semibold text-tx">{allDone ? "All tasks completed" : activeTask.title}</p>
             {!allDone && phase === "focus" && todaySessionsForTask > 0 && (
               <p className="text-xs text-sub mt-1">{todaySessionsForTask} {todaySessionsForTask === 1 ? "Pomodoro" : "Pomodoros"} today</p>
             )}
@@ -160,9 +160,9 @@ export default function TimerPage({
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-tx">Timer</h1>
+          <h1 className="text-2xl md:text-3xl font-semibold text-tx">Timer</h1>
           <p className="text-sm text-sub mt-0.5">
-            {allDone ? "All tasks completed 🎉" : `Session ${sessions + 1}/${totalSessions}`}
+            {allDone ? "All tasks completed" : `Session ${sessions + 1}/${totalSessions}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -246,7 +246,7 @@ export default function TimerPage({
             </div>
             <div className="h-2 rounded-full bg-ring overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-1000 ease-linear ${phase === "focus" ? "bg-accent" : "bg-priority-low"}`}
+                className="h-full rounded-full transition-all duration-1000 ease-linear bg-tx"
                 style={{ width: `${reverseBarProgress}%` }} />
             </div>
             {!allDone && phase === "focus" && (
@@ -259,7 +259,7 @@ export default function TimerPage({
                         <span className="text-xs text-sub">{todaySessionsForTask} {todaySessionsForTask === 1 ? "Pomodoro" : "Pomodoros"} today</span>
                         <div className="flex gap-1 flex-1">
                           {Array.from({ length: Math.min(todaySessionsForTask, 5) }).map((_, i) => (
-                            <div key={i} className="h-1.5 flex-1 rounded-full bg-accent" />
+                            <div key={i} className="h-1.5 flex-1 rounded-full bg-tx" />
                           ))}
                         </div>
                       </div>

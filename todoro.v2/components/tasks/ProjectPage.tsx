@@ -94,11 +94,11 @@ export default function ProjectPage({
         <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
           <span className="text-base">{toast ? EMOJI[toast.type] : "✅"}</span>
           <div className="flex flex-col">
-            <span className="text-sm font-black text-tx">{toast?.title}</span>
+            <span className="text-sm font-semibold text-tx">{toast?.title}</span>
             {toast?.sub && <span className="text-xs text-sub">{toast.sub}</span>}
           </div>
           {toast?.undoFn && (
-            <button onClick={toast.undoFn} className="ml-2 text-sm font-black text-accent hover:underline">Undo</button>
+            <button onClick={toast.undoFn} className="ml-2 text-sm font-semibold text-accent hover:underline">Undo</button>
           )}
         </div>
       </div>
@@ -120,7 +120,7 @@ export default function ProjectPage({
 
         {/* Name + counts */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-black text-tx truncate">{project.name}</h1>
+          <h1 className="text-xl font-semibold text-tx truncate">{project.name}</h1>
           <p className="text-xs text-sub">{pending.length} pending · {done.length} done</p>
         </div>
 
@@ -136,7 +136,7 @@ export default function ProjectPage({
         {/* New task */}
         <button
           onClick={() => { setModalTask(undefined); setShowModal(true) }}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent text-white text-xs font-black hover:bg-accent-hover transition-all">
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent text-white text-xs font-semibold hover:bg-accent-hover transition-all">
           <HiPlus size={13} /> New
         </button>
       </div>
@@ -168,7 +168,7 @@ export default function ProjectPage({
           <button
             onClick={() => setShowDone(v => !v)}
             className="flex items-center justify-between py-1.5 w-full">
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">
+            <span className="text-xs font-bold text-sub">
               Completed — {done.length}
             </span>
             <HiChevronDown size={12} className="text-sub transition-transform duration-200"

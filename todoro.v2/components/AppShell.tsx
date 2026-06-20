@@ -72,7 +72,7 @@ export default function AppShell({
         ${running ? (phase === "focus" ? "border-accent" : "border-priority-low") : "border-border"}`}>
       {avatarUrl
         ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-        : <div className="w-full h-full bg-surface2 flex items-center justify-center text-sub font-black"
+        : <div className="w-full h-full bg-surface2 flex items-center justify-center text-sub font-semibold"
             style={{ fontSize: size * 0.3 }}>
             {initials}
           </div>
@@ -86,7 +86,7 @@ export default function AppShell({
 
         {/* Desktop header */}
         {isTablet && !hideNavbar && (
-          <header className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 w-full py-2 mx-auto bg-surface/90 backdrop-blur-xl
+          <header className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 w-full py-2 mx-auto bg-surface border-b border-border
               transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
             <div className="max-w-7xl w-full h-12 mx-auto flex px-4 lg:px-8">
               <div className="flex items-center gap-2 px-3 py-2 shrink-0">
@@ -142,7 +142,7 @@ export default function AppShell({
         <main className={`flex-1 overflow-y-auto ${isTablet && !hideNavbar ? "pt-20" : ""} ${isTablet ? "" : "pb-20"}`}>
           <div key={animKey}
             style={{ animation: "tabenter 0.2s ease both" }}
-            className="w-full max-w-7xl mx-auto px-4 lg:px-10 py-6">
+            className="w-full max-w-7xl mx-auto px-4 lg:px-10 py-8">
             {children}
           </div>
         </main>
@@ -152,7 +152,7 @@ export default function AppShell({
           <div className={`fixed bottom-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none
             transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}>
             <div ref={navContainerRef}
-              className="w-full pointer-events-auto relative flex items-center justify-between backdrop-blur-md border border-border rounded-3xl p-2">
+              className="w-full pointer-events-auto relative flex items-center justify-between bg-surface border border-border rounded-3xl p-2">
               {pill.ready && (
                 <div className="absolute top-1.5 bottom-1.5 bg-gray-500/10 rounded-2xl pointer-events-none"
                   style={{ left: pill.left, width: pill.width, transition: pillTrans }} />
@@ -172,7 +172,7 @@ export default function AppShell({
                             ${active ? "border-border" : "border-border/50"}`}>
                           {avatarUrl
                             ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-                            : <span className="w-full h-full flex items-center justify-center font-black text-[8px] bg-surface2 text-sub">
+                            : <span className="w-full h-full flex items-center justify-center font-semibold text-[8px] bg-surface2 text-sub">
                                 {initials}
                               </span>
                           }

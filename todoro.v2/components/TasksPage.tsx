@@ -163,11 +163,11 @@ export default function TasksPage({
         <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
           <span className="text-base">{toast ? EMOJI[toast.type] : "✅"}</span>
           <div className="flex flex-col">
-            <span className="text-sm font-black text-tx">{toast?.title}</span>
+            <span className="text-sm font-semibold text-tx">{toast?.title}</span>
             {toast?.sub && <span className="text-xs text-sub">{toast.sub}</span>}
           </div>
           {toast?.undoFn && (
-            <button onClick={toast.undoFn} className="ml-2 text-sm font-black text-accent hover:underline">
+            <button onClick={toast.undoFn} className="ml-2 text-sm font-semibold text-accent hover:underline">
               Undo
             </button>
           )}
@@ -177,12 +177,12 @@ export default function TasksPage({
       {/* Page header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-black text-tx">Tasks</h1>
+          <h1 className="text-2xl font-semibold text-tx">Tasks</h1>
           <p className="text-sm text-sub mt-0.5">{pendingCount} pending · {doneCount} done</p>
         </div>
         <button
           onClick={() => { setModalTask(undefined); setShowModal(true) }}
-          className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover active:scale-95 transition-all">
+          className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover active:scale-95 transition-all">
           <HiPlus size={14} /> New task
         </button>
       </div>
@@ -243,7 +243,7 @@ export default function TasksPage({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <HiFolder size={13} className="text-sub" />
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">
+            <span className="text-xs font-bold text-sub">
               Projects · {projects.length}
             </span>
           </div>
@@ -286,7 +286,7 @@ export default function TasksPage({
           {unassigned.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between py-1">
-                <span className="text-xs font-bold text-sub uppercase tracking-wider">
+                <span className="text-xs font-bold text-sub">
                   {projects.length > 0 ? "No project" : `Pending — ${allPending.length}`}
                 </span>
               </div>
@@ -302,7 +302,7 @@ export default function TasksPage({
         <div className="flex flex-col">
           <button onClick={() => setShowDone(v => !v)}
             className="flex items-center justify-between py-1.5 w-full">
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">
+            <span className="text-xs font-bold text-sub">
               Completed — {done.length}
             </span>
             <HiChevronDown size={12} className="text-sub transition-transform duration-200"

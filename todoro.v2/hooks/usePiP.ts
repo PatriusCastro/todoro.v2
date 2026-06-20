@@ -56,7 +56,7 @@ function buildPiPHTML(s: PiPState): string {
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
   .wrap{display:flex;align-items:center;justify-content:center;height:100%;gap:10px;padding:12px;}
   .top{display:flex;flex-direction:column;align-items:center;gap:6px;}
-  .phase{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:${sub};}
+  .phase{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:${sub};}
   .dot{width:6px;height:6px;border-radius:50%;background:${phaseDot};${pulseCss}}
   .ring{position:relative;width:${size}px;height:${size}px;}
   .ring svg{transform:rotate(-90deg);}

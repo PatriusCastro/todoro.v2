@@ -366,10 +366,10 @@ export default function Home() {
         playChime(false)
         buzz(20)
         if (nextCycle % LONG_BREAK_INTERVAL === 0) {
-          notify("🍅 Focus complete!", "Great work — time for a long break.")
+          notify("Focus complete", "Great work — time for a long break.")
           setPhase("longbreak"); setTime(LONG_BREAK_MINS * 60)
         } else {
-          notify("🍅 Focus complete!", "Nice session — take a short break.")
+          notify("Focus complete", "Nice session — take a short break.")
           setPhase("break"); setTime(breakMins * 60)
         }
         if (nextCycle % LONG_BREAK_INTERVAL === 0) {
@@ -383,7 +383,7 @@ export default function Home() {
     } else {
       if (completed) {
         playChime(true)
-        notify("⚡ Break's over!", "Ready to focus? Let's get back to it.")
+        notify("Break's over", "Ready to focus? Let's get back to it.")
         setPhase("focus"); setTime(focusMins * 60)
       }
       setPhase("focus")
@@ -593,9 +593,9 @@ export default function Home() {
       <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 pointer-events-none transition-all duration-300
         ${toast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
         <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap">
-          <span className="text-base">🎉</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
           <div className="flex flex-col">
-            <span className="text-sm font-black text-tx">Session complete!</span>
+            <span className="text-sm font-semibold text-tx">Session complete!</span>
             <span className="text-xs text-sub">+{toast?.points} pts · {toast?.streak} day streak</span>
           </div>
         </div>

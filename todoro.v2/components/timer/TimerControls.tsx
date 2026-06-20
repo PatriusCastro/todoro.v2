@@ -32,13 +32,13 @@ export default function TimerControls({
       {showStopAndRest ? (
         <button
           onClick={onStopAndRest}
-          className="flex items-center gap-2 px-8 py-3 rounded-full text-white text-sm font-black min-w-27.5 justify-center
+          className="flex items-center gap-2 px-8 py-3 rounded-full text-white text-sm font-semibold min-w-27.5 justify-center
             bg-priority-low hover:bg-[#42c956] active:scale-95 transition-all duration-150">
           <HiStop size={14} /> Stop &amp; Rest
         </button>
       ) : (
         <button onClick={onToggle}
-          className={`flex items-center gap-2 px-8 py-3 rounded-full text-white text-sm font-black min-w-27.5 justify-center
+          className={`flex items-center gap-2 px-8 py-3 rounded-full text-white text-sm font-semibold min-w-27.5 justify-center
             active:scale-95 transition-all duration-150
             ${!isBreak
               ? "bg-accent hover:bg-accent-hover"

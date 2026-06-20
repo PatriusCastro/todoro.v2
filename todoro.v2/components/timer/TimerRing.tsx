@@ -34,18 +34,18 @@ export default function TimerRing({
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--ring)" strokeWidth={12} />
-        <circle cx={cx} cy={cx} r={r} fill="none" stroke={stroke} strokeWidth={9}
+        <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--ring)" strokeWidth={7} />
+        <circle cx={cx} cy={cx} r={r} fill="none" stroke={stroke} strokeWidth={7}
           strokeLinecap="round" strokeDasharray={C}
           strokeDashoffset={C * (1 - displayProgress)}
           style={{ transition: "stroke-dashoffset 1s linear" }} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-        <span className="text-[11px] font-bold tracking-widest uppercase text-sub">
+        <span className="text-[11px] font-medium text-sub">
           {displayLabel}
         </span>
         <span
-          className="font-black tracking-tighter leading-none text-tx tabular-nums"
+          className="font-semibold tracking-tight leading-none text-tx tabular-nums"
           style={{ fontSize: size < 200 ? "2.25rem" : size < 280 ? "3rem" : "3.75rem" }}>
           {minutes}:{seconds.toString().padStart(2, "0")}
         </span>

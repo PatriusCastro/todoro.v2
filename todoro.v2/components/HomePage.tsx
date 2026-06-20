@@ -67,9 +67,9 @@ function MiniCalendar({
 
   function dotColor(count: number) {
     if (count === 0) return null
-    if (count === 1) return "bg-accent/40"
-    if (count <= 3)  return "bg-accent/70"
-    return "bg-accent"
+    if (count === 1) return "bg-tx/25"
+    if (count <= 3)  return "bg-tx/50"
+    return "bg-tx/80"
   }
 
   return (
@@ -78,7 +78,7 @@ function MiniCalendar({
         <button onClick={prevMonth} aria-label="Previous month" className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
           <HiChevronLeft size={15} />
         </button>
-        <span className="text-sm font-black text-tx">{MONTHS_SHORT[month]} {year}</span>
+        <span className="text-sm font-semibold text-tx">{MONTHS_SHORT[month]} {year}</span>
         <button onClick={nextMonth} aria-label="Next month" className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
           <HiChevronRight size={15} />
         </button>
@@ -104,7 +104,7 @@ function MiniCalendar({
               className={`relative flex flex-col items-center justify-center rounded-lg h-8
                 ${isToday ? "bg-accent/15" : "hover:bg-surface2"}
                 transition-colors duration-100`}>
-              <span className={`text-xs font-semibold leading-none ${isToday ? "text-accent font-black" : "text-tx"}`}>
+              <span className={`text-xs font-semibold leading-none ${isToday ? "text-accent font-semibold" : "text-tx"}`}>
                 {day}
               </span>
               {dot && <span className={`w-1 h-1 rounded-full mt-0.5 ${dot}`} />}
@@ -127,9 +127,9 @@ function StatTile({ icon, label, value, sub, accent }: {
     <div className="rounded-2xl border border-border bg-surface px-5 py-4 flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <span className="text-sub">{icon}</span>
-        <span className="text-xs font-bold text-sub uppercase tracking-widest">{label}</span>
+        <span className="text-xs font-bold text-sub">{label}</span>
       </div>
-      <span className="text-3xl font-black leading-none" style={accent ? { color: accent } : undefined}>
+      <span className="text-3xl font-semibold leading-none" style={accent ? { color: accent } : undefined}>
         {value} {sub && <span className="font-semibold text-xs text-sub">{sub}</span>}
       </span>
     </div>
@@ -158,7 +158,7 @@ export default function HomePage({
   const allDone      = tasks.every(t => t.done)
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
 
       {/* Greeting */}
       <div className="flex items-center justify-between">
@@ -168,7 +168,7 @@ export default function HomePage({
               ${running ? "border-priority-low" : "border-accent/20"}`}>
               {avatarUrl
                 ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-                : <div className="w-full h-full bg-accent/15 flex items-center justify-center text-accent font-black text-sm">
+                : <div className="w-full h-full bg-surface2 flex items-center justify-center text-tx font-semibold text-sm">
                     {firstName.slice(0, 2).toUpperCase()}
                   </div>
               }
@@ -176,8 +176,8 @@ export default function HomePage({
             {running && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-priority-low border-2 border-bg" />}
           </button>
           <div>
-            <p className="text-xs font-semibold text-sub uppercase tracking-widest">{greeting}</p>
-            <h1 className="text-xl font-black text-tx leading-tight">
+            <p className="text-xs font-semibold text-sub">{greeting}</p>
+            <h1 className="text-xl font-semibold text-tx leading-tight">
               {firstName}
               {running && <span className="ml-2 text-sm font-semibold text-priority-low">· focusing</span>}
             </h1>
@@ -186,8 +186,8 @@ export default function HomePage({
         {/* Level + points — tap to open the rewards shop */}
         <button onClick={onOpenShop}
           className="flex items-center gap-2 border border-border rounded-xl pl-2 pr-3.5 py-1.5 bg-surface hover:border-accent/40 active:scale-95 transition-all">
-          <span className="text-[10px] font-black text-accent bg-accent/10 rounded-lg px-1.5 py-1 leading-none">Lv {level}</span>
-          <HiStar size={13} color="#FFBA00" />
+          <span className="text-[10px] font-semibold text-sub bg-surface2 rounded-lg px-1.5 py-1 leading-none">Lv {level}</span>
+          <HiStar size={13} className="text-sub" />
           <span className="text-sm font-bold text-tx">{totalPoints} pts</span>
         </button>
       </div>
@@ -209,17 +209,16 @@ export default function HomePage({
         
           {/* Today's goal */}
           <div className={`sm:hidden col-span-12 rounded-2xl border bg-surface px-5 py-4 transition-colors duration-300
-            ${goalHit ? "border-priority-low/40 bg-priority-low/5" : "border-border"}`}>
+            ${goalHit ? "border-border bg-surface2" : "border-border"}`}>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-sub uppercase tracking-widest">Today&apos;s Goal</span>
-              <span className={`text-sm font-bold ${goalHit ? "text-priority-low" : "text-sub"}`}>
-                {sessions} / {totalSessions} sessions {goalHit && "✓"}
-              </span>
+              <span className="text-xs font-bold text-sub">Today&apos;s Goal</span>
+              <span className={`text-sm font-bold ${goalHit ? "text-tx" : "text-sub"}`}>
+                {sessions} / {totalSessions} sessions              </span>
             </div>
             <div className="flex items-center gap-1.5">
               {Array.from({ length: totalSessions }).map((_, i) => (
                 <div key={i} className={`h-2.5 flex-1 rounded-full transition-all duration-500
-                  ${i < sessions ? goalHit ? "bg-priority-low" : "bg-accent" : "bg-ring"}`} />
+                  ${i < sessions ? "bg-tx" : "bg-ring"}`} />
               ))}
             </div>
           </div>
@@ -229,16 +228,16 @@ export default function HomePage({
 
           <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between">
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className="text-xs font-bold text-sub uppercase tracking-widest shrink-0">Now</span>
+              <span className="text-xs font-bold text-sub shrink-0">Now</span>
               {allDone
-                ? <span className="text-sm text-sub italic">All tasks done 🎉</span>
+                ? <span className="text-sm text-sub italic">All tasks done</span>
                 : <>
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(activeTask.priority) }} />
                     <span className="text-sm font-semibold text-tx truncate">{activeTask.title}</span>
                   </>
               }
               {quickMode && (
-                <span className="ml-auto text-xs font-bold text-[#FFBA00] uppercase tracking-widest">
+                <span className="ml-auto text-xs font-bold text-sub">
                   Quick Mode
                 </span>
               )}
@@ -254,7 +253,7 @@ export default function HomePage({
               <div className="flex gap-1 flex-1">
                 {Array.from({ length: activeTask.estimatedSessions }).map((_, i) => (
                   <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300
-                    ${i < activeTask.completedSessions ? "bg-accent" : "bg-ring"}`} />
+                    ${i < activeTask.completedSessions ? "bg-tx" : "bg-ring"}`} />
                 ))}
               </div>
               <span className="text-xs text-sub shrink-0">
@@ -274,13 +273,13 @@ export default function HomePage({
             <div className="my-4 relative cursor-pointer group" style={{ width: size, height: size }}
               onClick={onNavToTimer}>
               <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-                <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--ring)" strokeWidth={13} />
-                <circle cx={cx} cy={cx} r={r} fill="none" stroke={ringColor} strokeWidth={9}
+                <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--ring)" strokeWidth={6} />
+                <circle cx={cx} cy={cx} r={r} fill="none" stroke={ringColor} strokeWidth={6}
                   strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - progress)}
                   style={{ transition: "stroke-dashoffset 1s linear" }} />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                <span className="text-5xl font-black text-tx tabular-nums leading-none tracking-tight">
+                <span className="text-5xl font-semibold text-tx tabular-nums leading-none tracking-tight">
                   {minutes}:{seconds.toString().padStart(2, "0")}
                 </span>
                 <span className="text-sm text-sub">
@@ -292,7 +291,7 @@ export default function HomePage({
               </div>
             </div>
             <button onClick={onTimerToggle}
-              className={`w-full py-3.5 rounded-xl text-white text-sm font-black active:scale-95 transition-all duration-150
+              className={`w-full py-3.5 rounded-xl text-white text-sm font-semibold active:scale-95 transition-all duration-150
                 ${phase === "focus" ? "bg-accent hover:bg-accent-hover" : "bg-priority-low hover:bg-[#42c956]"}`}>
               <span className="flex items-center justify-center gap-2">
                 {running
@@ -310,25 +309,24 @@ export default function HomePage({
 
           {/* Today's goal */}
           <div className={`hidden sm:grid rounded-2xl border bg-surface px-5 py-4 transition-colors duration-300
-            ${goalHit ? "border-priority-low/40 bg-priority-low/5" : "border-border"}`}>
+            ${goalHit ? "border-border bg-surface2" : "border-border"}`}>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-sub uppercase tracking-widest">Today&apos;s Goal</span>
-              <span className={`text-sm font-bold ${goalHit ? "text-priority-low" : "text-sub"}`}>
-                {sessions} / {totalSessions} sessions {goalHit && "✓"}
-              </span>
+              <span className="text-xs font-bold text-sub">Today&apos;s Goal</span>
+              <span className={`text-sm font-bold ${goalHit ? "text-tx" : "text-sub"}`}>
+                {sessions} / {totalSessions} sessions              </span>
             </div>
             <div className="flex items-center gap-1.5">
               {Array.from({ length: totalSessions }).map((_, i) => (
                 <div key={i} className={`h-2.5 flex-1 rounded-full transition-all duration-500
-                  ${i < sessions ? goalHit ? "bg-priority-low" : "bg-accent" : "bg-ring"}`} />
+                  ${i < sessions ? "bg-tx" : "bg-ring"}`} />
               ))}
             </div>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
-            <StatTile icon={<HiFire size={14} />}        label="Streak" value={`${streak}d`}      sub="streak"           accent="#FFBA00" />
-            <StatTile icon={<HiCheckCircle size={14} />} label="Done"   value={doneTasks.length}  sub={`of ${tasks.length} tasks`} accent="#51CF66" />
+            <StatTile icon={<HiFire size={14} />}        label="Streak" value={`${streak}d`} />
+            <StatTile icon={<HiCheckCircle size={14} />} label="Done"   value={doneTasks.length}  sub={`of ${tasks.length} tasks`} />
           </div>
 
           {/* Up Next and Calendar */}
@@ -339,7 +337,7 @@ export default function HomePage({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <HiListBullet size={14} className="text-sub" />
-                  <span className="text-xs font-bold text-sub uppercase tracking-widest">Up Next</span>
+                  <span className="text-xs font-bold text-sub">Up Next</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <button onClick={onQuickAdd}
@@ -355,7 +353,7 @@ export default function HomePage({
 
               {pendingTasks.length === 0
                 ? <p className="text-sm text-sub italic text-center py-3">
-                    {allDone ? "All tasks completed! 🎉" : "No pending tasks"}
+                    {allDone ? "All tasks completed" : "No pending tasks"}
                   </p>
                 : <div className="flex flex-col gap-2">
                     {pendingTasks.slice(0, 3).map(t => (

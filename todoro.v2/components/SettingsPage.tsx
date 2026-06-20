@@ -124,7 +124,7 @@ export default function SettingsPage({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="text-2xl md:text-3xl font-black text-tx">Settings</h1>
+        <h1 className="text-2xl md:text-3xl font-semibold text-tx">Settings</h1>
         <p className="text-sm text-sub mt-0.5">Make Todoro yours</p>
       </div>
 
@@ -134,7 +134,7 @@ export default function SettingsPage({
             <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-border bg-surface2 flex items-center justify-center">
               {avatarUrl
                 ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-                : <span className="text-xl font-black text-sub">{initials}</span>
+                : <span className="text-xl font-semibold text-sub">{initials}</span>
               }
             </div>
             <button onClick={() => fileRef.current?.click()}
@@ -145,7 +145,7 @@ export default function SettingsPage({
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
           </div>
           <div className="flex flex-col gap-1 flex-1 min-w-0">
-            <span className="text-xs font-bold text-sub uppercase tracking-wide">Photo</span>
+            <span className="text-xs font-bold text-sub">Photo</span>
             <span className="text-xs text-sub">Tap the icon to upload</span>
             {avatarUrl && (
               <button onClick={() => onAvatarUrl("")}
@@ -198,7 +198,7 @@ export default function SettingsPage({
           <span className="flex-1 text-sm font-medium text-tx">Daily Session Goal</span>
           <div className="flex items-center gap-2">
             <StepBtn onClick={() => onDailyGoal(Math.max(1, dailyGoal - 1))} disabled={dailyGoal <= 1}>−</StepBtn>
-            <span className="text-sm font-black text-tx w-20 text-center tabular-nums">
+            <span className="text-sm font-semibold text-tx w-20 text-center tabular-nums">
               {dailyGoal} <span className="text-xs font-normal text-sub">sessions</span>
             </span>
             <StepBtn onClick={() => onDailyGoal(Math.min(12, dailyGoal + 1))} disabled={dailyGoal >= 12}>+</StepBtn>
@@ -246,7 +246,7 @@ export default function SettingsPage({
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-xs font-bold text-sub uppercase tracking-widest px-1">{label}</span>
+      <span className="text-xs font-bold text-sub px-1">{label}</span>
       <div className="rounded-2xl border border-border bg-surface overflow-hidden divide-y divide-border">
         {children}
       </div>

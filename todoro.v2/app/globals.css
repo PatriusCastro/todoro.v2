@@ -59,15 +59,6 @@
   --color-ring:     var(--ring);
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(circle at 20% 20%, var(--accent-dim), transparent 40%);
-  pointer-events: none;
-  transition: background 0.4s;
-}
-
 *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { height: 100%; }
 body { margin: 0; min-height: 100dvh; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; overscroll-behavior: none; background: var(--bg); color: var(--tx); transition: background 0.3s, color 0.3s; }

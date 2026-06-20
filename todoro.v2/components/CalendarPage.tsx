@@ -87,7 +87,7 @@ export default function CalendarPage({ tasks, allHistory, initialDate }: Calenda
     <div className="flex flex-col gap-6">
 
       <div>
-        <h1 className="text-2xl md:text-3xl font-black text-tx">Calendar</h1>
+        <h1 className="text-2xl md:text-3xl font-semibold text-tx">Calendar</h1>
         <p className="text-sm text-sub mt-0.5">Tasks & focus history</p>
       </div>
 
@@ -100,7 +100,7 @@ export default function CalendarPage({ tasks, allHistory, initialDate }: Calenda
             className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
             <HiChevronLeft size={18} />
           </button>
-          <span className="text-sm font-black text-tx">{MONTHS[month]} {year}</span>
+          <span className="text-sm font-semibold text-tx">{MONTHS[month]} {year}</span>
           <button onClick={nextMonth} aria-label="Next month"
             className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
             <HiChevronRight size={18} />
@@ -166,7 +166,7 @@ export default function CalendarPage({ tasks, allHistory, initialDate }: Calenda
         <div className="rounded-2xl border border-border bg-surface px-5 py-4 flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <HiCalendarDays size={15} className="text-sub" />
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">
+            <span className="text-xs font-bold text-sub">
               {new Date(selectedStr + "T00:00").toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}
             </span>
           </div>
@@ -197,7 +197,7 @@ export default function CalendarPage({ tasks, allHistory, initialDate }: Calenda
       {/* Contribution heatmap */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between px-1">
-          <span className="text-xs font-bold text-sub uppercase tracking-wider">Focus History</span>
+          <span className="text-xs font-bold text-sub">Focus History</span>
           <div className="flex items-center gap-1.5 text-[10px] text-sub">
             <span>Less</span>
             {["bg-ring", "bg-accent/25", "bg-accent/50", "bg-accent/75", "bg-accent"].map(c => (

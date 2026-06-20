@@ -47,13 +47,13 @@ export default function ProjectModal({ project, onSave, onDelete, onClose, dark 
   return createPortal(
     <div className={dark ? "dark" : ""}>
       <div
-        className="fixed inset-0 z-9999 flex items-end md:items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+        className="fixed inset-0 z-9999 flex items-end md:items-center justify-center p-4 bg-black/70"
         onClick={e => { if (e.target === e.currentTarget) onClose() }}>
         <div className="w-full max-w-md bg-surface border border-border rounded-3xl flex flex-col gap-4 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.5)] max-h-[90dvh] overflow-y-auto">
 
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h2 className="font-black text-lg text-tx">{isEdit ? "Edit Project" : "New Project"}</h2>
+            <h2 className="font-semibold text-lg text-tx">{isEdit ? "Edit Project" : "New Project"}</h2>
             <button onClick={onClose} aria-label="Close" className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors">
               <HiXMark size={16} />
             </button>
@@ -73,7 +73,7 @@ export default function ProjectModal({ project, onSave, onDelete, onClose, dark 
 
           {/* Color */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">Color</span>
+            <span className="text-xs font-bold text-sub">Color</span>
             <div className="flex flex-wrap gap-2.5">
               {PRESET_COLORS.map(c => (
                 <button
@@ -121,7 +121,7 @@ export default function ProjectModal({ project, onSave, onDelete, onClose, dark 
             <button
               onClick={handleSave}
               disabled={!name.trim()}
-              className="flex-1 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover disabled:opacity-40 transition-all">
+              className="flex-1 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover disabled:opacity-40 transition-all">
               {isEdit ? "Save" : "Create"}
             </button>
           </div>
