@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder } from "react-icons/hi2"
+import { useState, useCallback, useEffect } from "react"
+import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiArrowsRightLeft } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import TaskModal from "../components/tasks/TaskModal"
 import ProjectCard from "../components/tasks/ProjectCard"
@@ -50,6 +50,16 @@ export default function TasksPage({
   const { pinned, togglePin } = usePinnedTasks()
   const { pending: deletePending, stage: stageDelete, undo } = useUndo(onDelete)
   const [activeProject, setActiveProject] = useState<Project | null>(null)
+
+  // One-time coaching for the swipe gestures (pin / delete)
+  const [showSwipeHint, setShowSwipeHint] = useState(false)
+  useEffect(() => {
+    try { if (!localStorage.getItem("todoro:swipeHintSeen")) setShowSwipeHint(true) } catch {}
+  }, [])
+  const dismissSwipeHint = useCallback(() => {
+    setShowSwipeHint(false)
+    try { localStorage.setItem("todoro:swipeHintSeen", "1") } catch {}
+  }, [])
 
   const handleDelete = useCallback((task: Task) => {
     stageDelete(task)
@@ -213,6 +223,19 @@ export default function TasksPage({
           Done ({doneCount})
         </button>
       </div>
+
+      {/* Swipe coaching (first visit) */}
+      {showSwipeHint && tasks.length > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-2.5">
+          <HiArrowsRightLeft size={15} className="text-accent shrink-0" />
+          <p className="text-xs text-tx flex-1">
+            <span className="font-bold">Tip:</span> swipe a task right to pin it, left to delete.
+          </p>
+          <button onClick={dismissSwipeHint} className="text-sub hover:text-tx transition-colors shrink-0">
+            <HiXMark size={14} />
+          </button>
+        </div>
+      )}
 
       {/* ── Projects section ───────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2">

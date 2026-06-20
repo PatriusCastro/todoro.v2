@@ -7,6 +7,8 @@ import TimerPage    from "../components/TimerPage"
 import TasksPage    from "../components/TasksPage"
 import SettingsPage from "../components/SettingsPage"
 import CalendarPage from "../components/CalendarPage"
+import Onboarding   from "../components/Onboarding"
+import NotifPrompt  from "../components/NotifPrompt"
 import { type Mode } from "../components/timer/ModeSelector"
 import { type Task } from "../components/tasks/TaskCard"
 import TaskModal, { type Project } from "../components/tasks/TaskModal"
@@ -108,6 +110,12 @@ export default function Home() {
   const [tab,       setTab]       = useState<Tab>("home")
   const [calendarDate, setCalendarDate] = useState<string | null>(null)
   const [showAdd,   setShowAdd]   = useState(false)
+  const [onboarded, setOnboarded] = useState(() => {
+    if (load("todoro:onboarded", false)) return true
+    // Returning users (name already saved) skip the welcome
+    try { return localStorage.getItem("todoro:userName") !== null } catch { return true }
+  })
+  const [notifPrompt, setNotifPrompt] = useState(false)
   const [userName,  setUserName]  = useState(() => load("todoro:userName",  "Bossing"))
   const [dark,      setDark]      = useState(() => load("todoro:dark",      true))
   const [sound,     setSound]     = useState(() => load("todoro:sound",     true))
@@ -214,6 +222,16 @@ export default function Home() {
   useEffect(() => { save("todoro:history",     allHistory)  }, [allHistory])
   useEffect(() => { save("todoro:accentTheme", accentTheme) }, [accentTheme])
   useEffect(() => { save("todoro:notifications", notifications) }, [notifications])
+  useEffect(() => { save("todoro:onboarded",     onboarded)     }, [onboarded])
+
+  // After the first completed focus session, offer to enable notifications (once)
+  useEffect(() => {
+    if (cycleCount === 0 || notifications) return
+    if (load("todoro:notifPrompted", false)) return
+    if (typeof Notification === "undefined" || Notification.permission === "denied") return
+    const id = setTimeout(() => setNotifPrompt(true), 1200)
+    return () => clearTimeout(id)
+  }, [cycleCount, notifications])
 
   useWakeLock(running)
   useDocumentTitle(time, phase, running)
@@ -511,6 +529,31 @@ export default function Home() {
           onSave={t => { handleSaveTask(t); setShowAdd(false) }}
           onClose={() => setShowAdd(false)}
           onCreateProject={handleSaveProject} />
+      )}
+
+      {/* First-run welcome / name capture */}
+      {!onboarded && (
+        <Onboarding
+          dark={dark}
+          initialName={userName}
+          onComplete={name => { if (name) setUserName(name); setOnboarded(true) }} />
+      )}
+
+      {/* One-time nudge to enable notifications after the first session */}
+      {notifPrompt && (
+        <NotifPrompt
+          dark={dark}
+          onEnable={async () => {
+            setNotifPrompt(false)
+            save("todoro:notifPrompted", true)
+            if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
+              const res = await Notification.requestPermission()
+              if (res === "granted") setNotifications(true)
+            } else {
+              setNotifications(true)
+            }
+          }}
+          onDismiss={() => { setNotifPrompt(false); save("todoro:notifPrompted", true) }} />
       )}
 
     </AppShell>
