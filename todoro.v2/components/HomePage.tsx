@@ -22,6 +22,7 @@ interface HomePageProps {
   avatarUrl: string; onNavToSettings: () => void
   allHistory: { taskId: string; taskTitle: string; focusMins: number; at: number }[]
   onNavToCalendar: (date?: string) => void;   quickMode: boolean
+  onOpenShop: () => void; canRestore: boolean
 }
 
 function phaseLabel(phase: Phase) {
@@ -140,7 +141,7 @@ export default function HomePage({
   sessions, totalSessions, onTimerToggle, onNavToTimer, onNavToCalendar,
   tasks, activeTask, onToggleTask, allHistory, onToggleSub,
   onNavToTasks, onOpenTask, onStartFocus, onQuickAdd, streak, totalPoints, greeting, userName,
-  avatarUrl, onNavToSettings, quickMode
+  avatarUrl, onNavToSettings, quickMode, onOpenShop, canRestore
 }: HomePageProps) {
   const minutes  = Math.floor(time / 60)
   const seconds  = time % 60
@@ -182,12 +183,25 @@ export default function HomePage({
             </h1>
           </div>
         </div>
-        {/* Points only — streak has its own tile below */}
-        <div className="flex items-center gap-2 border border-border rounded-xl px-3.5 py-2 bg-surface">
+        {/* Points — tap to open the rewards shop */}
+        <button onClick={onOpenShop}
+          className="flex items-center gap-2 border border-border rounded-xl px-3.5 py-2 bg-surface hover:border-accent/40 active:scale-95 transition-all">
           <HiStar size={13} color="#FFBA00" />
           <span className="text-sm font-bold text-tx">{totalPoints} pts</span>
-        </div>
+        </button>
       </div>
+
+      {/* Streak restore nudge */}
+      {canRestore && (
+        <button onClick={onOpenShop}
+          className="flex items-center gap-3 rounded-2xl border border-priority-low/40 bg-priority-low/5 px-4 py-3 text-left hover:border-priority-low/60 transition-colors">
+          <HiFire size={16} className="text-priority-low shrink-0" />
+          <p className="text-xs font-semibold text-tx flex-1">
+            Your streak broke — tap to restore it with a Streak Freeze.
+          </p>
+          <HiChevronRight size={14} className="text-sub shrink-0" />
+        </button>
+      )}
 
       {/* Bento */}
       <div className="grid grid-cols-12 gap-3">

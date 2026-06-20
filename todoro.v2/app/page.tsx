@@ -9,6 +9,7 @@ import SettingsPage from "../components/SettingsPage"
 import CalendarPage from "../components/CalendarPage"
 import Onboarding   from "../components/Onboarding"
 import NotifPrompt  from "../components/NotifPrompt"
+import ShopModal    from "../components/ShopModal"
 import { type Mode } from "../components/timer/ModeSelector"
 import { type Task } from "../components/tasks/TaskCard"
 import TaskModal, { type Project } from "../components/tasks/TaskModal"
@@ -30,6 +31,8 @@ function uid() { return Math.random().toString(36).slice(2) }
 
 const LONG_BREAK_INTERVAL = 4
 const LONG_BREAK_MINS     = 15
+const FREEZE_COST         = 200   // points to buy one Streak Freeze ticket
+const POINTS_STREAK_CAP   = 14    // streak days at which the points bonus maxes out
 
 const INITIAL_TASKS: Task[] = [
   {
@@ -87,9 +90,10 @@ function save(key: string, value: unknown) {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
 }
 
-function computeStreak(history: SessionRecord[]): number {
-  if (!history.length) return 0
-  const days  = [...new Set(history.map(s => localDate(s.at)))].sort().reverse()
+function computeStreak(history: SessionRecord[], protectedDates: string[] = []): number {
+  const dates = new Set([...history.map(s => localDate(s.at)), ...protectedDates])
+  if (!dates.size) return 0
+  const days  = [...dates].sort().reverse()
   const ms    = 864e5
   const midnight = new Date(); midnight.setHours(0, 0, 0, 0)
   const key   = (offset: number) => localDate(midnight.getTime() - offset * ms)
@@ -101,6 +105,33 @@ function computeStreak(history: SessionRecord[]): number {
     count++
   }
   return count
+}
+
+// Points for a completed focus session: 1 per focused minute + a streak bonus
+// that scales to +70% at POINTS_STREAK_CAP days.
+function computePoints(focusMins: number, streak: number): number {
+  const base = Math.max(1, Math.round(focusMins))
+  const mult = 1 + Math.min(streak, POINTS_STREAK_CAP) * 0.05
+  return Math.round(base * mult)
+}
+
+// If the streak just broke (last active day is 2–3 days ago, i.e. a 1–2 day gap
+// before today), return the missed days a Streak Freeze would bridge; else null.
+function findStreakRestore(history: SessionRecord[], protectedDates: string[]): string[] | null {
+  const active = new Set([...history.map(s => localDate(s.at)), ...protectedDates])
+  if (!active.size) return null
+  const ms = 864e5
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0)
+  const today = localDate(midnight.getTime())
+  const yest  = localDate(midnight.getTime() - ms)
+  if (active.has(today) || active.has(yest)) return null   // streak isn't broken
+  const last = [...active].sort().reverse()[0]
+  const gap: string[] = []
+  let cur = new Date(last + "T00:00").getTime() + ms
+  const yestTime = midnight.getTime() - ms
+  while (cur <= yestTime) { gap.push(localDate(cur)); cur += ms }
+  if (gap.length === 0 || gap.length > 2) return null      // nothing to bridge, or too stale
+  return gap
 }
 
 export default function Home() {
@@ -143,6 +174,9 @@ export default function Home() {
 
   const [cycleCount,  setCycleCount]  = useState(0)
   const [totalPoints, setTotalPoints] = useState(() => load("todoro:points", 0))
+  const [streakFreezes,  setStreakFreezes]  = useState<number>(()   => load("todoro:freezes", 0))
+  const [protectedDates, setProtectedDates] = useState<string[]>(() => load("todoro:protectedDates", []))
+  const [showShop,    setShowShop]    = useState(false)
   const [toast,       setToast]       = useState<{ points: number; streak: number } | null>(null)
 
   const [allHistory, setAllHistory] = useState<SessionRecord[]>(
@@ -153,7 +187,8 @@ export default function Home() {
 
   const todayHistory = allHistory.filter(s => localDate(s.at) === todayKey())
   const sessions = todayHistory.length
-  const streak   = computeStreak(allHistory)
+  const streak   = computeStreak(allHistory, protectedDates)
+  const restoreGap = findStreakRestore(allHistory, protectedDates)
 
   const [tasks,      setTasks]      = useState<Task[]>(() => load("todoro:tasks", INITIAL_TASKS))
   const [activeTask, setActiveTask] = useState<Task>(() => {
@@ -227,6 +262,8 @@ export default function Home() {
   useEffect(() => { save("todoro:breakMins",   breakMins)   }, [breakMins])
   useEffect(() => { save("todoro:tasks",       tasks)       }, [tasks])
   useEffect(() => { save("todoro:points",      totalPoints) }, [totalPoints])
+  useEffect(() => { save("todoro:freezes",        streakFreezes)  }, [streakFreezes])
+  useEffect(() => { save("todoro:protectedDates", protectedDates) }, [protectedDates])
   useEffect(() => { save("todoro:history",     allHistory)  }, [allHistory])
   useEffect(() => { save("todoro:accentTheme", accentTheme) }, [accentTheme])
   useEffect(() => { save("todoro:notifications", notifications) }, [notifications])
@@ -279,11 +316,15 @@ export default function Home() {
       if (completed) {
         const nextCycle = cycleCount + 1
         setCycleCount(nextCycle)
-        setTotalPoints(p => p + 5)
         setAllHistory(h => {
           const next = [...h, { taskId: activeTask.id, taskTitle: activeTask.title, focusMins, at: Date.now() }]
-          const newStreak = computeStreak(next)
-          setTimeout(() => { setToast({ points: 5, streak: newStreak }); setTimeout(() => setToast(null), 3500) }, 300)
+          const newStreak = computeStreak(next, protectedDates)
+          const earned    = computePoints(focusMins, newStreak)
+          setTimeout(() => {
+            setTotalPoints(p => p + earned)
+            setToast({ points: earned, streak: newStreak })
+            setTimeout(() => setToast(null), 3500)
+          }, 300)
           return next
         })
         setTasks(ts => ts.map(t => t.id === activeTask.id
@@ -314,7 +355,7 @@ export default function Home() {
       setPhase("focus")
       setTime(reverseMode ? 0 : focusMins * 60)
     }
-  }, [phase, cycleCount, focusMins, breakMins, activeTask, playChime, reverseMode])
+  }, [phase, cycleCount, focusMins, breakMins, activeTask, playChime, reverseMode, protectedDates])
 
   const advanceRef  = useRef(advancePhase)
   const hasAdvanced = useRef(false)
@@ -369,7 +410,6 @@ export default function Home() {
 
     const nextCycle = cycleCount + 1
     setCycleCount(nextCycle)
-    setTotalPoints(p => p + 5)
     setAllHistory(h => {
       const next = [...h, {
         taskId:    activeTask.id,
@@ -377,8 +417,13 @@ export default function Home() {
         focusMins: earnedFocusMins,
         at:        Date.now(),
       }]
-      const newStreak = computeStreak(next)
-      setTimeout(() => { setToast({ points: 5, streak: newStreak }); setTimeout(() => setToast(null), 3500) }, 300)
+      const newStreak = computeStreak(next, protectedDates)
+      const earned    = computePoints(earnedFocusMins, newStreak)
+      setTimeout(() => {
+        setTotalPoints(p => p + earned)
+        setToast({ points: earned, streak: newStreak })
+        setTimeout(() => setToast(null), 3500)
+      }, 300)
       return next
     })
     setTasks(ts => ts.map(t => t.id === activeTask.id
@@ -393,7 +438,7 @@ export default function Home() {
       setPhase("break")
       setTime(earnedBreakSecs)
     }
-  }, [time, cycleCount, activeTask, playChime])
+  }, [time, cycleCount, activeTask, playChime, protectedDates])
   // ─────────────────────────────────────────────────────────────────
 
   const handleModeChange = (m: Mode, fm: number, bm: number) => {
@@ -467,6 +512,17 @@ export default function Home() {
   // Deep-link into Calendar focused on a specific day (from the Home mini-calendar)
   const goToCalendar = (date?: string) => { setCalendarDate(date ?? null); setTab("calendar") }
 
+  const handleBuyFreeze = () => {
+    if (totalPoints < FREEZE_COST) return
+    setTotalPoints(p => p - FREEZE_COST)
+    setStreakFreezes(f => f + 1)
+  }
+  const handleRestoreStreak = () => {
+    if (streakFreezes < 1 || !restoreGap) return
+    setProtectedDates(p => [...p, ...restoreGap])
+    setStreakFreezes(f => f - 1)
+  }
+
   const timerProps = {
     time, phase, mode, focusMins, breakMins, longBreakMins: LONG_BREAK_MINS,
     running, progress, sessions, totalSessions: dailyGoal, cycleCount,
@@ -505,6 +561,7 @@ export default function Home() {
           onNavToTasks={() => setTab("tasks")} onOpenTask={handleOpenTask}
           onStartFocus={handleStartFocus} onQuickAdd={() => setShowAdd(true)}
           streak={streak} totalPoints={totalPoints} allHistory={allHistory}
+          onOpenShop={() => setShowShop(true)} canRestore={!!restoreGap}
           avatarUrl={avatarUrl} onNavToSettings={() => setTab("settings")}
           greeting={getGreeting()} userName={userName} quickMode={quickMode} />
       )}
@@ -577,6 +634,19 @@ export default function Home() {
             }
           }}
           onDismiss={() => { setNotifPrompt(false); save("todoro:notifPrompted", true) }} />
+      )}
+
+      {/* Rewards shop — buy Streak Freezes & restore a broken streak */}
+      {showShop && (
+        <ShopModal
+          dark={dark}
+          points={totalPoints}
+          freezes={streakFreezes}
+          freezeCost={FREEZE_COST}
+          canRestore={!!restoreGap}
+          onBuyFreeze={handleBuyFreeze}
+          onRestore={handleRestoreStreak}
+          onClose={() => setShowShop(false)} />
       )}
 
     </AppShell>
