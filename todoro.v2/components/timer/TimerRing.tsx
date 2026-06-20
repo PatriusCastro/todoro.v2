@@ -1,7 +1,5 @@
 "use client"
 
-import { colors } from "../../lib/theme"
-
 interface TimerRingProps {
   minutes:      number
   seconds:      number
@@ -23,7 +21,9 @@ export default function TimerRing({
   const cx     = size / 2
   const r      = cx - 20
   const C      = 2 * Math.PI * r
-  const stroke = color ?? colors.accent
+  // Focus has no fixed color → follow the themed accent (CSS var, so it tracks
+  // the accent picker). var() only works via the CSS `stroke` property below.
+  const stroke = color ?? "var(--accent)"
 
   const totalSecs        = minutes * 60 + seconds
   const cycleNum         = Math.floor(totalSecs / REVERSE_CYCLE_SECS) + 1
@@ -35,10 +35,10 @@ export default function TimerRing({
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
         <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--ring)" strokeWidth={7} />
-        <circle cx={cx} cy={cx} r={r} fill="none" stroke={stroke} strokeWidth={7}
+        <circle cx={cx} cy={cx} r={r} fill="none" strokeWidth={7}
           strokeLinecap="round" strokeDasharray={C}
           strokeDashoffset={C * (1 - displayProgress)}
-          style={{ transition: "stroke-dashoffset 1s linear" }} />
+          style={{ stroke, transition: "stroke-dashoffset 1s linear" }} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
         <span className="text-[11px] font-medium text-sub">

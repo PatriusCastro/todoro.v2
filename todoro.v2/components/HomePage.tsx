@@ -4,7 +4,7 @@ import { useState } from "react"
 import { HiStar, HiPlayCircle, HiPauseCircle, HiChevronRight, HiChevronLeft, HiFire, HiClock, HiCheckCircle, HiListBullet, HiPlus } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import { type Mode } from "../components/timer/ModeSelector"
-import { colors, getPriority } from "../lib/theme"
+import { getPriority } from "../lib/theme"
 
 type Phase = "focus" | "break" | "longbreak"
 
@@ -32,7 +32,8 @@ function phaseLabel(phase: Phase) {
 }
 
 function phaseColor(phase: Phase) {
-  return phase === "focus" ? colors.accent : "#51CF66"
+  // Focus tracks the themed accent (CSS var); break stays green
+  return phase === "focus" ? "var(--accent)" : "#51CF66"
 }
 
 function localDate(ts: number = Date.now()) {
@@ -274,9 +275,9 @@ export default function HomePage({
               onClick={onNavToTimer}>
               <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
                 <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--ring)" strokeWidth={6} />
-                <circle cx={cx} cy={cx} r={r} fill="none" stroke={ringColor} strokeWidth={6}
+                <circle cx={cx} cy={cx} r={r} fill="none" strokeWidth={6}
                   strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - progress)}
-                  style={{ transition: "stroke-dashoffset 1s linear" }} />
+                  style={{ stroke: ringColor, transition: "stroke-dashoffset 1s linear" }} />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
                 <span className="text-5xl font-semibold text-tx tabular-nums leading-none tracking-tight">
