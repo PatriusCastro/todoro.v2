@@ -32,7 +32,7 @@ const NAV: { id: Tab; label: string }[] = [
   { id: "tasks",    label: "Tasks"    },
   { id: "timer",    label: "Timer"    },
   { id: "calendar", label: "Calendar" },
-  { id: "settings", label: "Me"       },
+  { id: "settings", label: "Settings" },
 ]
 
 function NavIcon({ id, active }: { id: Tab; active: boolean }) {
@@ -119,7 +119,7 @@ export default function AppShell({
                           select-none transition-colors duration-150
                           ${active ? "text-tx" : "text-sub hover:text-tx"}`}>
                         <NavIcon id={id} active={active} />
-                        {label === "Me" ? "Settings" : label}
+                        {label}
                         {id === "timer" && running && (
                           <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-bg ${dotColor}`} />
                         )}

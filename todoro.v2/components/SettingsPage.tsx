@@ -98,17 +98,26 @@ export default function SettingsPage({
 
       <Section label="Appearance">
         <ToggleRow label="Dark Mode" icon={<HiMoon size={18} className="text-sub shrink-0" />} value={dark} onChange={onDark} />
-        <div className="flex items-center justify-between px-4 py-4">
-          <MdColorLens size={18} className="text-sub shrink-0" />
-          <span className="ml-3 flex-1 text-sm font-medium text-tx">Accent Color</span>
-
-          <select value={accentTheme} onChange={e => onAccentTheme(e.target.value)}
-            className="w-36 bg-surface2 border border-border rounded-xl px-3 py-2 text-sm text-tx
-              outline-none focus:border-accent transition-colors">
-            {ACCENT_THEMES.map(({ id, label }) => (
-              <option key={id} value={id}>{label}</option>
+        <div className="flex flex-col gap-3 px-4 py-4">
+          <div className="flex items-center gap-3">
+            <MdColorLens size={18} className="text-sub shrink-0" />
+            <span className="flex-1 text-sm font-medium text-tx">Accent Color</span>
+            <span className="text-xs text-sub">
+              {ACCENT_THEMES.find(t => t.id === accentTheme)?.label ?? accentTheme}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2.5 pl-8">
+            {ACCENT_THEMES.map(({ id, color, label }) => (
+              <button key={id} onClick={() => onAccentTheme(id)} title={label} aria-label={label}
+                className="w-7 h-7 rounded-full transition-all duration-100 active:scale-90"
+                style={{
+                  backgroundColor: color,
+                  outline: accentTheme === id ? `2px solid ${color}` : "none",
+                  outlineOffset: "2px",
+                  transform: accentTheme === id ? "scale(1.18)" : "scale(1)",
+                }} />
             ))}
-          </select>
+          </div>
         </div>
       </Section>
 

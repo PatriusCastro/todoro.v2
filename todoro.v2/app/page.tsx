@@ -393,6 +393,15 @@ export default function Home() {
     }
   }
 
+  // Begin a fresh focus session on a specific task (the ▶ quick-start)
+  const handleStartFocus = (task: Task) => {
+    setActiveTask(task)
+    setPhase("focus")
+    setTime(reverseMode ? 0 : focusMins * 60)
+    setRunning(true)
+    setTab("timer")
+  }
+
   const timerProps = {
     time, phase, mode, focusMins, breakMins, longBreakMins: LONG_BREAK_MINS,
     running, progress, sessions, totalSessions: dailyGoal, cycleCount,
@@ -451,6 +460,7 @@ export default function Home() {
           onSave={handleSaveTask} onDelete={handleDeleteTask}
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
           onSetActive={setActiveTask} onNavToTimer={() => setTab("timer")}
+          onStartFocus={handleStartFocus}
           onSaveProject={handleSaveProject} />
       )}
 

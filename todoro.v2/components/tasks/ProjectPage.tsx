@@ -24,6 +24,7 @@ interface ProjectPageProps {
   onToggleSub: (tId: string, sId: string) => void
   onSetActive: (t: Task) => void
   onNavToTimer: () => void
+  onStartFocus: (t: Task) => void
   onSaveProject: (p: Project) => void
   onDeleteProject: (id: string) => void
   onEditProject?: (p: Project) => void   // opens ProjectModal in parent
@@ -32,7 +33,7 @@ interface ProjectPageProps {
 export default function ProjectPage({
   project, allTasks, activeTask, running, dark, projects,
   onBack, onSave, onDelete, onToggle, onToggleSub,
-  onSetActive, onNavToTimer, onSaveProject, onDeleteProject, onEditProject,
+  onSetActive, onNavToTimer, onStartFocus, onSaveProject, onDeleteProject, onEditProject,
 }: ProjectPageProps) {
   const tasks    = allTasks.filter(t => t.projectId === project.id)
   const pending  = tasks.filter(t => !t.done)
@@ -64,8 +65,8 @@ export default function ProjectPage({
 
   const handleQuickStart = useCallback((task: Task) => {
     if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
-    onSetActive(task); onNavToTimer()
-  }, [running, onSetActive, onNavToTimer])
+    onStartFocus(task)
+  }, [running, onStartFocus])
 
   const handleTaskClick = useCallback((task: Task) => {
     if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }

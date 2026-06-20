@@ -20,6 +20,7 @@ interface TasksPageProps {
   onSave: (t: Task) => void; onDelete: (id: string) => void
   onToggle: (id: string) => void; onToggleSub: (tId: string, sId: string) => void
   onSetActive: (t: Task) => void; onNavToTimer: () => void
+  onStartFocus: (t: Task) => void
   onSaveProject: (p: Project) => void
   onDeleteProject: (id: string) => void
   dark: boolean
@@ -35,7 +36,7 @@ type Filter = Priority | "all" | "done"
 export default function TasksPage({
   tasks, activeTask, running, projects,
   onSave, onDelete, onToggle, onToggleSub,
-  onSetActive, onNavToTimer, onSaveProject, onDeleteProject, dark,
+  onSetActive, onNavToTimer, onStartFocus, onSaveProject, onDeleteProject, dark,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Filter>("all")
@@ -67,8 +68,8 @@ export default function TasksPage({
 
   const handleQuickStart = useCallback((task: Task) => {
     if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
-    onSetActive(task); onNavToTimer()
-  }, [running, onSetActive, onNavToTimer])
+    onStartFocus(task)
+  }, [running, onStartFocus])
 
   const handleTaskClick = useCallback((task: Task) => {
     if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
@@ -141,6 +142,7 @@ export default function TasksPage({
         onToggleSub={onToggleSub}
         onSetActive={onSetActive}
         onNavToTimer={onNavToTimer}
+        onStartFocus={onStartFocus}
         onSaveProject={onSaveProject}
         onDeleteProject={id => { handleDeleteProject(id); setActiveProject(null) }}
         onEditProject={p => setProjectModal({ open: true, project: p })}

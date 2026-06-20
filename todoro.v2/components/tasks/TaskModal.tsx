@@ -168,7 +168,9 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
           </div>
 
           {/* Title */}
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="What needs to be done?" autoFocus
+          <input value={title} onChange={e => setTitle(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSave() } }}
+            placeholder="What needs to be done?" autoFocus
             className="w-full bg-surface2 border border-border rounded-2xl px-4 py-3 text-sm font-semibold text-tx placeholder:text-sub outline-none focus:border-accent transition-colors" />
 
           {/* Priority */}
