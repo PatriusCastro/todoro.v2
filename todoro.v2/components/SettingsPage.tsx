@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray, HiBell } from "react-icons/hi2"
+import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell } from "react-icons/hi2"
 import { MdColorLens } from "react-icons/md";
 import { FaBullseye } from "react-icons/fa"
 
@@ -19,7 +19,8 @@ export default function SettingsPage({
   userName, onUserName, dark, onDark, sound, onSound, dailyGoal, onDailyGoal,
   avatarUrl, onAvatarUrl, accentTheme, onAccentTheme, notifications, onNotifications
 }: SettingsPageProps) {
-  const fileRef = useRef<HTMLInputElement>(null)
+  const fileRef   = useRef<HTMLInputElement>(null)
+  const importRef = useRef<HTMLInputElement>(null)
 
   const handleNotificationsToggle = async (v: boolean) => {
     if (v && "Notification" in window && Notification.permission !== "granted") {
@@ -46,8 +47,61 @@ export default function SettingsPage({
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = ev => onAvatarUrl(ev.target?.result as string)
+    reader.onload = ev => {
+      const src = ev.target?.result as string
+      // Downscale so avatars stay tiny and don't blow the localStorage quota
+      const img = new Image()
+      img.onload = () => {
+        const MAX   = 256
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1)
+        const canvas = document.createElement("canvas")
+        canvas.width  = Math.round(img.width  * scale)
+        canvas.height = Math.round(img.height * scale)
+        const ctx = canvas.getContext("2d")
+        if (!ctx) { onAvatarUrl(src); return }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        onAvatarUrl(canvas.toDataURL("image/jpeg", 0.85))
+      }
+      img.onerror = () => onAvatarUrl(src)
+      img.src = src
+    }
     reader.readAsDataURL(file)
+  }
+
+  const handleExport = () => {
+    const data: Record<string, string> = {}
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith("todoro:")) data[key] = localStorage.getItem(key) ?? ""
+    }
+    const payload = JSON.stringify({ app: "todoro", version: 1, exportedAt: Date.now(), data }, null, 2)
+    const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }))
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `todoro-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      try {
+        const parsed = JSON.parse(ev.target?.result as string)
+        const data   = parsed?.data ?? parsed
+        const keys   = data && typeof data === "object"
+          ? Object.keys(data).filter(k => k.startsWith("todoro:")) : []
+        if (!keys.length) throw new Error("invalid")
+        if (!confirm("Importing will replace all current Todoro data on this device. Continue?")) return
+        keys.forEach(k => localStorage.setItem(k, typeof data[k] === "string" ? data[k] : JSON.stringify(data[k])))
+        location.reload()
+      } catch {
+        alert("That doesn't look like a valid Todoro backup file.")
+      }
+    }
+    reader.readAsText(file)
   }
 
   const initials = userName ? userName.slice(0, 2).toUpperCase() : "–"
@@ -134,6 +188,26 @@ export default function SettingsPage({
             <StepBtn onClick={() => onDailyGoal(Math.min(12, dailyGoal + 1))} disabled={dailyGoal >= 12}>+</StepBtn>
           </div>
         </div>
+      </Section>
+
+      <Section label="Data">
+        <button onClick={handleExport}
+          className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-surface2 transition-colors">
+          <HiArrowDownTray size={18} className="text-sub shrink-0" />
+          <div className="flex-1">
+            <span className="text-sm font-medium text-tx">Export backup</span>
+            <p className="text-xs text-sub">Download your tasks, history &amp; settings as a file</p>
+          </div>
+        </button>
+        <button onClick={() => importRef.current?.click()}
+          className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-surface2 transition-colors">
+          <HiArrowUpTray size={18} className="text-sub shrink-0" />
+          <div className="flex-1">
+            <span className="text-sm font-medium text-tx">Import backup</span>
+            <p className="text-xs text-sub">Restore from a file — replaces current data</p>
+          </div>
+        </button>
+        <input ref={importRef} type="file" accept="application/json,.json" className="hidden" onChange={handleImport} />
       </Section>
 
       <Section label="About">

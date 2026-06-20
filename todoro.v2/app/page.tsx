@@ -131,9 +131,14 @@ export default function Home() {
 
   const [accentTheme, setAccentTheme] = useState<string>(() => load("todoro:accentTheme", "blue"))
 
-  const [phase,   setPhase]   = useState<Phase>("focus")
+  // Restore the timer where it was left off — always paused, so time spent with
+  // the app closed is never counted as focus.
+  const [phase,   setPhase]   = useState<Phase>(() => load<{ phase: Phase } | null>("todoro:timer", null)?.phase ?? "focus")
   // In reverse mode the initial time is 0 (counts up); normal mode starts at focusMins * 60
-  const [time,    setTime]    = useState(() => load("todoro:reverseMode", false) ? 0 : load("todoro:focusMins", 25) * 60)
+  const [time,    setTime]    = useState(() => {
+    const saved = load<{ time: number } | null>("todoro:timer", null)
+    return saved ? saved.time : (load("todoro:reverseMode", false) ? 0 : load("todoro:focusMins", 25) * 60)
+  })
   const [running, setRunning] = useState(false)
 
   const [cycleCount,  setCycleCount]  = useState(0)
@@ -200,8 +205,11 @@ export default function Home() {
     }
   }, [quickMode, tasks])
 
-  // When reverseMode changes, reset timer to the right starting point
+  // When reverseMode changes, reset the timer — but skip the initial mount so a
+  // restored session survives a reload.
+  const reverseInit = useRef(true)
   useEffect(() => {
+    if (reverseInit.current) { reverseInit.current = false; return }
     setRunning(false)
     setPhase("focus")
     setTime(reverseMode ? 0 : focusMins * 60)
@@ -223,6 +231,9 @@ export default function Home() {
   useEffect(() => { save("todoro:accentTheme", accentTheme) }, [accentTheme])
   useEffect(() => { save("todoro:notifications", notifications) }, [notifications])
   useEffect(() => { save("todoro:onboarded",     onboarded)     }, [onboarded])
+
+  // Snapshot the timer so a reload restores the remaining time (paused)
+  useEffect(() => { save("todoro:timer", { phase, time }) }, [phase, time])
 
   // After the first completed focus session, offer to enable notifications (once)
   useEffect(() => {
@@ -309,30 +320,42 @@ export default function Home() {
   const hasAdvanced = useRef(false)
   useEffect(() => { advanceRef.current = advancePhase }, [advancePhase])
 
-  // Separate ref so the interval closure always has the current reverseMode + phase
+  // Separate refs so the interval closure always has the current reverseMode,
+  // phase, and the latest time to anchor against when it (re)starts.
   const reverseModeRef = useRef(reverseMode)
   const phaseRef       = useRef(phase)
+  const timeRef        = useRef(time)
   useEffect(() => { reverseModeRef.current = reverseMode }, [reverseMode])
   useEffect(() => { phaseRef.current = phase }, [phase])
+  useEffect(() => { timeRef.current = time }, [time])
 
+  // Timestamp-anchored ticking: remaining/elapsed time is derived from the wall
+  // clock rather than a running counter, so it stays accurate even when the tab
+  // is backgrounded and its timers are throttled.
   useEffect(() => {
     if (!running) return
     hasAdvanced.current = false
-    const id = setInterval(() => {
-      if (reverseModeRef.current && phaseRef.current === "focus") {
+    const isUp      = reverseModeRef.current && phaseRef.current === "focus"
+    const anchorAt  = Date.now()
+    const anchorVal = timeRef.current
+
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - anchorAt) / 1000)
+      if (isUp) {
         // Reverse mode focus: count UP — no auto-advance, user controls the end
-        setTime(t => t + 1)
+        setTime(anchorVal + elapsed)
+      } else if (anchorVal - elapsed <= 0) {
+        if (!hasAdvanced.current) { hasAdvanced.current = true; setTime(0); advanceRef.current(true) }
       } else {
-        setTime(t => {
-          if (t <= 1) {
-            if (!hasAdvanced.current) { hasAdvanced.current = true; advanceRef.current(true) }
-            return 0
-          }
-          return t - 1
-        })
+        setTime(anchorVal - elapsed)
       }
-    }, 1000)
-    return () => clearInterval(id)
+    }
+
+    const id = setInterval(tick, 1000)
+    // Snap to the correct time the instant the tab regains focus
+    const onVis = () => { if (document.visibilityState === "visible") tick() }
+    document.addEventListener("visibilitychange", onVis)
+    return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis) }
   }, [running])
 
   // ── handleStopAndRest ─────────────────────────────────────────────
