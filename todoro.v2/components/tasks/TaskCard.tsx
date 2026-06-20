@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { HiPencil, HiChevronDown, HiCheck, HiPlay, HiMapPin, HiTrash } from "react-icons/hi2"
+import { HiPencil, HiChevronDown, HiCheck, HiPlay, HiMapPin, HiTrash, HiArrowPath } from "react-icons/hi2"
 import { getPriority, type Priority } from "../../lib/theme"
 import { useSwipe } from "../../hooks/useSwipe"
 
+export type Repeat = "none" | "daily" | "weekly"
 export interface Subtask { id: string; title: string; done: boolean }
 export interface Task {
   id: string; title: string; priority: Priority
@@ -12,6 +13,7 @@ export interface Task {
   done: boolean; subtasks: Subtask[]
   estimatedSessions: number; completedSessions: number
   projectId?: string
+  repeat?: Repeat
 }
 
 interface TaskCardProps {
@@ -115,8 +117,13 @@ export default function TaskCard({
             </div>
 
             {/* Meta */}
-            {(task.dueLabel !== "No due date" || task.subtasks.length > 0 || task.estimatedSessions > 0) && (
+            {(task.dueLabel !== "No due date" || task.subtasks.length > 0 || task.estimatedSessions > 0 || (task.repeat && task.repeat !== "none")) && (
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                {task.repeat && task.repeat !== "none" && (
+                  <span className="text-[11px] text-accent flex items-center gap-0.5">
+                    <HiArrowPath size={9} /> <span className="capitalize">{task.repeat}</span>
+                  </span>
+                )}
                 {task.dueLabel && task.dueLabel !== "No due date" && (
                   <span className={`text-[11px] ${task.dueLabel.startsWith("Overdue") ? "text-red-400" : "text-sub"}`}>
                     {task.dueLabel}

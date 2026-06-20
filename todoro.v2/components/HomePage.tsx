@@ -22,7 +22,7 @@ interface HomePageProps {
   avatarUrl: string; onNavToSettings: () => void
   allHistory: { taskId: string; taskTitle: string; focusMins: number; at: number }[]
   onNavToCalendar: (date?: string) => void;   quickMode: boolean
-  onOpenShop: () => void; canRestore: boolean
+  onOpenShop: () => void; canRestore: boolean; level: number
 }
 
 function phaseLabel(phase: Phase) {
@@ -141,7 +141,7 @@ export default function HomePage({
   sessions, totalSessions, onTimerToggle, onNavToTimer, onNavToCalendar,
   tasks, activeTask, onToggleTask, allHistory, onToggleSub,
   onNavToTasks, onOpenTask, onStartFocus, onQuickAdd, streak, totalPoints, greeting, userName,
-  avatarUrl, onNavToSettings, quickMode, onOpenShop, canRestore
+  avatarUrl, onNavToSettings, quickMode, onOpenShop, canRestore, level
 }: HomePageProps) {
   const minutes  = Math.floor(time / 60)
   const seconds  = time % 60
@@ -183,9 +183,10 @@ export default function HomePage({
             </h1>
           </div>
         </div>
-        {/* Points — tap to open the rewards shop */}
+        {/* Level + points — tap to open the rewards shop */}
         <button onClick={onOpenShop}
-          className="flex items-center gap-2 border border-border rounded-xl px-3.5 py-2 bg-surface hover:border-accent/40 active:scale-95 transition-all">
+          className="flex items-center gap-2 border border-border rounded-xl pl-2 pr-3.5 py-1.5 bg-surface hover:border-accent/40 active:scale-95 transition-all">
+          <span className="text-[10px] font-black text-accent bg-accent/10 rounded-lg px-1.5 py-1 leading-none">Lv {level}</span>
           <HiStar size={13} color="#FFBA00" />
           <span className="text-sm font-bold text-tx">{totalPoints} pts</span>
         </button>

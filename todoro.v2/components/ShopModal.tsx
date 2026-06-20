@@ -6,6 +6,9 @@ import { HiXMark, HiFire, HiStar, HiBolt } from "react-icons/hi2"
 interface ShopModalProps {
   dark: boolean
   points: number
+  level: number
+  levelInto: number
+  levelSpan: number
   freezes: number
   freezeCost: number
   canRestore: boolean
@@ -15,10 +18,11 @@ interface ShopModalProps {
 }
 
 export default function ShopModal({
-  dark, points, freezes, freezeCost, canRestore,
+  dark, points, level, levelInto, levelSpan, freezes, freezeCost, canRestore,
   onBuyFreeze, onRestore, onClose,
 }: ShopModalProps) {
   const canAfford = points >= freezeCost
+  const levelPct  = Math.min(100, Math.round((levelInto / levelSpan) * 100))
 
   return createPortal(
     <div className={dark ? "dark" : ""}>
@@ -33,6 +37,17 @@ export default function ShopModal({
             <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors">
               <HiXMark size={16} />
             </button>
+          </div>
+
+          {/* Level progress */}
+          <div className="flex flex-col gap-2 rounded-2xl border border-border bg-surface2 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-black text-tx">Level {level}</span>
+              <span className="text-xs text-sub">{levelInto} / {levelSpan} to next</span>
+            </div>
+            <div className="h-2 rounded-full bg-ring overflow-hidden">
+              <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${levelPct}%` }} />
+            </div>
           </div>
 
           {/* Balance */}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell } from "react-icons/hi2"
+import { HiUser, HiMoon, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward } from "react-icons/hi2"
 import { MdColorLens } from "react-icons/md";
 import { FaBullseye } from "react-icons/fa"
 
@@ -13,11 +13,13 @@ interface SettingsPageProps {
   avatarUrl: string; onAvatarUrl:(v: string) => void
   accentTheme: string; onAccentTheme: (v: string) => void
   notifications: boolean; onNotifications: (v: boolean) => void
+  autoStart: boolean; onAutoStart: (v: boolean) => void
 }
 
 export default function SettingsPage({
   userName, onUserName, dark, onDark, sound, onSound, dailyGoal, onDailyGoal,
-  avatarUrl, onAvatarUrl, accentTheme, onAccentTheme, notifications, onNotifications
+  avatarUrl, onAvatarUrl, accentTheme, onAccentTheme, notifications, onNotifications,
+  autoStart, onAutoStart
 }: SettingsPageProps) {
   const fileRef   = useRef<HTMLInputElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
@@ -177,6 +179,7 @@ export default function SettingsPage({
       <Section label="Focus">
         <ToggleRow label="Sound Effects" icon={<HiSpeakerWave size={18} className="text-sub shrink-0" />} value={sound} onChange={onSound} />
         <ToggleRow label="Push Notifications" icon={<HiBell size={18} className="text-sub shrink-0" />} value={notifications} onChange={handleNotificationsToggle} />
+        <ToggleRow label="Auto-start breaks & focus" icon={<HiForward size={18} className="text-sub shrink-0" />} value={autoStart} onChange={onAutoStart} />
         <div className="flex items-center gap-3 px-4 py-4">
           <FaBullseye size={18} className="text-sub shrink-0" />
           <span className="flex-1 text-sm font-medium text-tx">Daily Session Goal</span>

@@ -6,7 +6,7 @@ import {
   HiXMark, HiClock, HiCalendarDays, HiTrash,
   HiChevronLeft, HiChevronRight, HiFolderOpen, HiPlus,
 } from "react-icons/hi2"
-import { type Task, type Subtask } from "../tasks/TaskCard"
+import { type Task, type Subtask, type Repeat } from "../tasks/TaskCard"
 import { type Priority, getPriority } from "../../lib/theme"
 
 export interface Project { id: string; name: string; color: string }
@@ -85,7 +85,7 @@ function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
   )
 }
 
-function formatDueLabel(date: string, time: string) {
+export function formatDueLabel(date: string, time: string) {
   if (!date) return "No due date"
   const d        = new Date(date + (time ? `T${time}` : "T00:00"))
   const midnight = new Date()
@@ -110,6 +110,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
   const [showCal,           setShowCal]           = useState(false)
   const [estimatedSessions, setEstimatedSessions] = useState(task?.estimatedSessions ?? 0)
   const [projectId,         setProjectId]         = useState<string | undefined>(task?.projectId)
+  const [repeat,            setRepeat]            = useState<Repeat>(task?.repeat ?? "none")
 
   // inline new-project creation
   const [showNewProject, setShowNewProject] = useState(false)
@@ -142,7 +143,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
       dueLabel: formatDueLabel(dueDate, dueTime),
       done: task?.done ?? false, subtasks,
       estimatedSessions, completedSessions: task?.completedSessions ?? 0,
-      projectId,
+      projectId, repeat,
     })
   }
 
@@ -296,6 +297,20 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
                 <span className="text-xs text-sub">optional</span>
               </div>
             )}
+          </div>
+
+          {/* Repeat */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-bold text-sub uppercase tracking-wider">Repeat</span>
+            <div className="flex gap-2">
+              {(["none", "daily", "weekly"] as Repeat[]).map(r => (
+                <button key={r} type="button" onClick={() => setRepeat(r)}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all duration-200 capitalize
+                    ${repeat === r ? "bg-accent text-white border-accent" : "bg-transparent text-sub border-border hover:border-accent/40"}`}>
+                  {r}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Subtasks */}

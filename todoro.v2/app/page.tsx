@@ -12,7 +12,7 @@ import NotifPrompt  from "../components/NotifPrompt"
 import ShopModal    from "../components/ShopModal"
 import { type Mode } from "../components/timer/ModeSelector"
 import { type Task } from "../components/tasks/TaskCard"
-import TaskModal, { type Project } from "../components/tasks/TaskModal"
+import TaskModal, { type Project, formatDueLabel } from "../components/tasks/TaskModal"
 import { useWakeLock } from "../hooks/useWakeLock"
 import { useDocumentTitle } from "../hooks/useDocumentTitle"
 import { useNotifications } from "../hooks/useNotifications"
@@ -31,7 +31,7 @@ function uid() { return Math.random().toString(36).slice(2) }
 
 const LONG_BREAK_INTERVAL = 4
 const LONG_BREAK_MINS     = 15
-const FREEZE_COST         = 200   // points to buy one Streak Freeze ticket
+const FREEZE_COST         = 250   // points for one Streak Freeze (~1.5 days of focus — generous safety net)
 const POINTS_STREAK_CAP   = 14    // streak days at which the points bonus maxes out
 
 const INITIAL_TASKS: Task[] = [
@@ -115,7 +115,7 @@ function computePoints(focusMins: number, streak: number): number {
   return Math.round(base * mult)
 }
 
-// If the streak just broke (last active day is 2–3 days ago, i.e. a 1–2 day gap
+// If the streak just broke (last active day is 2–4 days ago, i.e. a 1–3 day gap
 // before today), return the missed days a Streak Freeze would bridge; else null.
 function findStreakRestore(history: SessionRecord[], protectedDates: string[]): string[] | null {
   const active = new Set([...history.map(s => localDate(s.at)), ...protectedDates])
@@ -130,8 +130,33 @@ function findStreakRestore(history: SessionRecord[], protectedDates: string[]): 
   let cur = new Date(last + "T00:00").getTime() + ms
   const yestTime = midnight.getTime() - ms
   while (cur <= yestTime) { gap.push(localDate(cur)); cur += ms }
-  if (gap.length === 0 || gap.length > 2) return null      // nothing to bridge, or too stale
+  if (gap.length === 0 || gap.length > 3) return null      // nothing to bridge, or too stale
   return gap
+}
+
+// Spawn the next instance of a recurring task, advancing its due date
+function nextOccurrence(task: Task): Task {
+  const base = task.dueDate ? new Date(task.dueDate + "T00:00") : new Date()
+  base.setDate(base.getDate() + (task.repeat === "weekly" ? 7 : 1))
+  const dueDate = localDate(base.getTime())
+  return {
+    ...task,
+    id: uid(),
+    done: false,
+    completedSessions: 0,
+    dueDate,
+    dueLabel: formatDueLabel(dueDate, task.dueTime ?? ""),
+    subtasks: task.subtasks.map(s => ({ ...s, id: uid(), done: false })),
+  }
+}
+
+// Level from total points — each level costs a little more than the last
+function levelFromPoints(points: number): { level: number; into: number; span: number } {
+  let level = 1
+  while (50 * level * (level + 1) <= points) level++
+  const base = 50 * (level - 1) * level
+  const next = 50 * level * (level + 1)
+  return { level, into: points - base, span: next - base }
 }
 
 export default function Home() {
@@ -155,6 +180,7 @@ export default function Home() {
   const [quickMode, setQuickMode] = useState(() => load("todoro:quickMode", false))
   const [reverseMode, setReverseMode] = useState(() => load("todoro:reverseMode", false))
   const [notifications, setNotifications] = useState(() => load("todoro:notifications", false))
+  const [autoStart,     setAutoStart]     = useState(() => load("todoro:autoStart", false))
 
   const [mode,      setMode]      = useState<Mode>(()   => load("todoro:mode",      "25/5"))
   const [focusMins, setFocusMins] = useState<number>(() => load("todoro:focusMins", 25))
@@ -189,6 +215,7 @@ export default function Home() {
   const sessions = todayHistory.length
   const streak   = computeStreak(allHistory, protectedDates)
   const restoreGap = findStreakRestore(allHistory, protectedDates)
+  const lvl = levelFromPoints(totalPoints)
 
   const [tasks,      setTasks]      = useState<Task[]>(() => load("todoro:tasks", INITIAL_TASKS))
   const [activeTask, setActiveTask] = useState<Task>(() => {
@@ -267,6 +294,7 @@ export default function Home() {
   useEffect(() => { save("todoro:history",     allHistory)  }, [allHistory])
   useEffect(() => { save("todoro:accentTheme", accentTheme) }, [accentTheme])
   useEffect(() => { save("todoro:notifications", notifications) }, [notifications])
+  useEffect(() => { save("todoro:autoStart",     autoStart)     }, [autoStart])
   useEffect(() => { save("todoro:onboarded",     onboarded)     }, [onboarded])
 
   // Snapshot the timer so a reload restores the remaining time (paused)
@@ -355,6 +383,8 @@ export default function Home() {
       setPhase("focus")
       setTime(reverseMode ? 0 : focusMins * 60)
     }
+    // Auto-start the next phase after a natural completion when enabled
+    if (completed && autoStartRef.current) setRunning(true)
   }, [phase, cycleCount, focusMins, breakMins, activeTask, playChime, reverseMode, protectedDates])
 
   const advanceRef  = useRef(advancePhase)
@@ -366,9 +396,11 @@ export default function Home() {
   const reverseModeRef = useRef(reverseMode)
   const phaseRef       = useRef(phase)
   const timeRef        = useRef(time)
+  const autoStartRef   = useRef(autoStart)
   useEffect(() => { reverseModeRef.current = reverseMode }, [reverseMode])
   useEffect(() => { phaseRef.current = phase }, [phase])
   useEffect(() => { timeRef.current = time }, [time])
+  useEffect(() => { autoStartRef.current = autoStart }, [autoStart])
 
   // Timestamp-anchored ticking: remaining/elapsed time is derived from the wall
   // clock rather than a running counter, so it stays accurate even when the tab
@@ -397,7 +429,7 @@ export default function Home() {
     const onVis = () => { if (document.visibilityState === "visible") tick() }
     document.addEventListener("visibilitychange", onVis)
     return () => { clearInterval(id); document.removeEventListener("visibilitychange", onVis) }
-  }, [running])
+  }, [running, phase])
 
   // ── handleStopAndRest ─────────────────────────────────────────────
   // Called in reverse mode when user is done focusing. Calculates an
@@ -438,6 +470,7 @@ export default function Home() {
       setPhase("break")
       setTime(earnedBreakSecs)
     }
+    if (autoStartRef.current) setRunning(true)
   }, [time, cycleCount, activeTask, playChime, protectedDates])
   // ─────────────────────────────────────────────────────────────────
 
@@ -460,7 +493,15 @@ export default function Home() {
   }
 
   const handleToggleTask = (id: string) =>
-    setTasks(ts => ts.map(t => t.id === id ? { ...t, done: !t.done } : t))
+    setTasks(ts => {
+      const target  = ts.find(t => t.id === id)
+      const updated = ts.map(t => t.id === id ? { ...t, done: !t.done } : t)
+      // Completing a recurring task spawns its next occurrence
+      if (target && !target.done && target.repeat && target.repeat !== "none") {
+        return [...updated, nextOccurrence(target)]
+      }
+      return updated
+    })
 
   const handleToggleSub = (taskId: string, subId: string) =>
     setTasks(ts => ts.map(t => t.id !== taskId ? t : {
@@ -561,7 +602,7 @@ export default function Home() {
           onNavToTasks={() => setTab("tasks")} onOpenTask={handleOpenTask}
           onStartFocus={handleStartFocus} onQuickAdd={() => setShowAdd(true)}
           streak={streak} totalPoints={totalPoints} allHistory={allHistory}
-          onOpenShop={() => setShowShop(true)} canRestore={!!restoreGap}
+          onOpenShop={() => setShowShop(true)} canRestore={!!restoreGap} level={lvl.level}
           avatarUrl={avatarUrl} onNavToSettings={() => setTab("settings")}
           greeting={getGreeting()} userName={userName} quickMode={quickMode} />
       )}
@@ -594,7 +635,8 @@ export default function Home() {
           dailyGoal={dailyGoal}   onDailyGoal={setDailyGoal}
           avatarUrl={avatarUrl}   onAvatarUrl={setAvatarUrl}
           accentTheme={accentTheme} onAccentTheme={setAccentTheme}
-          notifications={notifications} onNotifications={setNotifications} />
+          notifications={notifications} onNotifications={setNotifications}
+          autoStart={autoStart} onAutoStart={setAutoStart} />
       )}
 
       {tab === "calendar" && (
@@ -641,6 +683,9 @@ export default function Home() {
         <ShopModal
           dark={dark}
           points={totalPoints}
+          level={lvl.level}
+          levelInto={lvl.into}
+          levelSpan={lvl.span}
           freezes={streakFreezes}
           freezeCost={FREEZE_COST}
           canRestore={!!restoreGap}
