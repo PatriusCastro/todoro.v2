@@ -11,6 +11,7 @@ import ProjectModal from "../components/tasks/ProjectModal"
 import ProjectPage from "../components/tasks/ProjectPage"
 import { type Project } from "../components/tasks/TaskModal"
 import { type Priority, getPriority } from "../lib/theme"
+import Toast from "../components/shared/Toast"
 import { useUndo } from "../hooks/useUndo"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
 import { useSortedTasks } from "../hooks/useTaskSort"
@@ -204,21 +205,7 @@ export default function TasksPage({
     <div className="flex flex-col gap-4">
 
       {/* Task action toast */}
-      <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 transition-all duration-300
-        ${toast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
-        <div className="glass flex items-center gap-3 px-5 py-3 rounded-2xl whitespace-nowrap">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-tx">{toast?.title}</span>
-            {toast?.sub && <span className="text-xs text-sub">{toast.sub}</span>}
-          </div>
-          {toast?.undoFn && (
-            <button onClick={toast.undoFn} className="ml-2 text-sm font-semibold text-accent hover:underline">
-              Undo
-            </button>
-          )}
-        </div>
-      </div>
+      <Toast open={!!toast} title={toast?.title} sub={toast?.sub} onAction={toast?.undoFn} />
 
       {/* Page header */}
       <div className="flex items-start justify-between">

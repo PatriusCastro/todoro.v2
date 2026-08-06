@@ -9,6 +9,7 @@ import SettingsPage from "../components/SettingsPage"
 import Onboarding   from "../components/Onboarding"
 import NotifPrompt  from "../components/NotifPrompt"
 import ShopModal    from "../components/ShopModal"
+import Toast        from "../components/shared/Toast"
 import { type Mode } from "../components/timer/ModeSelector"
 import { type Task } from "../components/tasks/TaskCard"
 import TaskModal, { type Project, formatDueLabel } from "../components/tasks/TaskModal"
@@ -679,16 +680,10 @@ export default function Home() {
     <AppShell activeTab={tab} onTabChange={goToTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onQuickAdd={() => setShowAdd(true)}>
 
       {/* Session complete toast */}
-      <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 pointer-events-none transition-all duration-300
-        ${toast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
-        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold text-tx">Session complete!</span>
-            <span className="text-xs text-sub">+{toast?.points} pts · {toast?.streak} day streak</span>
-          </div>
-        </div>
-      </div>
+      <Toast
+        open={!!toast}
+        title="Session complete!"
+        sub={`+${toast?.points} pts · ${toast?.streak} day streak`} />
 
       {tab === "home" && (
         <HomePage {...timerProps}
