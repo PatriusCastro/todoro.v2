@@ -16,6 +16,8 @@ var t=localStorage.getItem('todoro:theme');
 if(t==null){var d=localStorage.getItem('todoro:dark');t=(d==null)?'system':(JSON.parse(d)?'dark':'light');}
 var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
 document.documentElement.classList.toggle('dark',dark);
+var a=JSON.parse(localStorage.getItem('todoro:accentTheme')||'"blue"');
+if(a&&a!=='blue')document.documentElement.setAttribute('data-theme',a);
 }catch(e){}})();`
 
 export const metadata: Metadata = {

@@ -217,6 +217,7 @@ export default function ProjectPage({
       {projectModal && (
         <ProjectModal
           project={project}
+          taskCount={tasks.length}
           onSave={p => { onSaveProject(p); setProjectModal(false) }}
           onDelete={id => { onDeleteProject(id); onBack() }}
           onClose={() => setProjectModal(false)}

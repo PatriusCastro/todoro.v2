@@ -12,6 +12,8 @@ import ShopModal    from "../components/ShopModal"
 import { type Mode } from "../components/timer/ModeSelector"
 import { type Task } from "../components/tasks/TaskCard"
 import TaskModal, { type Project, formatDueLabel } from "../components/tasks/TaskModal"
+import { usePinnedTasks } from "../hooks/usePinnedTasks"
+import { pickNextTask, sortTasks } from "../lib/taskOrder"
 import { useWakeLock } from "../hooks/useWakeLock"
 import { useDocumentTitle } from "../hooks/useDocumentTitle"
 import { useNotifications } from "../hooks/useNotifications"
@@ -270,11 +272,37 @@ export default function Home() {
     ? (time % REVERSE_CYCLE) / REVERSE_CYCLE
     : maxTime > 0 ? (maxTime - time) / maxTime : 0
 
+  // ── Pinned tasks ──────────────────────────────────────────────────
+  const { pinned, prunePins } = usePinnedTasks()
+
+  // A pin only means something while the task is still open — drop pins for
+  // deleted or completed tasks so they never outrank real work.
+  useEffect(() => {
+    prunePins(new Set(tasks.filter(t => !t.done).map(t => t.id)))
+  }, [tasks, prunePins])
+
+  // Pinning is a statement about what to do next, so a new pin takes over the
+  // timer. Guarded on `running` so it can never hijack a session in progress,
+  // and only newly-added pins count — otherwise picking a task by hand would be
+  // undone on the next render.
+  const prevPinned = useRef<ReadonlySet<string> | null>(null)
+  useEffect(() => {
+    const prev = prevPinned.current
+    prevPinned.current = pinned
+    if (quickMode || running) return
+    const candidates = tasks.filter(t =>
+      !t.done && pinned.has(t.id) && (prev ? !prev.has(t.id) : true))
+    if (candidates.length === 0) return
+    const top = sortTasks(candidates, undefined, pinned)[0]
+    if (top && top.id !== activeTask.id) setActiveTask(top)
+  }, [pinned, tasks, quickMode, running, activeTask.id])
+  // ─────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     const updated = tasks.find(t => t.id === activeTask.id)
     if (updated && !updated.done) setActiveTask(updated)
     else if (updated?.done) {
-      const nextPending = tasks.find(t => !t.done)
+      const nextPending = pickNextTask(tasks, pinned, activeTask.id)
       if (nextPending) setActiveTask(nextPending)
     }
   }, [tasks])
@@ -283,7 +311,7 @@ export default function Home() {
     if (quickMode && activeTask.title !== "") {
       setActiveTask(createQuickModeTask())
     } else if (!quickMode && activeTask.id === "quick-mode") {
-      const nextPending = tasks.find(t => !t.done)
+      const nextPending = pickNextTask(tasks, pinned)
       if (nextPending) setActiveTask(nextPending)
       else setActiveTask(tasks[0] ?? INITIAL_TASKS[0])
     }
@@ -396,26 +424,26 @@ export default function Home() {
           : t))
         playChime(false)
         buzz(20)
-        if (nextCycle % LONG_BREAK_INTERVAL === 0) {
-          notify("Focus complete", "Great work — time for a long break.")
-          setPhase("longbreak"); setTime(LONG_BREAK_MINS * 60)
-        } else {
-          notify("Focus complete", "Nice session — take a short break.")
-          setPhase("break"); setTime(breakMins * 60)
-        }
-        if (nextCycle % LONG_BREAK_INTERVAL === 0) {
-          setPhase("longbreak"); setTime(LONG_BREAK_MINS * 60)
-        } else {
-          setPhase("break"); setTime(breakMins * 60)
-        }
+        const isLong = nextCycle % LONG_BREAK_INTERVAL === 0
+        notify("Focus complete", isLong
+          ? "Great work — time for a long break."
+          : "Nice session — take a short break.")
+        setPhase(isLong ? "longbreak" : "break")
+        setTime(isLong ? LONG_BREAK_MINS * 60 : breakMins * 60)
       } else {
-        setPhase("break"); setTime(breakMins * 60)
+        // Skipped focus: the break is earned, not granted. Scale it to the time
+        // actually focused (the same 1:5 ratio as Stop & Rest), floored at a
+        // minute and never longer than a full break.
+        const focusedSecs = reverseModeRef.current
+          ? timeRef.current
+          : Math.max(0, focusMins * 60 - timeRef.current)
+        setPhase("break")
+        setTime(Math.min(breakMins * 60, Math.max(60, Math.round(focusedSecs / 5))))
       }
     } else {
       if (completed) {
         playChime(true)
         notify("Break's over", "Ready to focus? Let's get back to it.")
-        setPhase("focus"); setTime(focusMins * 60)
       }
       setPhase("focus")
       setTime(reverseMode ? 0 : focusMins * 60)
@@ -530,6 +558,14 @@ export default function Home() {
     setTasks(ts => ts.map(t => t.projectId === projectId ? { ...t, projectId: undefined } : t))
   }
 
+  // Undo for a deleted project: put the folder back and re-file the exact tasks
+  // that were unassigned by the delete.
+  const handleRestoreProject = (project: Project, taskIds: string[]) => {
+    setProjects(ps => ps.some(p => p.id === project.id) ? ps : [...ps, project])
+    const ids = new Set(taskIds)
+    setTasks(ts => ts.map(t => ids.has(t.id) ? { ...t, projectId: project.id } : t))
+  }
+
   const handleToggleTask = (id: string) =>
     setTasks(ts => {
       const target  = ts.find(t => t.id === id)
@@ -555,7 +591,7 @@ export default function Home() {
     setTasks(ts => ts.filter(t => t.id !== id))
     if (activeTask.id === id) {
       const remaining   = tasks.filter(t => t.id !== id)
-      const nextPending = remaining.find(t => !t.done)
+      const nextPending = pickNextTask(remaining, pinned)
       setActiveTask(nextPending ?? remaining[0] ?? INITIAL_TASKS[0])
     }
   }
@@ -610,8 +646,30 @@ export default function Home() {
   if (!hydrated) {
     return (
       <AppShell activeTab={tab} onTabChange={goToTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onQuickAdd={() => setShowAdd(true)}>
-        <div className="flex items-center justify-center h-96 text-sub">
-          <p>Loading...</p>
+        {/* Skeleton of the Home layout — a blank "Loading…" reads as a broken
+            launch on every cold start, which is every launch for a PWA. */}
+        <div className="flex flex-col gap-5 animate-pulse" aria-busy="true" aria-label="Loading Todoro">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-surface2" />
+              <div className="flex flex-col gap-1.5">
+                <div className="h-3 w-20 rounded bg-surface2" />
+                <div className="h-4 w-28 rounded bg-surface2" />
+              </div>
+            </div>
+            <div className="h-8 w-24 rounded-xl bg-surface2" />
+          </div>
+          <div className="grid grid-cols-12 gap-3">
+            <div className="col-span-12 md:col-span-6 lg:col-span-5 rounded-2xl bg-surface2 h-96" />
+            <div className="col-span-12 md:col-span-6 lg:col-span-7 flex flex-col gap-3">
+              <div className="rounded-2xl bg-surface2 h-20" />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-surface2 h-24" />
+                <div className="rounded-2xl bg-surface2 h-24" />
+              </div>
+              <div className="rounded-2xl bg-surface2 h-44" />
+            </div>
+          </div>
         </div>
       </AppShell>
     )
@@ -662,7 +720,7 @@ export default function Home() {
           onSave={handleSaveTask} onDelete={handleDeleteTask}
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
           onOpenTask={handleOpenTask} onStartFocus={handleStartFocus}
-          onSaveProject={handleSaveProject}
+          onSaveProject={handleSaveProject} onRestoreProject={handleRestoreProject}
           allHistory={allHistory} initialDate={tasksDate} />
       )}
 

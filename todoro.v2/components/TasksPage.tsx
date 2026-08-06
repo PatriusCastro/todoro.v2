@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiArrowsRightLeft, HiCalendarDays } from "react-icons/hi2"
+import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiArrowsRightLeft, HiCalendarDays, HiMapPin } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import TasksCalendar, { FocusHistory } from "../components/tasks/TasksCalendar"
 import { type SessionRecord } from "../app/page"
@@ -24,6 +24,7 @@ interface TasksPageProps {
   onOpenTask: (t: Task) => void; onStartFocus: (t: Task) => void
   onSaveProject: (p: Project) => void
   onDeleteProject: (id: string) => void
+  onRestoreProject: (p: Project, taskIds: string[]) => void
   allHistory: SessionRecord[]
   initialDate?: string | null
   dark: boolean
@@ -44,7 +45,7 @@ type Filter = Priority | "all" | "done"
 export default function TasksPage({
   tasks, activeTask, projects,
   onSave, onDelete, onToggle, onToggleSub,
-  onOpenTask, onStartFocus, onSaveProject, onDeleteProject,
+  onOpenTask, onStartFocus, onSaveProject, onDeleteProject, onRestoreProject,
   allHistory, initialDate, dark,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
@@ -53,6 +54,9 @@ export default function TasksPage({
   const [modalTask, setModalTask] = useState<Task | undefined>()
   const [showModal, setShowModal] = useState(false)
   const [showDone,  setShowDone]  = useState(false)
+  // "all" is the default: a task filed under a project must still be reachable
+  // from the main list, otherwise the only way to see it is to open its folder.
+  const [view,      setView]      = useState<"all" | "project">("all")
 
   // Project modal state
   const [projectModal, setProjectModal] = useState<{ open: boolean; project?: Project }>({ open: false })
@@ -102,16 +106,33 @@ export default function TasksPage({
   }, [projects, onSaveProject, showToast])
 
   const handleDeleteProject = useCallback((id: string) => {
-    const proj = projects.find(p => p.id === id)
+    const proj    = projects.find(p => p.id === id)
+    // Snapshot before the delete — these are the tasks that lose their folder
+    const orphans = tasks.filter(t => t.projectId === id).map(t => t.id)
     onDeleteProject(id)
-    showToast("deleted", `"${proj?.name ?? "Project"}" deleted`, "Project removed")
+    showToast("deleted", `"${proj?.name ?? "Project"}" deleted`,
+      orphans.length > 0
+        ? `${orphans.length} task${orphans.length > 1 ? "s" : ""} moved to No project`
+        : "Project removed",
+      proj ? () => { onRestoreProject(proj, orphans); dismissToast() } : undefined)
     setProjectModal({ open: false })
-  }, [projects, onDeleteProject, showToast])
+  }, [projects, tasks, onDeleteProject, onRestoreProject, showToast, dismissToast])
 
-  // Base filtered set — a selected calendar day narrows to tasks due that day
+  // Base filtered set — a selected calendar day narrows to tasks due that day.
+  // Search reaches into subtasks and the project name so a task can be found by
+  // anything the user can actually see on its card.
+  const q = search.trim().toLowerCase()
+  const matchesSearch = (t: Task) => {
+    if (!q) return true
+    if (t.title.toLowerCase().includes(q)) return true
+    if (t.subtasks.some(s => s.title.toLowerCase().includes(q))) return true
+    const proj = t.projectId ? projects.find(p => p.id === t.projectId) : undefined
+    return !!proj?.name.toLowerCase().includes(q)
+  }
+
   const visible = tasks.filter(t => {
     if (t.id === deletePending?.id) return false
-    if (!t.title.toLowerCase().includes(search.toLowerCase())) return false
+    if (!matchesSearch(t)) return false
     if (selectedDate) return t.dueDate === selectedDate
     if (filter === "done") return t.done
     if (filter === "all")  return true
@@ -128,18 +149,27 @@ export default function TasksPage({
   // Group unassigned tasks
   const assignedIds = new Set(projects.map(p => p.id))
   const unassigned  = allPending.filter(t => !t.projectId || !assignedIds.has(t.projectId))
+  const projectOf   = (t: Task) => t.projectId ? projects.find(p => p.id === t.projectId) : undefined
 
-  const renderTask = (task: Task) => (
-    <TaskCard key={task.id} task={task}
-      onToggle={onToggle} onToggleSub={onToggleSub}
-      onEdit={t => { setModalTask(t); setShowModal(true) }}
-      onDelete={handleDelete}
-      onPin={togglePin}
-      onQuickStart={handleQuickStart}
-      isActive={task.id === activeTask.id}
-      isPinned={pinned.has(task.id)}
-      onClick={handleTaskClick} />
-  )
+  const pinnedPending = allPending.filter(t => pinned.has(t.id))
+
+  const renderTask = (task: Task) => {
+    const proj = projectOf(task)
+    return (
+      <TaskCard key={task.id} task={task}
+        onToggle={onToggle} onToggleSub={onToggleSub}
+        onEdit={t => { setModalTask(t); setShowModal(true) }}
+        onDelete={handleDelete}
+        onPin={togglePin}
+        onQuickStart={handleQuickStart}
+        isActive={task.id === activeTask.id}
+        isPinned={pinned.has(task.id)}
+        projectName={proj?.name}
+        projectColor={proj?.color}
+        onProjectClick={proj ? () => setActiveProject(proj) : undefined}
+        onClick={handleTaskClick} />
+    )
+  }
 
   const pendingCount = tasks.filter(t => !t.done).length
   const doneCount    = tasks.filter(t => t.done).length
@@ -206,7 +236,7 @@ export default function TasksPage({
       {/* Search */}
       <div className="glass flex items-center gap-3 rounded-xl px-4 py-2.5">
         <HiMagnifyingGlass size={14} className="text-sub shrink-0" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks…"
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks, subtasks, projects…"
           className="bg-transparent outline-none text-sm text-tx placeholder:text-sub flex-1" />
         {search && (
           <button onClick={() => setSearch("")} aria-label="Clear search" className="text-sub hover:text-tx">
@@ -262,7 +292,7 @@ export default function TasksPage({
         <div className="flex items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-2.5">
           <HiArrowsRightLeft size={15} className="text-accent shrink-0" />
           <p className="text-xs text-tx flex-1">
-            <span className="font-bold">Tip:</span> swipe a task right to pin it, left to delete.
+            <span className="font-bold">Tip:</span> tap 📍 (or swipe right) to pin a task — it jumps to the top and becomes your next focus. Swipe left to delete.
           </p>
           <button onClick={dismissSwipeHint} className="text-sub hover:text-tx transition-colors shrink-0">
             <HiXMark size={14} />
@@ -315,19 +345,85 @@ export default function TasksPage({
       )}
 
       {/* ── Pending tasks ─────────────────────────────────────────────────── */}
-      {(selectedDate ? allPending.length > 0 : unassigned.length > 0) && (
+      {selectedDate ? (
+        allPending.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between py-1">
+              <span className="text-xs font-bold text-sub">Due this day — {allPending.length}</span>
+            </div>
+            <div className="h-px bg-border mb-1" style={{ opacity: 0.5 }} />
+            {allPending.map(task => renderTask(task))}
+          </div>
+        )
+      ) : visible.length > 0 ? (
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between py-1">
+
+          {/* Section header + view switch */}
+          <div className="flex items-center justify-between py-1 gap-3">
             <span className="text-xs font-bold text-sub">
-              {selectedDate
-                ? `Due this day — ${allPending.length}`
-                : projects.length > 0 ? "No project" : `Pending — ${allPending.length}`}
+              Pending — {allPending.length}
             </span>
+            {projects.length > 0 && (
+              <div className="flex items-center gap-0.5 rounded-lg border border-border bg-surface2 p-0.5 shrink-0">
+                {([["all", "All tasks"], ["project", "By project"]] as const).map(([key, label]) => (
+                  <button key={key} onClick={() => setView(key)}
+                    aria-pressed={view === key}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors
+                      ${view === key ? "bg-accent text-white" : "text-sub hover:text-tx"}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="h-px bg-border mb-1" style={{ opacity: 0.5 }} />
-          {(selectedDate ? allPending : unassigned).map(task => renderTask(task))}
+
+          {allPending.length === 0 ? (
+            <p className="text-sm text-sub italic py-4 text-center">
+              {tasks.some(t => !t.done) ? "No pending tasks match this filter" : "Nothing pending — you're all caught up"}
+            </p>
+          ) : view === "all" || projects.length === 0 ? (
+            <>
+              {pinnedPending.length > 0 && (
+                <>
+                  <div className="flex items-center gap-1.5 pt-0.5">
+                    <HiMapPin size={11} className="text-accent" />
+                    <span className="text-[11px] font-bold text-accent">Pinned — {pinnedPending.length}</span>
+                  </div>
+                  {pinnedPending.map(task => renderTask(task))}
+                  <div className="h-px bg-border my-1.5" style={{ opacity: 0.5 }} />
+                </>
+              )}
+              {allPending.filter(t => !pinned.has(t.id)).map(task => renderTask(task))}
+            </>
+          ) : (
+            <>
+              {projects.map(proj => {
+                const group = allPending.filter(t => t.projectId === proj.id)
+                if (group.length === 0) return null
+                return (
+                  <div key={proj.id} className="flex flex-col gap-1.5">
+                    <button onClick={() => setActiveProject(proj)}
+                      className="flex items-center gap-1.5 pt-1 self-start group/h">
+                      <HiFolder size={11} style={{ color: proj.color }} />
+                      <span className="text-[11px] font-bold text-sub group-hover/h:text-accent transition-colors">
+                        {proj.name} — {group.length}
+                      </span>
+                    </button>
+                    {group.map(task => renderTask(task))}
+                  </div>
+                )
+              })}
+              {unassigned.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-bold text-sub pt-1">No project — {unassigned.length}</span>
+                  {unassigned.map(task => renderTask(task))}
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
+      ) : null}
 
       {/* Completed */}
       {done.length > 0 && (
@@ -385,6 +481,9 @@ export default function TasksPage({
       {projectModal.open && (
         <ProjectModal
           project={projectModal.project}
+          taskCount={projectModal.project
+            ? tasks.filter(t => t.projectId === projectModal.project!.id).length
+            : 0}
           onSave={handleSaveProject}
           onDelete={handleDeleteProject}
           onClose={() => setProjectModal({ open: false })}

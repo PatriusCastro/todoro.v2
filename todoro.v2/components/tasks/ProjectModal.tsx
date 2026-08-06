@@ -13,13 +13,15 @@ const PRESET_COLORS = [
 
 interface ProjectModalProps {
   project?: Project
+  /** How many tasks are filed here — shown before deleting so the blast radius is explicit */
+  taskCount?: number
   onSave: (p: Project) => void
   onDelete?: (id: string) => void
   onClose: () => void
   dark?: boolean
 }
 
-export default function ProjectModal({ project, onSave, onDelete, onClose, dark }: ProjectModalProps) {
+export default function ProjectModal({ project, taskCount = 0, onSave, onDelete, onClose, dark }: ProjectModalProps) {
   const isEdit = !!project
 
   const [name,          setName]          = useState(project?.name  ?? "")
@@ -102,21 +104,38 @@ export default function ProjectModal({ project, onSave, onDelete, onClose, dark 
             </span>
           </div>
 
+          {/* Delete consequences — spelled out, because "Sure?" never said what
+              would happen to the tasks filed in here. */}
+          {confirmDelete && (
+            <div className="flex flex-col gap-1 rounded-2xl border border-priority-high/40 bg-priority-high/5 px-4 py-3">
+              <p className="text-xs font-bold text-tx">
+                Delete &ldquo;{project?.name}&rdquo;?
+              </p>
+              <p className="text-[11px] text-sub leading-relaxed">
+                {taskCount > 0
+                  ? <>The folder is removed. Its <span className="font-bold text-tx">{taskCount} task{taskCount > 1 ? "s" : ""}</span> are kept and moved to <span className="font-bold text-tx">No project</span> — nothing is lost, and you can undo this.</>
+                  : <>The folder is removed. It has no tasks in it, and you can undo this.</>}
+              </p>
+            </div>
+          )}
+
           {/* Footer */}
           <div className="flex gap-2 pt-1">
             {isEdit && onDelete && (
               <button
                 onClick={handleDelete}
-                className={`px-4 py-2.5 rounded-xl border text-sm font-bold transition-all
+                className={`px-4 py-2.5 rounded-xl border text-sm font-bold transition-all shrink-0
                   ${confirmDelete
                     ? "bg-priority-high border-priority-high text-white"
                     : "border-priority-high/40 text-priority-high hover:bg-priority-high/10"}`}>
                 <HiTrash size={14} className="inline mr-1.5 -mt-0.5" />
-                {confirmDelete ? "Sure?" : "Delete"}
+                Delete
               </button>
             )}
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-border text-sub text-sm font-semibold hover:text-tx transition-all">
-              Cancel
+            <button
+              onClick={() => confirmDelete ? setConfirmDelete(false) : onClose()}
+              className="flex-1 py-2.5 rounded-xl border border-border text-sub text-sm font-semibold hover:text-tx transition-all">
+              {confirmDelete ? "Keep it" : "Cancel"}
             </button>
             <button
               onClick={handleSave}

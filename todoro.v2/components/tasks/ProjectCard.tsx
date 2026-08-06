@@ -29,8 +29,26 @@ export default function ProjectCard({ project, tasks, onClick }: ProjectCardProp
         <HiFolder size={24} style={{ color: project.color }} />
       </div>
       
-      <span className="text-[13px] font-semibold text-tx truncate leading-none">
+      <span className="w-full text-[13px] font-semibold text-tx truncate leading-none text-center">
         {project.name}
+      </span>
+
+      {/* Information scent — a folder with no counts gives the user no reason
+          to open it, and no way to compare projects at a glance. */}
+      <div className="w-full flex flex-col gap-1.5">
+        <div className="h-1 w-full rounded-full bg-border overflow-hidden">
+          <div className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${progress * 100}%`, backgroundColor: project.color }} />
+        </div>
+        <span className="text-[11px] text-sub tabular-nums text-center">
+          {total === 0
+            ? "No tasks yet"
+            : pending === 0 ? `All ${total} done` : `${pending} left · ${done}/${total}`}
+        </span>
+      </div>
+
+      <span className="flex items-center gap-0.5 text-[11px] font-semibold text-sub group-hover:text-accent transition-colors">
+        Open <HiChevronRight size={11} />
       </span>
     </button>
   )

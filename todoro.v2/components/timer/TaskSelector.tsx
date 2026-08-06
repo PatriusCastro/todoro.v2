@@ -1,9 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { HiChevronDown, HiCheck } from "react-icons/hi2"
+import { HiChevronDown, HiCheck, HiMapPin } from "react-icons/hi2"
 import { type Task } from "../tasks/TaskCard"
 import { getPriority } from "../../lib/theme"
+import { sortTasks } from "../../lib/taskOrder"
+import { usePinnedTasks } from "../../hooks/usePinnedTasks"
 
 interface TaskSelectorProps {
   tasks:    Task[]
@@ -15,7 +17,8 @@ interface TaskSelectorProps {
 export default function TaskSelector({ tasks, active, onChange, quickMode = false }: TaskSelectorProps) {
   const [open, setOpen] = useState(false)
 
-  const pendingTasks = tasks.filter(t => !t.done)
+  const { pinned }   = usePinnedTasks()
+  const pendingTasks = sortTasks(tasks.filter(t => !t.done), active.id, pinned)
   const allDone      = pendingTasks.length === 0
 
   // Switching pauses the running session (handled by the parent) and never
@@ -63,6 +66,7 @@ export default function TaskSelector({ tasks, active, onChange, quickMode = fals
               <button key={task.id} onClick={() => handleSelect(task)}
                 className={`w-full flex items-center gap-2 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface2
                   ${task.id === active.id ? "bg-accent/10" : ""}`}>
+                {pinned.has(task.id) && <HiMapPin size={11} className="text-accent shrink-0" />}
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(task.priority) }} />
                 <span className="text-sm font-medium text-tx truncate flex-1">{task.title}</span>
                 {task.id === active.id && <HiCheck size={12} className="text-accent shrink-0" />}

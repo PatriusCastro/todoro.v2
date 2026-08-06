@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { HiPencil, HiChevronDown, HiCheck, HiPlay, HiMapPin, HiTrash, HiArrowPath } from "react-icons/hi2"
+import { HiPencil, HiChevronDown, HiCheck, HiPlay, HiMapPin, HiTrash, HiArrowPath, HiFolder } from "react-icons/hi2"
 import { getPriority, type Priority } from "../../lib/theme"
 import { useSwipe } from "../../hooks/useSwipe"
 
@@ -28,15 +28,19 @@ interface TaskCardProps {
   compact?: boolean
   isActive?: boolean
   isPinned?: boolean
+  /** Shown as a tappable chip so a flat list still says where a task lives */
+  projectName?: string
+  projectColor?: string
+  onProjectClick?: () => void
 }
 
 export default function TaskCard({
   task, onToggle, onToggleSub, onClick, onEdit,
   onDelete, onPin, onQuickStart,
   compact = false, isActive = false, isPinned = false,
+  projectName, projectColor, onProjectClick,
 }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false)
-  const [titleExpanded, setTitleExpanded] = useState(false)
 
   const { ref, swipeHandlers } = useSwipe({
     onSwipeRight: onPin    ? () => onPin(task.id) : undefined,
@@ -106,19 +110,30 @@ export default function TaskCard({
               {task.priority !== "none" && (
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />
               )}
+              {/* Wraps to two lines instead of hiding behind a tap-to-expand
+                  that sat pixels away from "open task" and fired by mistake. */}
               <span
-                onPointerDown={e => e.stopPropagation()}
-                onClick={e => { e.stopPropagation(); setTitleExpanded(v => !v) }}
-                className={`text-[13px] font-medium select-none leading-snug
-                  ${task.done ? "line-through text-sub" : "text-tx"}
-                  ${titleExpanded ? "wrap-break-words whitespace-normal" : "truncate"}`}>
+                title={task.title}
+                className={`text-[13px] font-medium leading-snug wrap-break-words line-clamp-2 min-w-0
+                  ${task.done ? "line-through text-sub" : "text-tx"}`}>
                 {task.title}
               </span>
             </div>
 
             {/* Meta */}
-            {(task.dueLabel !== "No due date" || task.subtasks.length > 0 || task.estimatedSessions > 0 || (task.repeat && task.repeat !== "none")) && (
+            {(projectName || task.dueLabel !== "No due date" || task.subtasks.length > 0 || task.estimatedSessions > 0 || (task.repeat && task.repeat !== "none")) && (
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                {projectName && (
+                  <span
+                    onPointerDown={e => e.stopPropagation()}
+                    onClick={e => { if (onProjectClick) { e.stopPropagation(); onProjectClick() } }}
+                    className={`inline-flex items-center gap-1 max-w-36 rounded-md px-1.5 py-0.5 text-[10px] font-semibold
+                      ${onProjectClick ? "cursor-pointer hover:brightness-110" : ""}`}
+                    style={{ backgroundColor: `${projectColor ?? "#888"}22`, color: projectColor ?? "#888" }}>
+                    <HiFolder size={9} className="shrink-0" />
+                    <span className="truncate">{projectName}</span>
+                  </span>
+                )}
                 {task.repeat && task.repeat !== "none" && (
                   <span className="text-[11px] text-accent flex items-center gap-0.5">
                     <HiArrowPath size={9} /> <span className="capitalize">{task.repeat}</span>
@@ -145,6 +160,18 @@ export default function TaskCard({
 
           {/* Actions */}
           <div className="flex items-center gap-0.5 shrink-0">
+            {onPin && !task.done && (
+              <button
+                onPointerDown={e => e.stopPropagation()}
+                onClick={e => { e.stopPropagation(); onPin(task.id) }}
+                aria-pressed={isPinned}
+                aria-label={isPinned ? "Unpin task" : "Pin task"}
+                title={isPinned ? "Unpin" : "Pin — work on this next"}
+                className={`p-1.5 rounded-lg transition-colors duration-150
+                  ${isPinned ? "text-accent bg-accent/10" : "text-sub hover:text-accent hover:bg-accent/10"}`}>
+                <HiMapPin size={13} />
+              </button>
+            )}
             {onQuickStart && !task.done && (
               <button
                 onPointerDown={e => e.stopPropagation()}

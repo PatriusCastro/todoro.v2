@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { HiChevronLeft, HiChevronRight, HiCalendarDays } from "react-icons/hi2"
 import { type Task } from "./TaskCard"
@@ -267,6 +267,21 @@ export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
   const weeks: { date: string; count: number }[][] = []
   for (let i = 0; i < heatmapCells.length; i += 7) weeks.push(heatmapCells.slice(i, i + 7))
 
+  const today = localDate()
+
+  // The grid runs oldest → newest across a year, so its default scroll position
+  // lands on last summer. Pin it to the right edge: today is what the user came
+  // to look at, and sliding back through 52 weeks to find it is the whole
+  // complaint. Re-runs when history grows so a new session stays in view.
+  // useLayoutEffect, not useEffect: positioning it before paint avoids a frame
+  // of the grid sitting at the far left and snapping over. Safe here — the page
+  // gates all of this behind hydration, so it never renders on the server.
+  const scrollerRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const el = scrollerRef.current
+    if (el) el.scrollLeft = el.scrollWidth
+  }, [allHistory.length])
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between px-1">
@@ -278,13 +293,14 @@ export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
         </div>
       </div>
 
-      <div className="glass rounded-2xl px-4 py-4 overflow-x-auto">
+      <div ref={scrollerRef} className="glass rounded-2xl px-4 py-4 overflow-x-auto">
         <div className="flex gap-1 min-w-max">
           {weeks.map((week, wi) => (
             <div key={wi} className="flex flex-col gap-1">
               {week.map(({ date, count }) => (
                 <div key={date} title={`${date}: ${count} session${count !== 1 ? "s" : ""}`}
-                  className={`w-3 h-3 rounded-sm transition-colors duration-150 ${heatColor(count)}`} />
+                  className={`w-3 h-3 rounded-sm transition-colors duration-150 ${heatColor(count)}
+                    ${date === today ? "ring-1 ring-accent ring-offset-1 ring-offset-surface" : ""}`} />
               ))}
             </div>
           ))}

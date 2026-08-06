@@ -5,6 +5,8 @@ import { HiStar, HiPlayCircle, HiPauseCircle, HiChevronRight, HiChevronLeft, HiF
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import { type Mode } from "../components/timer/ModeSelector"
 import { getPriority } from "../lib/theme"
+import { sortTasks } from "../lib/taskOrder"
+import { usePinnedTasks } from "../hooks/usePinnedTasks"
 
 type Phase = "focus" | "break" | "longbreak"
 
@@ -154,7 +156,10 @@ export default function HomePage({
 
   const size = 220; const cx = size / 2; const r = cx - 16; const C = 2 * Math.PI * r
 
-  const pendingTasks = tasks.filter(t => !t.done && t.id !== activeTask.id)
+  // Same order as the Tasks page — pinned first, then priority — so "Up Next"
+  // actually agrees with what the rest of the app calls next.
+  const { pinned, togglePin } = usePinnedTasks()
+  const pendingTasks = sortTasks(tasks.filter(t => !t.done && t.id !== activeTask.id), undefined, pinned)
   const doneTasks    = tasks.filter(t => t.done)
   const allDone      = tasks.every(t => t.done)
 
@@ -359,7 +364,8 @@ export default function HomePage({
                 : <div className="flex flex-col gap-2">
                     {pendingTasks.slice(0, 3).map(t => (
                       <TaskCard key={t.id} task={t} onToggle={onToggleTask}
-                        onClick={() => onOpenTask(t)} onQuickStart={onStartFocus} compact />
+                        onClick={() => onOpenTask(t)} onQuickStart={onStartFocus}
+                        onPin={togglePin} isPinned={pinned.has(t.id)} compact />
                     ))}
                     {pendingTasks.length > 3 && (
                       <button onClick={onNavToTasks}
