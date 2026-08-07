@@ -1,12 +1,13 @@
 "use client"
 
-import { HiStar, HiPlay, HiPause, HiChevronRight, HiFire, HiCheckCircle, HiListBullet, HiBolt } from "react-icons/hi2"
+import { HiStar, HiPlay, HiPause, HiChevronRight, HiArrowRight, HiFire, HiCheckCircle, HiBolt } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import { type Project } from "../components/tasks/TaskModal"
 import { sortTasks } from "../lib/taskOrder"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
 import StatTile from "./shared/StatTile"
 import Panel from "./shared/Panel"
+import SectionHeader from "./shared/SectionHeader"
 
 type Phase = "focus" | "break" | "longbreak"
 
@@ -47,7 +48,7 @@ export default function HomePage({
   const firstName = userName.split(" ")[0] || "there"
   const currentBreakMins = phase === "longbreak" ? longBreakMins : breakMins
 
-  const { pinned, togglePin } = usePinnedTasks()
+  const { pinned } = usePinnedTasks()
   const pendingTasks = sortTasks(tasks.filter(t => !t.done && t.id !== activeTask.id), undefined, pinned)
   const doneTasks    = tasks.filter(t => t.done)
   const allDone      = tasks.length > 0 && tasks.every(t => t.done)
@@ -118,7 +119,7 @@ export default function HomePage({
         <button onClick={onOpenShop}
           className="ml-auto shrink-0 flex items-center gap-2 min-h-11 px-3.5 rounded-control border border-border
             bg-surface hover:border-accent/40 active:scale-95 transition-all">
-          <span className="text-caption font-extrabold uppercase tracking-wider text-sub">Lv {level}</span>
+          <span className="text-caption font-extrabold uppercase tracking-wider text-tx">Lv {level}</span>
           <HiStar size={14} className="text-sub" />
           <span className="text-lead font-extrabold text-tx tabular-nums">{totalPoints}</span>
         </button>
@@ -191,18 +192,19 @@ export default function HomePage({
       </div>
 
       {/* ── Up next ────────────────────────────────────────────────────────── */}
-      <Panel className="flex flex-col gap-1">
-        <div className="flex items-center gap-2 mb-1">
-          <HiListBullet size={15} className="text-sub" />
-          <h3 className="text-caption font-extrabold uppercase tracking-wider text-sub">Up next</h3>
-          <button onClick={onNavToTasks}
-            className="ml-auto flex items-center gap-0.5 min-h-11 text-meta font-extrabold text-accent hover:underline">
-            All tasks <HiChevronRight size={13} />
-          </button>
-        </div>
+      <Panel className="flex flex-col">
+        <SectionHeader
+          action={
+            <button onClick={onNavToTasks}
+              className="flex items-center gap-1 min-h-11 text-meta font-extrabold text-accent hover:underline">
+              All tasks <HiArrowRight size={14} />
+            </button>
+          }>
+          Up next
+        </SectionHeader>
 
         {pendingTasks.length === 0 ? (
-          <p className="text-meta text-sub py-3">
+          <p className="text-meta text-sub py-3 border-t border-border">
             {allDone ? "Everything's done. Enjoy the quiet." : "Nothing queued — add what's on your mind."}
           </p>
         ) : (
@@ -210,11 +212,11 @@ export default function HomePage({
             {pendingTasks.slice(0, 3).map(t => (
               <TaskCard key={t.id} task={t} onToggle={onToggleTask}
                 onClick={() => onOpenTask(t)} onQuickStart={onStartFocus}
-                onPin={togglePin} isPinned={pinned.has(t.id)} compact />
+                isPinned={pinned.has(t.id)} compact />
             ))}
             {pendingTasks.length > 3 && (
               <button onClick={onNavToTasks}
-                className="min-h-11 text-meta text-sub hover:text-accent transition-colors text-left">
+                className="min-h-11 text-meta text-sub hover:text-accent transition-colors text-left border-t border-border">
                 +{pendingTasks.length - 3} more
               </button>
             )}
@@ -226,12 +228,7 @@ export default function HomePage({
 
         {/* ── This week ────────────────────────────────────────────────────── */}
         <Panel className="flex flex-col gap-3">
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-caption font-extrabold uppercase tracking-wider text-sub">This week</h3>
-            <span className="ml-auto text-caption text-sub tabular-nums">
-              {weekTotal} session{weekTotal === 1 ? "" : "s"}
-            </span>
-          </div>
+          <SectionHeader meta={`${weekTotal} session${weekTotal === 1 ? "" : "s"}`}>This week</SectionHeader>
           <div className="grid grid-cols-7 gap-1.5 items-end h-24">
             {week.map(d => (
               <div key={d.ds} className="h-full flex items-end">
@@ -256,12 +253,7 @@ export default function HomePage({
 
         {/* ── Projects ─────────────────────────────────────────────────────── */}
         <Panel className="flex flex-col gap-1">
-          <div className="flex items-baseline gap-2 mb-1">
-            <h3 className="text-caption font-extrabold uppercase tracking-wider text-sub">Projects</h3>
-            <span className="ml-auto text-caption text-sub">
-              {projectRows.length || "none"} {projectRows.length === 1 ? "project" : projectRows.length ? "projects" : "yet"}
-            </span>
-          </div>
+          <SectionHeader meta={projectRows.length ? `${projectRows.length} active` : "none yet"}>Projects</SectionHeader>
           {projectRows.length === 0 ? (
             <button onClick={onNavToTasks}
               className="min-h-11 text-meta text-sub hover:text-accent transition-colors text-left">

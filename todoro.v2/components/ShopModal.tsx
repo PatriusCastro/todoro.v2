@@ -55,12 +55,12 @@ export default function ShopModal({
             <div className="flex items-center gap-2.5 flex-1">
               <HiStar size={18} className="text-sub" />
               <div>
-                <p className="text-caption font-bold text-sub">Balance</p>
+                <p className="text-caption font-extrabold uppercase tracking-wider text-tx">Balance</p>
                 <p className="text-2xl font-semibold text-tx leading-none mt-0.5">{points} <span className="text-sm font-semibold text-sub">pts</span></p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-caption font-bold text-sub">Freezes</p>
+              <p className="text-caption font-extrabold uppercase tracking-wider text-tx">Freezes</p>
               <p className="text-2xl font-semibold text-tx leading-none mt-0.5">{freezes}</p>
             </div>
           </div>

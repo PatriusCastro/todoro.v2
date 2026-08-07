@@ -75,7 +75,7 @@ export default function ProjectModal({ project, taskCount = 0, onSave, onDelete,
 
           {/* Color */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub">Color</span>
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">Color</span>
             <div className="flex flex-wrap gap-2.5">
               {PRESET_COLORS.map(c => (
                 <button

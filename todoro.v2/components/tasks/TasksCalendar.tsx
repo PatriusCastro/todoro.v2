@@ -1,10 +1,12 @@
 "use client"
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useState } from "react"
 import { HiChevronLeft, HiChevronRight, HiCalendarDays } from "react-icons/hi2"
 import { type Task } from "./TaskCard"
 import { type SessionRecord } from "../../app/page"
 import Sheet from "../shared/Sheet"
+import Panel from "../shared/Panel"
+import SectionHeader from "../shared/SectionHeader"
 
 function localDate(ts: number = Date.now()) {
   const d = new Date(ts)
@@ -28,6 +30,16 @@ function weekDates(anchor: Date) {
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"]
 const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+const DAYS_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+
+// ISO-8601 week number: week 1 is the one containing the first Thursday.
+function isoWeek(d: Date) {
+  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7))
+  const firstThursday = new Date(t.getFullYear(), 0, 4)
+  firstThursday.setDate(firstThursday.getDate() + 3 - ((firstThursday.getDay() + 6) % 7))
+  return 1 + Math.round((t.getTime() - firstThursday.getTime()) / (7 * 864e5))
+}
 
 interface DayMaps {
   tasksByDate:    Record<string, Task[]>
@@ -36,9 +48,10 @@ interface DayMaps {
 
 // One calendar day — shared by the week strip and the month sheet so they stay
 // identical. Toggling an already-selected day clears the selection (onSelect null).
-function DayCell({ ds, dayNum, isToday, isSel, dayTasks, sessions, ariaLabel, onSelect }: {
+function DayCell({ ds, dayNum, dayLabel, isToday, isSel, dayTasks, sessions, ariaLabel, onSelect }: {
   ds:        string
   dayNum:    number
+  dayLabel?: string
   isToday:   boolean
   isSel:     boolean
   dayTasks:  Task[]
@@ -49,34 +62,29 @@ function DayCell({ ds, dayNum, isToday, isSel, dayTasks, sessions, ariaLabel, on
   return (
     <button onClick={() => onSelect(isSel ? null : ds)}
       aria-label={ariaLabel} aria-pressed={isSel}
-      className={`relative flex flex-col items-center pt-2 pb-1.5 rounded-xl transition-all duration-150 min-h-13
-        ${isSel   ? "bg-accent/15 border border-accent/50"
-        : isToday ? "border border-accent/40"
-        : "hover:bg-surface2 border border-transparent"}`}>
+      className={`relative flex flex-col items-center justify-center gap-1 py-2.5 rounded-control
+        transition-colors duration-150 min-h-17
+        ${isSel ? "bg-accent" : "bg-surface hover:bg-surface2"}`}>
 
-      <span className={`text-xs font-semibold leading-none ${isSel || isToday ? "text-accent" : "text-tx"}`}>
+      {dayLabel && (
+        <span className={`text-caption font-extrabold uppercase tracking-wider leading-none
+          ${isSel ? "text-white" : isToday ? "text-accent" : "text-sub"}`}>
+          {dayLabel}
+        </span>
+      )}
+      <span className={`text-heading font-extrabold leading-none tabular-nums
+        ${isSel ? "text-white" : isToday ? "text-accent" : "text-tx"}`}>
         {dayNum}
       </span>
 
-      {/* Session dots — neutral, accent reserved for selection/today */}
-      {sessions > 0 && (
-        <div className="flex gap-0.5 mt-1">
-          {Array.from({ length: Math.min(sessions, 3) }).map((_, j) => (
-            <span key={j} className="w-1 h-1 rounded-full bg-tx/55" />
-          ))}
-        </div>
-      )}
-
-      {/* Tasks due — accent means work owed, the neutral dots above mean work
-          done. These used to be tinted by priority, which was the last place in
-          the app where a colour alone carried meaning, at 6px. */}
-      {dayTasks.length > 0 && (
-        <div className="flex gap-0.5 mt-0.5 justify-center px-1">
-          {dayTasks.slice(0, 3).map((_, j) => (
-            <span key={j} className="w-1.5 h-1.5 rounded-pill bg-accent" />
-          ))}
-        </div>
-      )}
+      {/* One bar, not two dot systems: it says "there's something on this day".
+          Accent when the day owes work, muted when it only holds finished
+          sessions. Colour alone never had to carry priority here. */}
+      <span className={`w-4.5 h-1 rounded-chip transition-colors
+        ${isSel ? "bg-white/70"
+        : dayTasks.length > 0 ? "bg-accent"
+        : sessions > 0 ? "bg-tx/30"
+        : "bg-transparent"}`} />
     </button>
   )
 }
@@ -168,38 +176,32 @@ export default function TasksCalendar({ tasks, allHistory, selected, onSelect }:
   const anchor   = selected ? new Date(selected + "T00:00") : new Date()
   const week     = weekDates(anchor)
 
-  // "This week" when today is in view, otherwise the month(s) the week spans
-  const months = [...new Set(week.map(d => d.month))]
-  const label  = week.some(d => d.ds === todayStr)
-    ? "This week"
-    : months.length === 1 ? MONTHS[months[0]] : `${MONTHS[months[0]]} – ${MONTHS[months[1]]}`
+  // "AUGUST 2026 / Week 32" — the month says where you are, the week number
+  // says it precisely. A bare "This week" said neither.
+  const midWeek   = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate())
+  const monthLabel = `${MONTHS[midWeek.getMonth()]} ${midWeek.getFullYear()}`
+  const weekNumber = isoWeek(midWeek)
 
   return (
     <>
       <div className="panel overflow-hidden">
 
-        {/* Header — week label + expand to month */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
-          <span className="text-sm font-semibold text-tx">{label}</span>
+        {/* Header — month + week number, and the month-view escape hatch */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+          <h3 className="text-caption font-extrabold uppercase tracking-wider text-tx">{monthLabel}</h3>
           <button onClick={() => setSheetOpen(true)}
             aria-label="Open month view" aria-haspopup="dialog" aria-expanded={sheetOpen}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-sub
-              hover:text-tx hover:bg-surface2 transition-colors">
-            <HiCalendarDays size={15} /> Month
+            className="ml-auto flex items-center gap-1.5 min-h-9 px-2 rounded-chip text-caption text-sub
+              hover:text-accent transition-colors">
+            Week {weekNumber} <HiCalendarDays size={14} />
           </button>
         </div>
 
-        {/* Day headers */}
-        <div className="grid grid-cols-7 px-3 pt-3 pb-1">
-          {DAYS.map(d => (
-            <div key={d} className="text-center text-caption font-semibold text-sub py-1">{d}</div>
-          ))}
-        </div>
-
-        {/* Current week */}
-        <div className="grid grid-cols-7 gap-1 px-3 pb-3">
-          {week.map(({ ds, dayNum, month }) => (
-            <DayCell key={ds} ds={ds} dayNum={dayNum}
+        {/* Current week — the day name lives inside the cell, so there is no
+            separate header row to keep aligned with it. */}
+        <div className="grid grid-cols-7 gap-1.5 p-3">
+          {week.map(({ ds, dayNum, month }, i) => (
+            <DayCell key={ds} ds={ds} dayNum={dayNum} dayLabel={DAYS_SHORT[i]}
               isToday={ds === todayStr} isSel={ds === selected}
               dayTasks={tasksByDate[ds] ?? []} sessions={sessionsByDate[ds] ?? 0}
               ariaLabel={`${MONTHS[month]} ${dayNum}`}
@@ -216,29 +218,43 @@ export default function TasksCalendar({ tasks, allHistory, selected, onSelect }:
   )
 }
 
-// 365-day focus-session heatmap. Neutral intensity scale to keep accent restrained.
+const WEEKS_SHOWN = 14
+
+/**
+ * Focus-session heatmap over the last 14 weeks, ending on the week containing
+ * today. It used to run a full 365 days, which needed a horizontal scroller and
+ * a layout effect to keep today in view; 14 weeks fits any phone width, so both
+ * are gone.
+ */
 export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
   const sessionsByDate = allHistory.reduce<Record<string, number>>((acc, s) => {
     const d = localDate(s.at); acc[d] = (acc[d] ?? 0) + 1; return acc
   }, {})
 
+  // Start on the Sunday of the week WEEKS_SHOWN-1 weeks back, so the last
+  // column is the current week and rows line up Sun–Sat.
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  start.setDate(start.getDate() - start.getDay() - (WEEKS_SHOWN - 1) * 7)
+
   const heatmapCells: { date: string; count: number }[] = []
-  for (let i = 364; i >= 0; i--) {
-    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i)
+  for (let i = 0; i < WEEKS_SHOWN * 7; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)
     const ds = localDate(d.getTime())
     heatmapCells.push({ date: ds, count: sessionsByDate[ds] ?? 0 })
   }
 
   const maxCount = Math.max(...heatmapCells.map(c => c.count), 1)
-  const SCALE = ["bg-ring", "bg-tx/15", "bg-tx/35", "bg-tx/60", "bg-tx/85"]
 
-  function heatColor(count: number) {
-    if (count === 0) return SCALE[0]
+  // Five steps on the accent, so the heatmap reads as part of the theme rather
+  // than a neutral chart parked inside it. Step 0 is a faint ink tint — an
+  // empty day should read as "nothing here", not as the lightest accent.
+  const STEP_MIX = [null, 24, 48, 72, 96] as const
+  function heatStyle(count: number): React.CSSProperties {
+    if (count === 0) return { background: "color-mix(in srgb, var(--tx) 11%, transparent)" }
     const intensity = count / maxCount
-    if (intensity < 0.25) return SCALE[1]
-    if (intensity < 0.5)  return SCALE[2]
-    if (intensity < 0.75) return SCALE[3]
-    return SCALE[4]
+    const step = intensity < 0.25 ? 1 : intensity < 0.5 ? 2 : intensity < 0.75 ? 3 : 4
+    return { background: `color-mix(in srgb, var(--accent) ${STEP_MIX[step]}%, transparent)` }
   }
 
   const weeks: { date: string; count: number }[][] = []
@@ -246,47 +262,36 @@ export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
 
   const today = localDate()
 
-  // The grid runs oldest → newest across a year, so its default scroll position
-  // lands on last summer. Pin it to the right edge: today is what the user came
-  // to look at, and sliding back through 52 weeks to find it is the whole
-  // complaint. Re-runs when history grows so a new session stays in view.
-  // useLayoutEffect, not useEffect: positioning it before paint avoids a frame
-  // of the grid sitting at the far left and snapping over. Safe here — the page
-  // gates all of this behind hydration, so it never renders on the server.
-  const scrollerRef = useRef<HTMLDivElement>(null)
-  useLayoutEffect(() => {
-    const el = scrollerRef.current
-    if (el) el.scrollLeft = el.scrollWidth
-  }, [allHistory.length])
-
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between px-1">
-        <span className="text-xs font-bold text-sub">Focus History</span>
-        <div className="flex items-center gap-1.5 text-caption text-sub">
-          <span>Less</span>
-          {SCALE.map(c => <span key={c} className={`w-3 h-3 rounded-sm ${c}`} />)}
-          <span>More</span>
-        </div>
+    <Panel className="flex flex-col gap-4">
+      <SectionHeader meta={`${WEEKS_SHOWN} weeks`}>Focus history</SectionHeader>
+
+      {/* 14 columns of 7 days. Sized by fraction rather than fixed pixels so the
+          grid fills the panel at any width instead of needing a scroller. */}
+      <div className="flex gap-1.5">
+        {weeks.map((week, wi) => (
+          <div key={wi} className="flex-1 flex flex-col gap-1.5">
+            {week.map(({ date, count }) => (
+              <div key={date}
+                title={`${date} — ${count} session${count !== 1 ? "s" : ""}`}
+                style={heatStyle(count)}
+                className={`w-full aspect-square rounded-chip transition-colors duration-150
+                  ${date === today ? "ring-2 ring-accent ring-offset-2 ring-offset-panel" : ""}`} />
+            ))}
+          </div>
+        ))}
       </div>
 
-      <div ref={scrollerRef} className="panel px-4 py-4 overflow-x-auto">
-        <div className="flex gap-1 min-w-max">
-          {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-1">
-              {week.map(({ date, count }) => (
-                <div key={date} title={`${date}: ${count} session${count !== 1 ? "s" : ""}`}
-                  className={`w-3 h-3 rounded-sm transition-colors duration-150 ${heatColor(count)}
-                    ${date === today ? "ring-1 ring-accent ring-offset-1 ring-offset-surface" : ""}`} />
-              ))}
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-between mt-2 text-caption text-sub">
-          <span>{new Date(heatmapCells[0].date + "T00:00").toLocaleDateString([], { month: "short", year: "numeric" })}</span>
-          <span>{new Date(heatmapCells[heatmapCells.length - 1].date + "T00:00").toLocaleDateString([], { month: "short", year: "numeric" })}</span>
-        </div>
+      <div className="flex items-center gap-1.5">
+        <span className="text-caption text-sub">Less</span>
+        {[0, 1, 2, 3, 4].map(step => (
+          <span key={step} className="w-3.5 h-3.5 rounded-chip"
+            style={step === 0
+              ? { background: "color-mix(in srgb, var(--tx) 11%, transparent)" }
+              : { background: `color-mix(in srgb, var(--accent) ${STEP_MIX[step]}%, transparent)` }} />
+        ))}
+        <span className="text-caption text-sub">More</span>
       </div>
-    </div>
+    </Panel>
   )
 }

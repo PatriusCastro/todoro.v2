@@ -42,7 +42,7 @@ function MinutesField({ label, value, min, max, onCommit }: {
   const [draft, setDraft] = useState(String(value))
   return (
     <label className="flex-1 flex flex-col gap-1.5">
-      <span className="text-caption font-extrabold uppercase tracking-wider text-sub">{label}</span>
+      <span className="text-caption font-extrabold uppercase tracking-wider text-tx">{label}</span>
       <span className="flex items-center gap-2">
         <input type="number" inputMode="numeric" value={draft} min={min} max={max}
           onChange={e => setDraft(e.target.value)}
@@ -90,7 +90,7 @@ export default function SessionSheet({
       </div>
 
       <div className="flex flex-col gap-2 pt-1">
-        <span className="text-caption font-extrabold uppercase tracking-wider text-sub">Focus / break</span>
+        <span className="text-caption font-extrabold uppercase tracking-wider text-tx">Focus / break</span>
         <Segmented
           options={MODE_OPTIONS}
           value={reverseMode ? ("custom" as Mode) : mode}

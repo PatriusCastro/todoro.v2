@@ -60,7 +60,7 @@ export default function TaskCard({
   }
 
   return (
-    <div className="relative rounded-xl overflow-hidden">
+    <div className={`relative overflow-hidden ${compact ? "border-t border-border first:border-t-0" : "rounded-xl"}`}>
 
       {/* Swipe hint */}
       <div
@@ -82,12 +82,13 @@ export default function TaskCard({
         ref={ref}
         {...swipeHandlers}
         style={{ touchAction: "pan-y", willChange: "transform" }}
-        className={`relative rounded-xl transition-colors duration-150
-          bg-surface2 border border-border my-1
-          ${isActive ? "border-accent/50" : "hover:border-border/80"}
+        className={`relative transition-colors duration-150
+          ${compact
+            ? "bg-transparent"
+            : `rounded-xl bg-surface2 border my-1 ${isActive ? "border-accent/50" : "border-border hover:border-border/80"}`}
           ${task.done ? "opacity-50" : ""}`}>
 
-        <div className={`flex items-center gap-3 ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}>
+        <div className={`flex items-center gap-3 ${compact ? "px-1 py-3.5" : "px-4 py-3"}`}>
 
           {/* Checkbox — 22px circle inside a 44px target. Completing a task is
               the single most-tapped control here and the easiest to fat-finger. */}
@@ -116,7 +117,7 @@ export default function TaskCard({
                   that sat pixels away from "open task" and fired by mistake. */}
               <span
                 title={task.title}
-                className={`text-body font-semibold leading-snug wrap-break-words line-clamp-2 min-w-0
+                className={`${compact ? "text-lead" : "text-body"} font-extrabold leading-snug wrap-break-words line-clamp-2 min-w-0
                   ${task.done ? "line-through text-sub" : "text-tx"}`}>
                 {task.title}
               </span>
@@ -170,7 +171,7 @@ export default function TaskCard({
                 Now
               </span>
             )}
-            {onPin && !task.done && (
+            {onPin && !task.done && !compact && (
               <button
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); onPin(task.id) }}
@@ -191,7 +192,7 @@ export default function TaskCard({
                 <HiPlay size={15} />
               </button>
             )}
-            {onEdit && (
+            {onEdit && !compact && (
               <button
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); onEdit(task) }}
@@ -200,7 +201,7 @@ export default function TaskCard({
                 <HiPencil size={15} />
               </button>
             )}
-            {expandable && (
+            {expandable && !compact && (
               <button
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}

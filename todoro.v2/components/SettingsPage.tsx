@@ -170,7 +170,7 @@ export default function SettingsPage({
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
           </div>
           <div className="flex flex-col gap-1 flex-1 min-w-0">
-            <span className="text-xs font-bold text-sub">Photo</span>
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">Photo</span>
             <span className="text-xs text-sub">Tap the icon to upload</span>
             {avatarUrl && (
               <button onClick={() => onAvatarUrl("")}
@@ -292,7 +292,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.12.0" />
+        <InfoRow label="Version" value="2.13.0" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
     </div>
@@ -302,7 +302,7 @@ export default function SettingsPage({
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-xs font-bold text-sub px-1">{label}</span>
+      <span className="text-caption font-extrabold uppercase tracking-wider text-tx px-1">{label}</span>
       <Panel bare className="overflow-hidden divide-y divide-border">
         {children}
       </Panel>

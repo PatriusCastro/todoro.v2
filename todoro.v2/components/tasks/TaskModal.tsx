@@ -196,7 +196,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
 
           {/* Project picker */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub">Project</span>
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">Project</span>
 
             <div className="flex flex-wrap gap-2">
               {/* No project option */}
@@ -280,7 +280,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
 
           {/* Date picker */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub">Due Date</span>
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">Due Date</span>
             <div role="button" tabIndex={0} onClick={() => setShowCal(v => !v)}
               onKeyDown={e => e.key === "Enter" && setShowCal(v => !v)}
               className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3 cursor-pointer transition-colors select-none
@@ -309,7 +309,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
 
           {/* Repeat */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub">Repeat</span>
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">Repeat</span>
             <div className="flex gap-2">
               {(["none", "daily", "weekly"] as Repeat[]).map(r => (
                 <button key={r} type="button" onClick={() => setRepeat(r)}
@@ -323,7 +323,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
 
           {/* Subtasks */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub">Subtasks</span>
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">Subtasks</span>
             {subtasks.map(sub => (
               <div key={sub.id} className="flex items-center gap-3 bg-surface2 rounded-xl px-3 py-2.5 border border-border">
                 <span className="flex-1 text-sm text-tx truncate min-w-0">{sub.title}</span>

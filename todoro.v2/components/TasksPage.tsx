@@ -291,15 +291,15 @@ export default function TasksPage({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <HiFolder size={13} className="text-sub" />
-            <span className="text-xs font-bold text-sub">
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
               Projects · {projects.length}
             </span>
           </div>
           <button
             onClick={() => setProjectModal({ open: true, project: undefined })}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border bg-surface2
-              text-xs font-bold text-sub hover:text-accent hover:border-accent/40 transition-colors">
-            <HiPlus size={12} /> New
+            className="flex items-center gap-1.5 min-h-11 px-3.5 rounded-control border border-border bg-surface
+              text-meta font-extrabold text-tx hover:text-accent hover:border-accent/40 transition-colors">
+            <HiPlus size={14} /> New
           </button>
         </div>
 
@@ -347,7 +347,7 @@ export default function TasksPage({
         <div className="flex flex-col">
           <button onClick={() => setShowDone(v => !v)}
             className="flex items-center justify-between py-1.5 w-full">
-            <span className="text-xs font-bold text-sub">
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
               Completed — {done.length}
             </span>
             <HiChevronDown size={12} className="text-sub transition-transform duration-200"

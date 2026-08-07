@@ -51,6 +51,7 @@ export default function TimerPage({
   const [focused, setFocused] = useState(false)
   const [pipActive,  setPipActive]  = useState(false)
   const [sheetOpen,  setSheetOpen]  = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(false)
   const isDesktop = useIsDesktop()
   useTimerKeys({ onToggle, onReset, onSkip })
 
@@ -67,6 +68,11 @@ export default function TimerPage({
 
   // Badge label shows "↑ Focus" in reverse mode focus phase
   const badgeLabel = reverseMode && phase === "focus" ? "↑ Focus" : label
+  const sessionCaption = allDone
+    ? "All tasks completed"
+    : phase === "focus"
+      ? `Session ${Math.min(sessions + 1, totalSessions)} of ${totalSessions}`
+      : "Take a break"
 
   const localDate = (ts: number = Date.now()) => {
     const d = new Date(ts)
@@ -141,10 +147,10 @@ export default function TimerPage({
       </div>
       <TimerRing
         minutes={minutes} seconds={seconds} progress={progress}
-        label={badgeLabel} spentLabel={spentLabel}
-        size={isDesktop ? 320 : 260} color={color}
+        caption={reverseMode && phase === "focus" ? spentLabel : sessionCaption}
+        size={isDesktop ? 340 : 280} color={color}
         reverseMode={reverseMode && phase === "focus"} />
-      <TimerControls
+      <TimerControls minimal
         running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip}
         phase={phase} reverseMode={reverseMode} onStopAndRest={onStopAndRest} />
       <button onClick={() => setFocused(false)} className="flex items-center gap-1.5 text-xs text-sub hover:text-tx">
@@ -195,37 +201,53 @@ export default function TimerPage({
       {/* ── The timer. One ring, one button. ─────────────────────────────── */}
       <Panel className="flex flex-col gap-5">
         <div className="flex items-center gap-3">
-          <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-pill border
-            text-caption font-extrabold uppercase tracking-wider ${badge}`}>
-            <span className={`w-2 h-2 rounded-pill ${dot} ${running ? "animate-pulse" : ""}`} />
-            {badgeLabel}
+          {/* Filled chip — the phase is the loudest fact on this screen */}
+          <span className="inline-flex items-center gap-2 min-h-9 px-4 rounded-pill bg-accent text-white
+            text-caption font-extrabold uppercase tracking-wider">
+            {running && <span className="w-2 h-2 rounded-pill bg-white animate-pulse" />}
+            {badgeLabel} · {reverseMode && phase === "focus"
+              ? "open"
+              : `${phase === "focus" ? focusMins : currentBreakMins} min`}
           </span>
-          <span className="ml-auto text-caption font-extrabold uppercase tracking-wider text-sub tabular-nums">
+          <span className="ml-auto text-caption font-extrabold uppercase tracking-wider text-tx tabular-nums">
             {reverseMode && phase === "focus"
               ? `${minutes}m elapsed`
               : `${Math.round(progress * 100)}% through`}
           </span>
         </div>
 
-        <div className="self-center">
+        <div className="self-center py-2">
           <TimerRing
             minutes={minutes} seconds={seconds} progress={progress}
-            label={badgeLabel} spentLabel={spentLabel}
-            size={isDesktop ? 280 : 240} color={color}
+            caption={reverseMode && phase === "focus" ? spentLabel : sessionCaption}
+            size={isDesktop ? 300 : 260} color={color}
             reverseMode={reverseMode && phase === "focus"} />
         </div>
 
-        {/* Working on */}
-        <div className="flex flex-col gap-2 border-t border-border pt-4">
-          <span className="text-caption font-extrabold uppercase tracking-wider text-sub">Working on</span>
-          <TaskSelector tasks={tasks} active={activeTask} onChange={onTaskChange} quickMode={quickMode} />
-          {!allDone && phase === "focus" && activeTask.estimatedSessions > 0 && <SessionBar />}
-          {!allDone && phase === "focus" && activeTask.subtasks.length > 0 && (
-            <div className="flex flex-col gap-2 pt-1">
-              <SubtaskList />
-            </div>
-          )}
+        {/* Working on — one line. The switcher hides behind "Change" so the row
+            doesn't become a second control competing with Start. */}
+        <div className="flex items-center gap-3 border-y border-border py-3">
+          <span className="text-caption font-extrabold uppercase tracking-wider text-sub shrink-0">
+            Working on
+          </span>
+          <span className="flex-1 min-w-0 text-meta font-extrabold text-tx truncate">
+            {quickMode && !activeTask.title ? "Quick focus" : allDone ? "All tasks done" : activeTask.title}
+          </span>
+          <button onClick={() => setPickerOpen(v => !v)} aria-expanded={pickerOpen}
+            className="shrink-0 min-h-11 px-1 text-meta font-extrabold text-accent hover:underline">
+            Change
+          </button>
         </div>
+
+        {pickerOpen && (
+          <TaskSelector tasks={tasks} active={activeTask} quickMode={quickMode}
+            onChange={t => { onTaskChange(t); setPickerOpen(false) }} />
+        )}
+
+        {!allDone && phase === "focus" && activeTask.estimatedSessions > 0 && <SessionBar />}
+        {!allDone && phase === "focus" && activeTask.subtasks.length > 0 && (
+          <div className="flex flex-col gap-2"><SubtaskList /></div>
+        )}
 
         <TimerControls
           running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip}
@@ -247,7 +269,7 @@ export default function TimerPage({
 
         {/* ── Today's sessions ──────────────────────────────────────────── */}
         <Panel className="flex flex-col">
-          <h3 className="text-caption font-extrabold uppercase tracking-wider text-sub mb-1">Today&apos;s sessions</h3>
+          <h3 className="text-caption font-extrabold uppercase tracking-wider text-tx mb-1">Today&apos;s sessions</h3>
           {todayLog.length === 0 ? (
             <p className="text-meta text-sub py-3">Nothing logged yet — the first one starts above.</p>
           ) : todayLog.map((s, i) => (
@@ -265,7 +287,7 @@ export default function TimerPage({
 
         {/* ── Session settings ──────────────────────────────────────────── */}
         <Panel className="flex flex-col">
-          <h3 className="text-caption font-extrabold uppercase tracking-wider text-sub mb-1">Session settings</h3>
+          <h3 className="text-caption font-extrabold uppercase tracking-wider text-tx mb-1">Session settings</h3>
           <button onClick={() => setSheetOpen(true)}
             className="flex items-center gap-3 py-4 border-t border-border text-left">
             <span className="flex-1 min-w-0">

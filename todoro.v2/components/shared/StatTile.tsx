@@ -17,7 +17,7 @@ export default function StatTile({ label, value, suffix, footnote, icon }: StatT
     <Panel className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         {icon && <span className="text-sub shrink-0">{icon}</span>}
-        <span className="text-caption font-extrabold uppercase tracking-wider text-sub">{label}</span>
+        <span className="text-caption font-extrabold uppercase tracking-wider text-tx">{label}</span>
       </div>
       <span className="text-title font-extrabold leading-none tabular-nums">
         {value}

@@ -162,8 +162,8 @@ export default function AppShell({
             </div>
             {showNewOnBar && (
               <button onClick={onQuickAdd}
-                className="ml-auto shrink-0 flex items-center gap-2 min-h-11 px-4 rounded-control
-                  bg-accent text-white text-meta font-extrabold hover:bg-accent-hover active:scale-95 transition-all">
+                className="ml-auto shrink-0 inline-flex items-center justify-center gap-2 min-h-12 px-4 rounded-control
+                  bg-accent text-white text-meta font-extrabold hover:bg-accent-hover active:scale-[0.98] transition-all duration-150">
                 <HiPlus size={17} />
                 New task
               </button>

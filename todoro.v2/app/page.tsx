@@ -236,7 +236,14 @@ export default function Home() {
   const [streakFreezes,  setStreakFreezes]  = useState<number>(()   => load("todoro:freezes", 0))
   const [protectedDates, setProtectedDates] = useState<string[]>(() => load("todoro:protectedDates", []))
   const [showShop,    setShowShop]    = useState(false)
-  const [toast,       setToast]       = useState<{ points: number; streak: number } | null>(null)
+  // One toast channel for the whole app shell: session complete, focus started.
+  const [toast, setToast] = useState<{ title: string; sub?: string } | null>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const flashToast = useCallback((title: string, sub?: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    setToast({ title, sub })
+    toastTimer.current = setTimeout(() => setToast(null), 2600)
+  }, [])
 
   const [allHistory, setAllHistory] = useState<SessionRecord[]>(
     () => load("todoro:history", [])
@@ -432,8 +439,7 @@ export default function Home() {
           const earned    = computePoints(focusMins, newStreak)
           setTimeout(() => {
             setTotalPoints(p => p + earned)
-            setToast({ points: earned, streak: newStreak })
-            setTimeout(() => setToast(null), 3500)
+            flashToast("Session complete", `+${earned} pts · ${newStreak} day streak`)
           }, 300)
           return next
         })
@@ -536,8 +542,7 @@ export default function Home() {
       const earned    = computePoints(earnedFocusMins, newStreak)
       setTimeout(() => {
         setTotalPoints(p => p + earned)
-        setToast({ points: earned, streak: newStreak })
-        setTimeout(() => setToast(null), 3500)
+        flashToast("Session complete", `+${earned} pts · ${newStreak} day streak`)
       }, 300)
       return next
     })
@@ -570,7 +575,13 @@ export default function Home() {
     else setTime(phase === "focus" ? focusMins * 60 : currentBreakMins * 60)
   }
   const handleSkip   = () => advanceRef.current(false)
-  const handleToggle = () => setRunning(r => !r)
+  const handleToggle = () => setRunning(r => {
+    // Only on the way *into* a focus run — pausing does not need announcing.
+    if (!r && phase === "focus") {
+      flashToast("Focusing on this task", quickMode && !activeTask.title ? "Quick focus" : activeTask.title)
+    }
+    return !r
+  })
   const handleDelete = (projectId: string) => {
     setProjects(ps => ps.filter(p => p.id !== projectId))
     setTasks(ts => ts.map(t => t.projectId === projectId ? { ...t, projectId: undefined } : t))
@@ -617,6 +628,7 @@ export default function Home() {
   // Begin a fresh focus session on a specific task (the ▶ quick-start)
   const handleStartFocus = (task: Task) => {
     setActiveTask(task)
+    flashToast("Focusing on this task", task.title)
     setPhase("focus")
     setTime(reverseMode ? 0 : focusMins * 60)
     setRunning(true)
@@ -715,11 +727,7 @@ export default function Home() {
   return (
     <AppShell {...shellProps}>
 
-      {/* Session complete toast */}
-      <Toast
-        open={!!toast}
-        title="Session complete!"
-        sub={`+${toast?.points} pts · ${toast?.streak} day streak`} />
+      <Toast open={!!toast} title={toast?.title} sub={toast?.sub} />
 
       {tab === "home" && (
         <HomePage {...timerProps}

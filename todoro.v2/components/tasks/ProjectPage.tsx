@@ -159,7 +159,7 @@ export default function ProjectPage({
           <button
             onClick={() => setShowDone(v => !v)}
             className="flex items-center justify-between py-1.5 w-full">
-            <span className="text-xs font-bold text-sub">
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
               Completed — {done.length}
             </span>
             <HiChevronDown size={12} className="text-sub transition-transform duration-200"

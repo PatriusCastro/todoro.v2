@@ -25,7 +25,7 @@ function SectionLabel({ children, tone = "sub", icon }: {
 }) {
   return (
     <div className={`flex items-center gap-1.5 px-1 pt-1 pb-2 text-caption font-extrabold uppercase tracking-wider
-      ${tone === "accent" ? "text-accent" : "text-sub"}`}>
+      ${tone === "accent" ? "text-accent" : "text-tx"}`}>
       {icon}
       {children}
     </div>
@@ -60,7 +60,7 @@ export default function TaskList({
   return (
     <Panel bare className="px-3 py-2">
       <div className="flex items-center gap-3 px-1 pt-1 pb-2">
-        <span className="text-caption font-extrabold uppercase tracking-wider text-sub">
+        <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
           Pending — {pending.length}
         </span>
         {projects.length > 0 && (
@@ -107,7 +107,7 @@ export default function TaskList({
                 <button onClick={() => onOpenProject(proj)}
                   className="flex items-center gap-1.5 min-h-11 px-1 group/h">
                   <HiFolder size={12} style={{ color: proj.color }} />
-                  <span className="text-caption font-extrabold uppercase tracking-wider text-sub group-hover/h:text-accent transition-colors">
+                  <span className="text-caption font-extrabold uppercase tracking-wider text-tx group-hover/h:text-accent transition-colors">
                     {proj.name} — {group.length}
                   </span>
                 </button>

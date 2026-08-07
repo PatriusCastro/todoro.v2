@@ -34,7 +34,7 @@ export default function Onboarding({ dark, initialName, onComplete }: Onboarding
 
           {/* Name */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub">What should we call you?</span>
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">What should we call you?</span>
             <input
               value={name}
               onChange={e => setName(e.target.value)}
