@@ -199,8 +199,7 @@ export default function TasksCalendar({ tasks, allHistory, selected, onSelect }:
 
         {/* Current week — the day name lives inside the cell, so there is no
             separate header row to keep aligned with it. */}
-        {/* Seven cells always share the width, so below 380px the gutters give
-            way first — a 26px cell cannot hold "Wed" over a two-digit date. */}
+        {/* Below 380px the gutters give way before the cells do. */}
         <div className="grid grid-cols-7 gap-1 xs:gap-1.5 p-2 xs:p-3">
           {week.map(({ ds, dayNum, month }, i) => (
             <DayCell key={ds} ds={ds} dayNum={dayNum} dayLabel={DAYS_SHORT[i]}
@@ -222,13 +221,11 @@ export default function TasksCalendar({ tasks, allHistory, selected, onSelect }:
 
 const WEEKS_SHOWN = 53
 const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-// Sunday-first rows. Labelling every row is noise at 14px; three is enough to
-// orient the reader, which is the convention every contribution graph uses.
+// Sunday-first rows; three labels is enough to orient the reader at 14px.
 const WEEKDAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""]
 
-// Fixed pixels, not fractions. A fraction-sized grid fills whatever it is given,
-// which on a desktop panel meant 68px squares; a heatmap only reads as one when
-// the cell stays small and the year stays dense.
+// Fixed pixels, not fractions — a fraction-sized grid fills whatever it is
+// given, which on a desktop panel meant 68px squares.
 const CELL = 14
 const GAP  = 3
 const DAY_COL = 26   // room for "Mon" at caption size
@@ -243,8 +240,7 @@ const DAY_COL = 26   // room for "Mon" at caption size
 export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
   const scroller = useRef<HTMLDivElement>(null)
 
-  // A year does not fit a phone, so the graph opens on the most recent weeks
-  // rather than on last spring.
+  // A year does not fit a phone, so open on the most recent weeks.
   useEffect(() => {
     const el = scroller.current
     if (el) el.scrollLeft = el.scrollWidth
@@ -283,10 +279,8 @@ export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
   const weeks: { date: string; count: number; month: number }[][] = []
   for (let i = 0; i < heatmapCells.length; i += 7) weeks.push(heatmapCells.slice(i, i + 7))
 
-  // A month is labelled above the first column that belongs to it. The opening
-  // column is skipped — it is a partial month whose label would sit over weeks
-  // that aren't there — and so are the last two, where a 3-letter label would
-  // run off the end of the graph.
+  // A label sits above the first column of its month. The opening column is a
+  // partial month, and the last two have no room for three letters.
   const monthLabels = weeks.map((week, wi) => {
     if (wi === 0 || wi >= weeks.length - 2) return null
     return week[0].month !== weeks[wi - 1][0].month ? MONTHS_SHORT[week[0].month] : null
@@ -298,14 +292,14 @@ export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
     <Panel className="flex flex-col gap-3">
       <SectionHeader meta="Last 12 months">Focus history</SectionHeader>
 
-      {/* 53 columns of 7 days at a fixed 14px. A year is wider than a phone by
-          design, so the graph scrolls rather than shrinking its cells to fit. */}
+      {/* A year is wider than a phone by design — it scrolls rather than
+          shrinking its cells to fit. */}
       <div ref={scroller}
         className="overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:thin]">
         <div className="flex flex-col gap-1 w-max">
 
-          {/* Month labels — offset by the weekday column so they sit over the
-              right week. Each label overflows its own 14px column on purpose. */}
+          {/* Offset by the weekday column; each label overflows its own 14px
+              column on purpose. */}
           <div className="flex" style={{ gap: GAP, marginLeft: DAY_COL + GAP }}>
             {weeks.map((_, wi) => (
               <div key={wi} className="relative shrink-0" style={{ width: CELL, height: 12 }}>
@@ -336,8 +330,7 @@ export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
                     style={{
                       ...heatStyle(count),
                       width: CELL, height: CELL,
-                      // Inset, so marking today never bleeds into the 3px gap
-                      // or gets clipped by the scroller at the right edge.
+                      // Inset — an outset ring bleeds into the 3px gap.
                       boxShadow: date === today ? "inset 0 0 0 2px var(--accent)" : undefined,
                     }}
                     className="rounded-chip transition-colors duration-150" />

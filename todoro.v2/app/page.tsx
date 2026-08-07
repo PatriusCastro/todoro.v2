@@ -193,7 +193,11 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => { setHydrated(true) }, [])
 
-  const [tab,       setTab]       = useState<Tab>("home")
+  // Survives a reload: a refresh on Tasks used to land back on Today.
+  const [tab,       setTab]       = useState<Tab>(() => {
+    const t = load<Tab>("todoro:tab", "home")
+    return ["home", "tasks", "timer", "settings"].includes(t) ? t : "home"
+  })
   const [showAdd,   setShowAdd]   = useState(false)
   const [onboarded, setOnboarded] = useState(() => {
     if (load("todoro:onboarded", false)) return true
@@ -369,6 +373,7 @@ export default function Home() {
   useEffect(() => { save("todoro:notifications", notifications) }, [notifications])
   useEffect(() => { save("todoro:autoStart",     autoStart)     }, [autoStart])
   useEffect(() => { save("todoro:onboarded",     onboarded)     }, [onboarded])
+  useEffect(() => { save("todoro:tab",           tab)           }, [tab])
 
   // Snapshot the timer so a reload restores the remaining time (paused)
   useEffect(() => { save("todoro:timer", { phase, time }) }, [phase, time])
@@ -758,7 +763,7 @@ export default function Home() {
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
           onStartFocus={handleStartFocus}
           onSaveProject={handleSaveProject} onRestoreProject={handleRestoreProject}
-          allHistory={allHistory} />
+          allHistory={allHistory} focusMins={focusMins} />
       )}
 
       {tab === "settings" && (
@@ -788,6 +793,7 @@ export default function Home() {
         <TaskModal
           dark={dark}
           projects={projects}
+          focusMins={focusMins}
           onSave={t => { handleSaveTask(t); setShowAdd(false) }}
           onClose={() => setShowAdd(false)}
           onCreateProject={handleSaveProject} />

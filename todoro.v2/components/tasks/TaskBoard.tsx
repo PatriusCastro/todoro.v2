@@ -26,11 +26,9 @@ interface TaskBoardProps {
 }
 
 /**
- * To do · In progress · Done.
- *
- * Drag works on pointer devices; the ◀ ▶ buttons on every card are the touch
- * and keyboard path, because HTML5 drag-and-drop does not fire for touch at all
- * and a board you can only rearrange with a mouse is not a board on a phone.
+ * To do · In progress · Done. Drag works on pointer devices; the ◀ ▶ buttons on
+ * every card are the touch and keyboard path, because HTML5 drag-and-drop never
+ * fires for touch.
  */
 export default function TaskBoard({
   tasks, projects, activeTaskId, pinnedIds,
@@ -57,8 +55,7 @@ export default function TaskBoard({
         {action && <div className="ml-auto">{action}</div>}
       </div>
 
-      {/* One column per stage. Phones scroll the columns horizontally with snap
-          so a lane always lands square in the viewport instead of half-cut. */}
+      {/* One column per stage; phones scroll them with snap. */}
       <div className="flex md:grid md:grid-cols-3 gap-3 overflow-x-auto snap-x snap-mandatory
         pb-2 -mx-1 px-1 [scrollbar-width:thin]">
         {STAGES.map(({ key, label }) => {
@@ -75,8 +72,6 @@ export default function TaskBoard({
                   ? "border-accent bg-accent/8"
                   : "border-border bg-surface2/40"}`}>
 
-              {/* Header stays put while the lane scrolls — the count is how you
-                  know there is more below the fold. */}
               <div className="shrink-0 flex items-center gap-2 px-1.5 pt-1">
                 <span className={`text-caption font-extrabold uppercase tracking-wider
                   ${key === "done" ? "text-sub" : "text-tx"}`}>
@@ -87,10 +82,13 @@ export default function TaskBoard({
                 </span>
               </div>
 
-              {/* A lane is capped rather than growing without limit: thirty
-                  tasks in "To do" would otherwise push Done off the page and
-                  make the board taller than the thing it is summarising. */}
-              <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto overscroll-contain
+              {/* The lane scrolls so a long "To do" can't push Done off the
+                  page. overflow-x must be `clip`, not the default: CSS turns
+                  `visible` into `auto` once the other axis scrolls, which made
+                  this a horizontal scroll container that ate the board's swipes.
+                  overscroll-contain is y-only for the same reason. */}
+              <div className="flex-1 min-h-0 flex flex-col gap-2
+                overflow-y-auto overflow-x-clip overscroll-y-contain
                 -mr-1 pr-1 [scrollbar-width:thin]">
                 {column.length === 0 ? (
                   <p className="px-1.5 py-6 text-caption text-sub text-center">
@@ -141,8 +139,7 @@ function BoardCard({
 
   const stop = (e: React.SyntheticEvent) => e.stopPropagation()
 
-  // A card is both draggable and tappable. Browsers differ on whether a drop
-  // is followed by a click, and "I moved it" must never also mean "open it".
+  // Some browsers fire a click after a drop; moving a card must not open it.
   const dragged = useRef(false)
 
   return (
@@ -213,8 +210,6 @@ function BoardCard({
         </div>
       )}
 
-      {/* Move · move · start. These are the touch path for what dragging does
-          on a mouse, so they are on every card rather than behind a hover. */}
       <div className="flex items-center gap-1.5 pt-0.5">
         <button
           onPointerDown={stop}
@@ -234,9 +229,8 @@ function BoardCard({
             enabled:hover:border-accent enabled:hover:text-accent disabled:opacity-30 transition-colors duration-150">
           <HiChevronRight size={15} />
         </button>
-        {/* No edit button here: a column is ~200px on a 320px phone, which is
-            three 40px buttons wide, and the whole card already opens the task.
-            The list rows are the crowded ones that needed an explicit pencil. */}
+        {/* No pencil: a lane is three buttons wide on a phone, and the card
+            itself already opens the task. */}
         {onQuickStart && !task.done && (
           <button
             onPointerDown={stop}

@@ -32,6 +32,8 @@ interface TasksPageProps {
   onDeleteProject: (id: string) => void
   onRestoreProject: (p: Project, taskIds: string[]) => void
   allHistory: SessionRecord[]
+  /** Session length, so a task's estimate can be shown in minutes. */
+  focusMins: number
   dark: boolean
 }
 
@@ -53,7 +55,7 @@ export default function TasksPage({
   tasks, activeTask, projects,
   onSave, onDelete, onToggle, onToggleSub,
   onStartFocus, onSaveProject, onDeleteProject, onRestoreProject,
-  allHistory, dark,
+  allHistory, focusMins, dark,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Filter>("all")
@@ -106,9 +108,8 @@ export default function TasksPage({
     setModalTask(task); setShowModal(true)
   }, [])
 
-  // Board moves. Dropping into Done goes through onToggle rather than writing
-  // done:true directly, so a recurring task still spawns its next occurrence —
-  // the board must not become a second, quieter way to complete something.
+  // Dropping into Done goes through onToggle, not done:true, so a recurring
+  // task still spawns its next occurrence.
   const handleMoveStage = useCallback((task: Task, to: Stage) => {
     if (to === "done") {
       if (!task.done) onToggle(task.id)
@@ -167,9 +168,8 @@ export default function TasksPage({
   const allPending = useSortedTasks(visible.filter(t => !t.done), activeTask.id, pinned)
   const done       = visible.filter(t => t.done)
 
-  // Filtering to Done and then having to open a collapsed drawer to see the
-  // result made the filter look broken. When Done is the filter, the completed
-  // list is the page — it opens itself and drops the toggle.
+  // With Done as the filter, the completed list is the page: it opens itself
+  // and drops the toggle rather than hiding the result behind a drawer.
   const doneFilter = filter === "done"
   const doneOpen   = doneFilter || showDone
 
@@ -213,6 +213,7 @@ export default function TasksPage({
         allTasks={tasks}
         activeTask={activeTask}
         dark={dark}
+        focusMins={focusMins}
         projects={projects}
         onBack={() => setActiveProject(null)}
         onSave={onSave}
@@ -267,8 +268,6 @@ export default function TasksPage({
           {daySessions > 0 && (
             <span className="text-xs text-sub shrink-0">{daySessions} session{daySessions > 1 ? "s" : ""}</span>
           )}
-          {/* An X clears a filter in every list people already use, and it holds
-              its 44px target without a two-word label crowding the date. */}
           <button onClick={() => setSelectedDate(null)}
             aria-label="Clear day filter" title="Show all tasks"
             className="w-11 h-11 -mr-2 shrink-0 grid place-items-center text-sub hover:text-tx transition-colors">
@@ -426,8 +425,7 @@ export default function TasksPage({
         </div>
       )}
 
-      {/* Empty state — only where nothing else already explains the emptiness.
-          A filter that matches nothing is answered inside the list itself. */}
+      {/* A filter that matches nothing is answered inside the list instead. */}
       {visible.length === 0 && !deletePending && !showBoard
         && (selectedDate || doneFilter || tasks.length === 0) && (
         <div className="panel px-5 py-12 text-center">
@@ -452,6 +450,7 @@ export default function TasksPage({
           onDelete={id => { const t = tasks.find(x => x.id === id); if (t) handleDelete(t) }}
           onClose={() => setShowModal(false)}
           onCreateProject={onSaveProject}
+          focusMins={focusMins}
           dark={dark} />
       )}
 

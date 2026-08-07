@@ -26,9 +26,8 @@ export default function TimerControls({
 }: TimerControlsProps) {
   const showStopAndRest = reverseMode && phase === "focus" && running && onStopAndRest
 
-  // "Start long break" is three words in a button that has two 60px neighbours
-  // — it wrapped on anything narrower than a modern phone. The phase is already
-  // named above the ring, so the button only has to say what pressing it does.
+  // The phase is already named above the ring, so the button only says what
+  // pressing it does — "Start long break" wrapped between its two neighbours.
   const primaryLabel = running
     ? "Pause"
     : phase === "focus" ? (reverseMode ? "Begin focus" : "Start focus")
@@ -69,8 +68,7 @@ export default function TimerControls({
         <HiArrowPath size={19} />
       </button>
 
-      {/* nowrap over shrink: the label is the button. Below 380px the type and
-          the two square neighbours step down so it still fits on one line. */}
+      {/* nowrap over shrink: below 380px the type steps down instead. */}
       {showStopAndRest ? (
         <button onClick={onStopAndRest}
           className="flex-1 min-w-0 min-h-14 xs:min-h-15 flex items-center justify-center gap-2 xs:gap-2.5 px-2 rounded-control

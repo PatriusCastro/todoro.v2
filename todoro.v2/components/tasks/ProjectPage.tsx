@@ -19,6 +19,7 @@ interface ProjectPageProps {
   allTasks: Task[]
   activeTask: Task
   dark: boolean
+  focusMins: number
   projects: Project[]
   onBack: () => void
   onSave: (t: Task) => void
@@ -32,7 +33,7 @@ interface ProjectPageProps {
 }
 
 export default function ProjectPage({
-  project, allTasks, activeTask, dark, projects,
+  project, allTasks, activeTask, dark, focusMins, projects,
   onBack, onSave, onDelete, onToggle, onToggleSub,
   onStartFocus, onSaveProject, onDeleteProject, onEditProject,
 }: ProjectPageProps) {
@@ -73,8 +74,7 @@ export default function ProjectPage({
     setModalTask(task); setShowModal(true)
   }, [])
 
-  // Completing via the board goes through onToggle so a repeating task still
-  // spawns its next occurrence — same rule as the Tasks page.
+  // onToggle, not done:true — see TasksPage.handleMoveStage.
   const handleMoveStage = useCallback((task: Task, to: Stage) => {
     if (to === "done") {
       if (!task.done) onToggle(task.id)
@@ -114,8 +114,7 @@ export default function ProjectPage({
           <HiArrowLeft size={15} />
         </button>
 
-        {/* Folder icon — the project name is already colour-coded below it, so
-            on a 320px screen this is the first thing to give up its width. */}
+        {/* First thing to give up its width on a 320px screen. */}
         <div
           className="w-9 h-9 rounded-xl hidden xs:flex items-center justify-center shrink-0"
           style={{ backgroundColor: `${project.color}22` }}>
@@ -237,6 +236,7 @@ export default function ProjectPage({
           onDelete={id => { const t = allTasks.find(x => x.id === id); if (t) handleDelete(t) }}
           onClose={() => setShowModal(false)}
           onCreateProject={onSaveProject}
+          focusMins={focusMins}
           dark={dark} />
       )}
 

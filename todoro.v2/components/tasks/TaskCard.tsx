@@ -60,8 +60,7 @@ export default function TaskCard({
     return matrix.m41 !== 0
   }
 
-  // The whole row opens the task, not just the title column — but the row is
-  // also the swipe surface, so a drag that ends over it must not read as a tap.
+  // The row is also the swipe surface, so a drag ending on it isn't a tap.
   const downAt = useRef<{ x: number; y: number } | null>(null)
   const openTask = (e: React.MouseEvent) => {
     const d = downAt.current
@@ -100,9 +99,8 @@ export default function TaskCard({
           ${isActive && !task.done ? "bg-accent/8" : "bg-transparent"}
           ${task.done ? "opacity-50" : ""}`}>
 
-        {/* Padding and gaps step down below 380px: two 44px buttons and a 44px
-            checkbox leave the title well under 100px on a 320px phone, and the
-            title is the only part of the row that cannot be an icon. */}
+        {/* Padding steps down below 380px — the title is the only part of the
+            row that cannot shrink to an icon. */}
         <div
           onPointerDown={e => { downAt.current = { x: e.clientX, y: e.clientY } }}
           onClick={openTask}
@@ -128,9 +126,7 @@ export default function TaskCard({
           <div className="flex-1 min-w-0">
 
             <div className="flex items-center gap-2 min-w-0">
-              {/* Pinned state lives on the pin button — but that button is
-                  phone-hidden, and compact rows never had one, so the marker
-                  carries it wherever the button isn't. */}
+              {/* Carries pinned state wherever the pin button isn't. */}
               {isPinned && (
                 <HiMapPin size={12}
                   className={`text-accent shrink-0 ${onPin && !compact ? "sm:hidden" : ""}`} />
@@ -194,10 +190,8 @@ export default function TaskCard({
                 Now
               </span>
             )}
-            {/* Two 44px buttons is all a phone row can spare — a third leaves
-                the title ~100px. Edit and start are the two people reach for,
-                so pin steps back to sm+ where there's room; on a phone it stays
-                the swipe-right gesture the hint teaches. Delete is swipe-left. */}
+            {/* Two 44px buttons is all a phone row can spare, so pin steps back
+                to sm+; on a phone it stays swipe-right. Delete is swipe-left. */}
             {onPin && !task.done && (
               <button
                 onPointerDown={e => e.stopPropagation()}

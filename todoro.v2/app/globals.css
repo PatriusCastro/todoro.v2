@@ -186,6 +186,15 @@ input, textarea { font-family: inherit; }
   outline-offset: 2px;
   border-radius: 3px;
 }
+
+/* Opt-out for fields that already turn their own border accent on focus — a
+   ring drawn around those is a second focus indicator for the same event.
+   It lives here rather than as a Tailwind utility because the rule above is
+   unlayered, and unlayered styles beat the utilities layer at any specificity. */
+.focus-no-ring:focus-visible {
+  outline: none;
+}
+
 ::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); }
 
 /* ── Panel ────────────────────────────────────────────────────────────────
@@ -198,11 +207,9 @@ input, textarea { font-family: inherit; }
 }
 
 /* ── Small-screen type ────────────────────────────────────────────────────
-   Below 380px the 11px uppercase section labels spend more width on their
-   letter-spacing than on their letters — "SESSIONS" needs ~62px of a 61px
-   stat tile, which is why those labels ran edge to edge. Tightening the
-   tracking here fixes every label at once instead of at thirty call sites.
-   Unlayered, so it wins over Tailwind's utilities layer at equal specificity. */
+   Below 380px the 11px uppercase labels spend more width on letter-spacing
+   than on letters — "SESSIONS" needs ~62px of a 61px stat tile. Unlayered, so
+   it wins over Tailwind's utilities layer at equal specificity. */
 @media (max-width: 379px) {
   .tracking-wider  { letter-spacing: 0.02em; }
   .tracking-widest { letter-spacing: 0.04em; }

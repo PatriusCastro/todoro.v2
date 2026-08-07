@@ -21,10 +21,7 @@ const LABELS: Record<TaskView, string> = {
   all: "All", project: "By project", board: "Board",
 }
 
-/**
- * List · by project · board. Icon-first because "By project" wrapped and shoved
- * the section count around on a phone; the label rejoins once there is width.
- */
+/** List · by project · board. Icon-first; the label rejoins once there is width. */
 export default function ViewSwitch({ value, onChange, showProject, className = "" }: ViewSwitchProps) {
   const views: TaskView[] = showProject ? ["all", "project", "board"] : ["all", "board"]
   return (

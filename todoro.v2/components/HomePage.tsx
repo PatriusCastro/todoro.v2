@@ -147,8 +147,7 @@ export default function HomePage({
           </span>
         </div>
 
-        {/* 32px on a 300px screen is four or five characters a line — the
-            poster stops being a headline and becomes a wall. */}
+        {/* 32px is four characters a line on a 300px screen. */}
         <h2 className="text-title xs:text-display font-extrabold leading-none wrap-break-words line-clamp-2">
           {posterTitle}
         </h2>
@@ -160,9 +159,7 @@ export default function HomePage({
             style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
 
-        {/* Label and clock share one button, so this is the tightest row on the
-            page. Below 380px the type, padding and gaps step down rather than
-            letting "Start focus" break across two lines. */}
+        {/* Label and clock share one button — the tightest row on the page. */}
         <div className="flex gap-2">
           <button onClick={onTimerToggle}
             className="flex-1 min-w-0 min-h-14 flex items-center gap-2 xs:gap-3 px-3.5 xs:px-5 rounded-control bg-bg text-tx

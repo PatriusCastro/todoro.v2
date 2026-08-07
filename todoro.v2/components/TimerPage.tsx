@@ -53,9 +53,8 @@ export default function TimerPage({
   const [sheetOpen,  setSheetOpen]  = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const isDesktop = useIsDesktop()
-  // The ring is the one fixed-pixel element on the page. 260px sits inside a
-  // 300px screen by a single pixel and overflows anything narrower, so it gets
-  // its own rung rather than being clipped by the page inset.
+  // The one fixed-pixel element here: 260px clears a 300px screen by a single
+  // pixel and overflows anything narrower.
   const isNarrow  = useIsNarrow()
   const ringSize  = isDesktop ? 300 : isNarrow ? 216 : 260
   useTimerKeys({ onToggle, onReset, onSkip })

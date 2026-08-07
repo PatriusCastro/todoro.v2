@@ -13,9 +13,8 @@ interface StatTileProps {
 }
 
 export default function StatTile({ label, value, suffix, footnote, icon }: StatTileProps) {
-  // Three of these share the width of a phone, so this is the tile that runs
-  // out of room first: the icon and the gaps go before the label truncates, and
-  // the number steps down a rung rather than crowding its own tile.
+  // Three of these share a phone's width: the icon goes before the label
+  // truncates, and the number steps down a rung below 380px.
   return (
     <Panel className="flex flex-col gap-1.5 xs:gap-2 min-w-0">
       <div className="flex items-center gap-1 xs:gap-2 min-w-0">
