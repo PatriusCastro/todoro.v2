@@ -24,7 +24,7 @@ interface TasksPageProps {
   projects: Project[]
   onSave: (t: Task) => void; onDelete: (id: string) => void
   onToggle: (id: string) => void; onToggleSub: (tId: string, sId: string) => void
-  onOpenTask: (t: Task) => void; onStartFocus: (t: Task) => void
+  onStartFocus: (t: Task) => void
   onSaveProject: (p: Project) => void
   onDeleteProject: (id: string) => void
   onRestoreProject: (p: Project, taskIds: string[]) => void
@@ -47,7 +47,7 @@ type Filter = Priority | "all" | "done"
 export default function TasksPage({
   tasks, activeTask, projects,
   onSave, onDelete, onToggle, onToggleSub,
-  onOpenTask, onStartFocus, onSaveProject, onDeleteProject, onRestoreProject,
+  onStartFocus, onSaveProject, onDeleteProject, onRestoreProject,
   allHistory, dark,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
@@ -94,9 +94,12 @@ export default function TasksPage({
     onStartFocus(task)
   }, [onStartFocus])
 
+  // Tapping a row opens it for editing — the pencil button came off the row so
+  // it could fit a 44px play target. Starting a session is the play button, and
+  // "make active without starting" still lives behind the Timer's Change picker.
   const handleTaskClick = useCallback((task: Task) => {
-    onOpenTask(task)
-  }, [onOpenTask])
+    setModalTask(task); setShowModal(true)
+  }, [])
 
   // Project handlers
   const handleSaveProject = useCallback((p: Project) => {
@@ -155,7 +158,6 @@ export default function TasksPage({
     return (
       <TaskCard key={task.id} task={task}
         onToggle={onToggle} onToggleSub={onToggleSub}
-        onEdit={t => { setModalTask(t); setShowModal(true) }}
         onDelete={handleDelete}
         onPin={togglePin}
         onQuickStart={handleQuickStart}
@@ -187,7 +189,6 @@ export default function TasksPage({
         onDelete={onDelete}
         onToggle={onToggle}
         onToggleSub={onToggleSub}
-        onOpenTask={onOpenTask}
         onStartFocus={onStartFocus}
         onSaveProject={onSaveProject}
         onDeleteProject={id => { handleDeleteProject(id); setActiveProject(null) }}
@@ -275,7 +276,8 @@ export default function TasksPage({
         <div className="flex items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-2.5">
           <HiArrowsRightLeft size={15} className="text-accent shrink-0" />
           <p className="text-xs text-tx flex-1">
-            <span className="font-bold">Tip:</span> tap 📍 (or swipe right) to pin a task — it jumps to the top and becomes your next focus. Swipe left to delete.
+            <span className="font-bold">Tip:</span> tap a task to edit it — priority, due date, subtasks.
+            Pin 📍 to jump it to the top and make it your next focus, ▶ to start now, or swipe left to delete.
           </p>
           <button onClick={dismissSwipeHint} aria-label="Dismiss tip"
             className="w-11 h-11 -my-2 -mr-2 shrink-0 grid place-items-center text-sub hover:text-tx transition-colors">
@@ -359,7 +361,6 @@ export default function TasksPage({
               {done.map(task => (
                 <TaskCard key={task.id} task={task}
                   onToggle={onToggle} onToggleSub={onToggleSub}
-                  onEdit={t => { setModalTask(t); setShowModal(true) }}
                   onDelete={handleDelete} />
               ))}
             </div>

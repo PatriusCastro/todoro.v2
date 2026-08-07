@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { HiPencil, HiChevronDown, HiCheck, HiPlay, HiMapPin, HiTrash, HiArrowPath, HiFolder } from "react-icons/hi2"
+import { HiChevronDown, HiCheck, HiPlay, HiMapPin, HiTrash, HiArrowPath, HiFolder } from "react-icons/hi2"
 import { type Priority } from "../../lib/theme"
 import { useSwipe } from "../../hooks/useSwipe"
 import PriorityChip from "../shared/PriorityChip"
@@ -22,7 +22,6 @@ interface TaskCardProps {
   onToggle?: (id: string) => void
   onToggleSub?: (taskId: string, subId: string) => void
   onClick?: (task: Task) => void
-  onEdit?: (task: Task) => void
   onDelete?: (task: Task) => void
   onPin?: (id: string) => void
   onQuickStart?: (task: Task) => void
@@ -36,7 +35,7 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({
-  task, onToggle, onToggleSub, onClick, onEdit,
+  task, onToggle, onToggleSub, onClick,
   onDelete, onPin, onQuickStart,
   compact = false, isActive = false, isPinned = false,
   projectName, projectColor, onProjectClick,
@@ -60,35 +59,36 @@ export default function TaskCard({
   }
 
   return (
-    <div className={`relative overflow-hidden ${compact ? "border-t border-border first:border-t-0" : "rounded-xl"}`}>
+    // One row treatment everywhere: a divider-separated list, not a stack of
+    // bordered cards. Cards inside a card was the "nothing outranks anything"
+    // problem in miniature.
+    <div className="relative overflow-hidden border-t border-border first:border-t-0">
 
       {/* Swipe hint */}
       <div
         className="absolute inset-0 flex pointer-events-none select-none transition-opacity duration-150"
         style={{ opacity: isSwiped() ? 1 : 0 }}>
-        <div className="flex flex-col items-center justify-center gap-1 w-20 bg-accent/10 rounded-l-xl">
+        <div className="flex flex-col items-center justify-center gap-1 w-20 bg-accent/10">
           <HiMapPin size={14} className="text-accent" />
           <span className="text-caption font-semibold text-accent">{isPinned ? "Unpin" : "Pin"}</span>
         </div>
         <div className="flex-1" />
-        <div className="flex flex-col items-center justify-center gap-1 w-20 bg-red-500/10 rounded-r-xl">
+        <div className="flex flex-col items-center justify-center gap-1 w-20 bg-red-500/10">
           <HiTrash size={14} className="text-red-500" />
           <span className="text-caption font-semibold text-red-500">Delete</span>
         </div>
       </div>
 
-      {/* Card */}
+      {/* Row */}
       <div
         ref={ref}
         {...swipeHandlers}
         style={{ touchAction: "pan-y", willChange: "transform" }}
         className={`relative transition-colors duration-150
-          ${compact
-            ? "bg-transparent"
-            : `rounded-xl bg-surface2 border my-1 ${isActive ? "border-accent/50" : "border-border hover:border-border/80"}`}
+          ${isActive && !task.done ? "bg-accent/8" : "bg-transparent"}
           ${task.done ? "opacity-50" : ""}`}>
 
-        <div className={`flex items-center gap-3 ${compact ? "px-1 py-3.5" : "px-4 py-3"}`}>
+        <div className={`flex items-center gap-3 ${compact ? "px-1 py-3.5" : "px-2 py-3.5"}`}>
 
           {/* Checkbox — 22px circle inside a 44px target. Completing a task is
               the single most-tapped control here and the easiest to fat-finger. */}
@@ -111,13 +111,15 @@ export default function TaskCard({
             onClick={() => onClick ? onClick(task) : expandable && setExpanded(v => !v)}>
 
             <div className="flex items-center gap-2 min-w-0">
-              {isPinned && <HiMapPin size={12} className="text-accent shrink-0" />}
+              {/* Pinned state lives on the pin button; a second marker here just
+                  spent width. Kept on compact rows, which have no pin button. */}
+              {isPinned && compact && <HiMapPin size={12} className="text-accent shrink-0" />}
               <PriorityChip priority={task.priority} />
               {/* Wraps to two lines instead of hiding behind a tap-to-expand
                   that sat pixels away from "open task" and fired by mistake. */}
               <span
                 title={task.title}
-                className={`${compact ? "text-lead" : "text-body"} font-extrabold leading-snug wrap-break-words line-clamp-2 min-w-0
+                className={`${compact ? "text-lead" : "text-lead"} font-extrabold leading-snug wrap-break-words line-clamp-2 min-w-0
                   ${task.done ? "line-through text-sub" : "text-tx"}`}>
                 {task.title}
               </span>
@@ -162,7 +164,7 @@ export default function TaskCard({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-0.5 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* A word beats a pulsing dot: "Now" says which task the timer is on
                 without the reader having to learn what the dot meant. */}
             {isActive && !task.done && (
@@ -171,16 +173,23 @@ export default function TaskCard({
                 Now
               </span>
             )}
-            {onPin && !task.done && !compact && (
+            {/* Two actions, both 44px. Four buttons left ~114px for the title on
+                a phone, which is why nothing could reach the touch floor — but
+                dropping to one made pinning a swipe-only gesture, which is
+                invisible on a mouse. Pin and start earn their place; edit is a
+                tap on the row and delete is the swipe. */}
+            {onPin && !task.done && (
               <button
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); onPin(task.id) }}
                 aria-pressed={isPinned}
-                aria-label={isPinned ? "Unpin task" : "Pin task"}
-                title={isPinned ? "Unpin" : "Pin — work on this next"}
-                className={`w-9 h-9 grid place-items-center rounded-lg transition-colors duration-150
-                  ${isPinned ? "text-accent bg-accent/10" : "text-sub hover:text-accent hover:bg-accent/10"}`}>
-                <HiMapPin size={15} />
+                aria-label={isPinned ? `Unpin "${task.title}"` : `Pin "${task.title}" to work on next`}
+                className={`w-11 h-11 shrink-0 grid place-items-center rounded-control border
+                  transition-colors duration-150
+                  ${isPinned
+                    ? "border-accent bg-accent text-white"
+                    : "border-border text-tx hover:border-accent hover:text-accent"}`}>
+                <HiMapPin size={16} />
               </button>
             )}
             {onQuickStart && !task.done && (
@@ -188,20 +197,12 @@ export default function TaskCard({
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); onQuickStart(task) }}
                 aria-label={`Start a focus session on "${task.title}"`}
-                className="w-9 h-9 grid place-items-center rounded-lg text-sub hover:text-accent hover:bg-accent/10 transition-colors duration-150">
-                <HiPlay size={15} />
+                className="w-11 h-11 shrink-0 grid place-items-center rounded-control border border-border
+                  text-tx hover:border-accent hover:text-accent transition-colors duration-150">
+                <HiPlay size={16} />
               </button>
             )}
-            {onEdit && !compact && (
-              <button
-                onPointerDown={e => e.stopPropagation()}
-                onClick={e => { e.stopPropagation(); onEdit(task) }}
-                aria-label={`Edit "${task.title}"`}
-                className="w-9 h-9 grid place-items-center rounded-lg text-sub hover:text-accent hover:bg-accent/10 transition-colors duration-150">
-                <HiPencil size={15} />
-              </button>
-            )}
-            {expandable && !compact && (
+            {expandable && !onClick && (
               <button
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}

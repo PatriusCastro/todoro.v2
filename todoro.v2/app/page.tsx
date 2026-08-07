@@ -759,7 +759,7 @@ export default function Home() {
           projects={projects} onDeleteProject={handleDelete}
           onSave={handleSaveTask} onDelete={handleDeleteTask}
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
-          onOpenTask={handleOpenTask} onStartFocus={handleStartFocus}
+          onStartFocus={handleStartFocus}
           onSaveProject={handleSaveProject} onRestoreProject={handleRestoreProject}
           allHistory={allHistory} />
       )}

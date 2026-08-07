@@ -61,8 +61,13 @@ export default function TaskList({
     <Panel bare className="px-3 py-2">
       <div className="flex items-center gap-3 px-1 pt-1 pb-2">
         <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
-          Pending — {pending.length}
+          Open — {pending.length}
         </span>
+        {/* Editing has no button of its own any more, so the header says where
+            it lives. Delete is the only action left with no visible affordance. */}
+        {projects.length === 0 && (
+          <span className="ml-auto text-caption text-sub shrink-0">Tap to edit · swipe to delete</span>
+        )}
         {projects.length > 0 && (
           <div className="ml-auto shrink-0 flex items-center rounded-control border border-border overflow-hidden">
             {([["all", "All"], ["project", "By project"]] as const).map(([key, label], i) => (

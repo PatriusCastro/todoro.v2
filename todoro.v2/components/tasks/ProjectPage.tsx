@@ -22,7 +22,6 @@ interface ProjectPageProps {
   onDelete: (id: string) => void
   onToggle: (id: string) => void
   onToggleSub: (tId: string, sId: string) => void
-  onOpenTask: (t: Task) => void
   onStartFocus: (t: Task) => void
   onSaveProject: (p: Project) => void
   onDeleteProject: (id: string) => void
@@ -32,7 +31,7 @@ interface ProjectPageProps {
 export default function ProjectPage({
   project, allTasks, activeTask, dark, projects,
   onBack, onSave, onDelete, onToggle, onToggleSub,
-  onOpenTask, onStartFocus, onSaveProject, onDeleteProject, onEditProject,
+  onStartFocus, onSaveProject, onDeleteProject, onEditProject,
 }: ProjectPageProps) {
   const tasks    = allTasks.filter(t => t.projectId === project.id)
   const pending  = tasks.filter(t => !t.done)
@@ -66,8 +65,8 @@ export default function ProjectPage({
   }, [onStartFocus])
 
   const handleTaskClick = useCallback((task: Task) => {
-    onOpenTask(task)
-  }, [onOpenTask])
+    setModalTask(task); setShowModal(true)
+  }, [])
 
   const sorted = useSortedTasks(
     pending.filter(t => t.id !== deletePending?.id),
@@ -77,7 +76,6 @@ export default function ProjectPage({
   const renderTask = (task: Task) => (
     <TaskCard key={task.id} task={task}
       onToggle={onToggle} onToggleSub={onToggleSub}
-      onEdit={t => { setModalTask(t); setShowModal(true) }}
       onDelete={handleDelete}
       onPin={togglePin}
       onQuickStart={handleQuickStart}
@@ -171,7 +169,6 @@ export default function ProjectPage({
               {done.filter(t => t.id !== deletePending?.id).map(task => (
                 <TaskCard key={task.id} task={task}
                   onToggle={onToggle} onToggleSub={onToggleSub}
-                  onEdit={t => { setModalTask(t); setShowModal(true) }}
                   onDelete={handleDelete} />
               ))}
             </div>

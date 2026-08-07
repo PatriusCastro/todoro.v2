@@ -32,10 +32,10 @@ export default function TimerRing({
   const cycleProgress   = (totalSecs % REVERSE_CYCLE_SECS) / REVERSE_CYCLE_SECS
   const displayProgress = Math.min(1, Math.max(0, reverseMode ? cycleProgress : progress))
 
-  // A round linecap on a zero-length dash paints a dot, so an untouched timer
-  // showed a stray bead floating at 12 o'clock. Below a visible arc length,
-  // draw nothing at all.
-  const showArc = displayProgress > 0.004
+  // Flat caps. A round cap on a zero-length dash paints a dot, which is what
+  // made an untouched timer show a stray bead at 12 o'clock; butt caps can't do
+  // that, and the squared ends sit better against the flat geometry elsewhere.
+  const showArc = displayProgress > 0
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -45,7 +45,7 @@ export default function TimerRing({
             stroke="color-mix(in srgb, var(--tx) 12%, transparent)" strokeWidth={width} />
           {showArc && (
             <circle cx={cx} cy={cx} r={r} fill="none" strokeWidth={width}
-              strokeLinecap="round"
+              strokeLinecap="butt"
               strokeDasharray={`${C * displayProgress} ${C}`}
               style={{ stroke, transition: "stroke-dasharray 1s linear" }} />
           )}
