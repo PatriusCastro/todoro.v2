@@ -28,7 +28,6 @@ interface TasksPageProps {
   onDeleteProject: (id: string) => void
   onRestoreProject: (p: Project, taskIds: string[]) => void
   allHistory: SessionRecord[]
-  initialDate?: string | null
   dark: boolean
 }
 
@@ -48,11 +47,11 @@ export default function TasksPage({
   tasks, activeTask, projects,
   onSave, onDelete, onToggle, onToggleSub,
   onOpenTask, onStartFocus, onSaveProject, onDeleteProject, onRestoreProject,
-  allHistory, initialDate, dark,
+  allHistory, dark,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Filter>("all")
-  const [selectedDate, setSelectedDate] = useState<string | null>(initialDate ?? null)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [modalTask, setModalTask] = useState<Task | undefined>()
   const [showModal, setShowModal] = useState(false)
   const [showDone,  setShowDone]  = useState(false)

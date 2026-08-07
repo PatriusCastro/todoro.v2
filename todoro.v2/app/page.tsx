@@ -187,7 +187,6 @@ export default function Home() {
   useEffect(() => { setHydrated(true) }, [])
 
   const [tab,       setTab]       = useState<Tab>("home")
-  const [tasksDate, setTasksDate] = useState<string | null>(null)
   const [showAdd,   setShowAdd]   = useState(false)
   const [onboarded, setOnboarded] = useState(() => {
     if (load("todoro:onboarded", false)) return true
@@ -622,11 +621,9 @@ export default function Home() {
 
   // Tab nav: opening Tasks from the navbar clears any deep-linked calendar day
   const goToTab = (t: Tab) => {
-    if (t === "tasks") setTasksDate(null)
     setTab(t)
   }
   // Deep-link into the merged Tasks page focused on a day (Home mini-calendar)
-  const goToTasksDate = (date?: string) => { setTasksDate(date ?? null); setTab("tasks") }
 
   const handleBuyFreeze = () => {
     if (totalPoints < FREEZE_COST) return
@@ -709,10 +706,10 @@ export default function Home() {
       {tab === "home" && (
         <HomePage {...timerProps}
           onTimerToggle={handleToggle} onNavToTimer={() => setTab("timer")}
-          tasks={tasks} activeTask={activeTask} onNavToCalendar={goToTasksDate}
-          onToggleTask={handleToggleTask} onToggleSub={handleToggleSub}
+          tasks={tasks} activeTask={activeTask} projects={projects}
+          onToggleTask={handleToggleTask}
           onNavToTasks={() => setTab("tasks")} onOpenTask={handleOpenTask}
-          onStartFocus={handleStartFocus} onQuickAdd={() => setShowAdd(true)}
+          onStartFocus={handleStartFocus}
           streak={streak} totalPoints={totalPoints} allHistory={allHistory}
           onOpenShop={() => setShowShop(true)} canRestore={!!restoreGap} level={lvl.level}
           avatarUrl={avatarUrl} onNavToSettings={() => setTab("settings")}
@@ -737,7 +734,7 @@ export default function Home() {
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
           onOpenTask={handleOpenTask} onStartFocus={handleStartFocus}
           onSaveProject={handleSaveProject} onRestoreProject={handleRestoreProject}
-          allHistory={allHistory} initialDate={tasksDate} />
+          allHistory={allHistory} />
       )}
 
       {tab === "settings" && (

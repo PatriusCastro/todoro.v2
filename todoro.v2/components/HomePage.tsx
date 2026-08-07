@@ -1,42 +1,30 @@
 "use client"
 
-import { useState } from "react"
-import { HiStar, HiPlayCircle, HiPauseCircle, HiChevronRight, HiChevronLeft, HiFire, HiClock, HiCheckCircle, HiListBullet, HiPlus } from "react-icons/hi2"
+import { HiStar, HiPlay, HiPause, HiChevronRight, HiFire, HiCheckCircle, HiListBullet, HiBolt } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
-import { type Mode } from "../components/timer/ModeSelector"
-import PriorityChip from "./shared/PriorityChip"
+import { type Project } from "../components/tasks/TaskModal"
 import { sortTasks } from "../lib/taskOrder"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
 import StatTile from "./shared/StatTile"
+import Panel from "./shared/Panel"
 
 type Phase = "focus" | "break" | "longbreak"
 
 interface HomePageProps {
-  time: number; phase: Phase; mode: Mode
-  focusMins: number; breakMins: number; longBreakMins: number
+  time: number; phase: Phase
+  breakMins: number; longBreakMins: number
   running: boolean; progress: number
-  sessions: number; totalSessions: number; cycleCount: number
+  sessions: number; totalSessions: number
   onTimerToggle: () => void; onNavToTimer: () => void
-  tasks: Task[]; activeTask: Task
-  onToggleTask: (id: string) => void; onToggleSub: (tId: string, sId: string) => void
+  tasks: Task[]; activeTask: Task; projects: Project[]
+  onToggleTask: (id: string) => void
   onNavToTasks: () => void; onOpenTask: (t: Task) => void
-  onStartFocus: (t: Task) => void; onQuickAdd: () => void
+  onStartFocus: (t: Task) => void
   streak: number; totalPoints: number; greeting: string; userName: string
   avatarUrl: string; onNavToSettings: () => void
   allHistory: { taskId: string; taskTitle: string; focusMins: number; at: number }[]
-  onNavToCalendar: (date?: string) => void;   quickMode: boolean
+  quickMode: boolean
   onOpenShop: () => void; canRestore: boolean; level: number
-}
-
-function phaseLabel(phase: Phase) {
-  if (phase === "focus")     return "Focus"
-  if (phase === "longbreak") return "Long Break"
-  return "Break"
-}
-
-function phaseColor(phase: Phase) {
-  // Focus tracks the themed accent (CSS var); break stays green
-  return phase === "focus" ? "var(--accent)" : "#51CF66"
 }
 
 function localDate(ts: number = Date.now()) {
@@ -44,333 +32,264 @@ function localDate(ts: number = Date.now()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
-const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-const DAY_LABELS   = ["S","M","T","W","T","F","S"]
-
-function MiniCalendar({
-  allHistory, onNavToCalendar,
-}: { allHistory: HomePageProps["allHistory"]; onNavToCalendar: (date?: string) => void }) {
-  const today   = new Date()
-  const [year,  setYear]  = useState(today.getFullYear())
-  const [month, setMonth] = useState(today.getMonth())
-
-  const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1) }
-  const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1) }
-
-  const firstDay  = new Date(year, month, 1).getDay()
-  const daysCount = new Date(year, month + 1, 0).getDate()
-  const cells     = Array.from({ length: firstDay + daysCount }, (_, i) =>
-    i < firstDay ? null : i - firstDay + 1
-  )
-
-  const sessionsByDate = allHistory.reduce<Record<string, number>>((acc, s) => {
-    const d = localDate(s.at); acc[d] = (acc[d] ?? 0) + 1; return acc
-  }, {})
-
-  const todayStr = localDate()
-
-  function dotColor(count: number) {
-    if (count === 0) return null
-    if (count === 1) return "bg-tx/25"
-    if (count <= 3)  return "bg-tx/50"
-    return "bg-tx/80"
-  }
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-3">
-        <button onClick={prevMonth} aria-label="Previous month" className="w-11 h-11 grid place-items-center rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
-          <HiChevronLeft size={15} />
-        </button>
-        <span className="text-sm font-semibold text-tx">{MONTHS_SHORT[month]} {year}</span>
-        <button onClick={nextMonth} aria-label="Next month" className="w-11 h-11 grid place-items-center rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
-          <HiChevronRight size={15} />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-7 mb-1.5">
-        {DAY_LABELS.map((d, i) => (
-          <div key={i} className="text-center text-caption font-bold text-sub">{d}</div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-7 gap-y-1">
-        {cells.map((day, i) => {
-          if (!day) return <div key={i} />
-          const ds      = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-          const isToday = ds === todayStr
-          const count   = sessionsByDate[ds] ?? 0
-          const dot     = dotColor(count)
-
-          return (
-            <button key={i}
-              onClick={() => onNavToCalendar(ds)}
-              className={`relative flex flex-col items-center justify-center rounded-lg h-8
-                ${isToday ? "bg-accent/15" : "hover:bg-surface2"}
-                transition-colors duration-100`}>
-              <span className={`text-xs font-semibold leading-none ${isToday ? "text-accent font-semibold" : "text-tx"}`}>
-                {day}
-              </span>
-              {dot && <span className={`w-1 h-1 rounded-full mt-0.5 ${dot}`} />}
-            </button>
-          )
-        })}
-      </div>
-
-      <button onClick={() => onNavToCalendar()} className="mt-auto flex items-center justify-center gap-2 text-xs text-sub hover:text-accent transition-colors self-center">
-        View Calendar <HiChevronRight size={11} />
-      </button>
-    </div>
-  )
-}
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"]
 
 export default function HomePage({
-  time, phase, mode, focusMins, breakMins, longBreakMins, running, progress,
-  sessions, totalSessions, onTimerToggle, onNavToTimer, onNavToCalendar,
-  tasks, activeTask, onToggleTask, allHistory, onToggleSub,
-  onNavToTasks, onOpenTask, onStartFocus, onQuickAdd, streak, totalPoints, greeting, userName,
-  avatarUrl, onNavToSettings, quickMode, onOpenShop, canRestore, level
+  time, phase, breakMins, longBreakMins, running, progress,
+  sessions, totalSessions, onTimerToggle, onNavToTimer,
+  tasks, activeTask, projects, onToggleTask, allHistory,
+  onNavToTasks, onOpenTask, onStartFocus, streak, totalPoints, greeting, userName,
+  avatarUrl, onNavToSettings, quickMode, onOpenShop, canRestore, level,
 }: HomePageProps) {
-  const minutes  = Math.floor(time / 60)
-  const seconds  = time % 60
+  const minutes = Math.floor(time / 60)
+  const seconds = time % 60
+  const timeLabel = `${minutes}:${String(seconds).padStart(2, "0")}`
+  const firstName = userName.split(" ")[0] || "there"
   const currentBreakMins = phase === "longbreak" ? longBreakMins : breakMins
-  const firstName  = userName.split(" ")[0] || "there"
-  const ringColor  = phaseColor(phase)
-  const label      = phaseLabel(phase)
-  const goalHit    = sessions >= totalSessions
 
-  const size = 220; const cx = size / 2; const r = cx - 16; const C = 2 * Math.PI * r
-
-  // Same order as the Tasks page — pinned first, then priority — so "Up Next"
-  // actually agrees with what the rest of the app calls next.
   const { pinned, togglePin } = usePinnedTasks()
   const pendingTasks = sortTasks(tasks.filter(t => !t.done && t.id !== activeTask.id), undefined, pinned)
   const doneTasks    = tasks.filter(t => t.done)
-  const allDone      = tasks.every(t => t.done)
+  const allDone      = tasks.length > 0 && tasks.every(t => t.done)
+
+  // ── This week ────────────────────────────────────────────────────────────
+  const todayStr = localDate()
+  const sessionsByDate = allHistory.reduce<Record<string, number>>((acc, s) => {
+    const d = localDate(s.at); acc[d] = (acc[d] ?? 0) + 1; return acc
+  }, {})
+  const weekStart = new Date()
+  weekStart.setHours(0, 0, 0, 0)
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay())   // back to Sunday
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i)
+    const ds = localDate(d.getTime())
+    return { ds, label: DAY_LABELS[i], count: sessionsByDate[ds] ?? 0, isToday: ds === todayStr }
+  })
+  const weekPeak  = Math.max(1, ...week.map(d => d.count))
+  const weekTotal = week.reduce((n, d) => n + d.count, 0)
+  const weekMins  = allHistory
+    .filter(s => week.some(d => d.ds === localDate(s.at)))
+    .reduce((n, s) => n + s.focusMins, 0)
+
+  // ── Projects ─────────────────────────────────────────────────────────────
+  const projectRows = projects.map(p => {
+    const owned = tasks.filter(t => t.projectId === p.id)
+    const done  = owned.filter(t => t.done).length
+    return { ...p, total: owned.length, done, progress: owned.length ? done / owned.length : 0 }
+  })
+
+  // ── Focus poster ─────────────────────────────────────────────────────────
+  const kicker = running
+    ? (phase === "focus" ? "Focusing now" : "On a break")
+    : phase === "focus" ? "Next up · focus" : "Next up · break"
+  const posterTitle = quickMode && !activeTask.title
+    ? "Quick focus"
+    : allDone ? "Everything's done" : (activeTask.title || "Nothing queued yet")
+  const posterMeta = [
+    activeTask.estimatedSessions > 0
+      ? `${activeTask.completedSessions} of ${activeTask.estimatedSessions} sessions`
+      : null,
+    activeTask.dueLabel && activeTask.dueLabel !== "No due date" ? activeTask.dueLabel.toLowerCase() : null,
+  ].filter(Boolean).join(" · ")
+  const runLabel = running
+    ? "Pause"
+    : phase === "focus" ? "Start focus" : phase === "longbreak" ? "Start long break" : "Start break"
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-gutter">
 
-      {/* Greeting */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={onNavToSettings} className="relative shrink-0">
-            <div className={`w-11 h-11 rounded-xl overflow-hidden border-2 transition-colors
-              ${running ? "border-priority-low" : "border-accent/20"}`}>
-              {avatarUrl
-                ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-                : <div className="w-full h-full bg-surface2 flex items-center justify-center text-tx font-semibold text-sm">
-                    {firstName.slice(0, 2).toUpperCase()}
-                  </div>
-              }
-            </div>
-            {running && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-priority-low border-2 border-bg" />}
-          </button>
-          <div>
-            <p className="text-xs font-semibold text-sub">{greeting}</p>
-            <h1 className="text-xl font-semibold text-tx leading-tight">
-              {firstName}
-              {running && <span className="ml-2 text-sm font-semibold text-priority-low">· focusing</span>}
-            </h1>
-          </div>
+      {/* Greeting — phone only; large screens carry it in the top bar */}
+      <div className="flex items-center gap-3">
+        <button onClick={onNavToSettings} aria-label="Open settings" className="relative shrink-0 md:hidden">
+          <span className={`block w-12 h-12 rounded-control overflow-hidden border-2 transition-colors
+            ${running ? "border-accent" : "border-border"}`}>
+            {avatarUrl
+              ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+              : <span className="w-full h-full bg-surface2 flex items-center justify-center text-tx font-extrabold text-meta">
+                  {firstName.slice(0, 2).toUpperCase()}
+                </span>
+            }
+          </span>
+        </button>
+        <div className="md:hidden min-w-0">
+          <p className="text-meta text-sub">{greeting}</p>
+          <h1 className="text-title font-extrabold text-tx leading-tight truncate">{firstName}</h1>
         </div>
-        {/* Level + points — tap to open the rewards shop */}
         <button onClick={onOpenShop}
-          className="flex items-center gap-2 border border-border rounded-xl pl-2 pr-3.5 py-1.5 bg-surface hover:border-accent/40 active:scale-95 transition-all">
-          <span className="text-caption font-semibold text-sub bg-surface2 rounded-lg px-1.5 py-1 leading-none">Lv {level}</span>
-          <HiStar size={13} className="text-sub" />
-          <span className="text-sm font-bold text-tx">{totalPoints} pts</span>
+          className="ml-auto shrink-0 flex items-center gap-2 min-h-11 px-3.5 rounded-control border border-border
+            bg-surface hover:border-accent/40 active:scale-95 transition-all">
+          <span className="text-caption font-extrabold uppercase tracking-wider text-sub">Lv {level}</span>
+          <HiStar size={14} className="text-sub" />
+          <span className="text-lead font-extrabold text-tx tabular-nums">{totalPoints}</span>
         </button>
       </div>
 
       {/* Streak restore nudge */}
       {canRestore && (
         <button onClick={onOpenShop}
-          className="flex items-center gap-3 rounded-2xl border border-priority-low/40 bg-priority-low/5 px-4 py-3 text-left hover:border-priority-low/60 transition-colors">
-          <HiFire size={16} className="text-priority-low shrink-0" />
-          <p className="text-xs font-semibold text-tx flex-1">
+          className="flex items-center gap-3 rounded-panel border border-priority-low/40 bg-priority-low/5 px-4 py-3.5 text-left hover:border-priority-low/60 transition-colors">
+          <HiFire size={18} className="text-priority-low shrink-0" />
+          <p className="text-meta font-semibold text-tx flex-1">
             Your streak broke — tap to restore it with a Streak Freeze.
           </p>
-          <HiChevronRight size={14} className="text-sub shrink-0" />
+          <HiChevronRight size={16} className="text-sub shrink-0" />
         </button>
       )}
 
-      {/* Bento */}
-      <div className="grid grid-cols-12 gap-3">
-        
-          {/* Today's goal */}
-          <div className={`sm:hidden col-span-12 rounded-2xl border bg-surface px-5 py-4 transition-colors duration-300
-            ${goalHit ? "border-border bg-surface2" : "border-border"}`}>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-sub">Today&apos;s Goal</span>
-              <span className={`text-sm font-bold ${goalHit ? "text-tx" : "text-sub"}`}>
-                {sessions} / {totalSessions} sessions              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {Array.from({ length: totalSessions }).map((_, i) => (
-                <div key={i} className={`h-2.5 flex-1 rounded-full transition-all duration-500
-                  ${i < sessions ? "bg-tx" : "bg-ring"}`} />
-              ))}
-            </div>
-          </div>
-
-        {/* Timer */}
-        <div className="glass col-span-12 max-h-fit lg:max-h-full md:col-span-6 lg:col-span-5 rounded-2xl overflow-hidden">
-
-          <div className="px-5 pt-4 pb-3 border-b border-border flex items-center justify-between">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className="text-xs font-bold text-sub shrink-0">Now</span>
-              {allDone
-                ? <span className="text-sm text-sub italic">All tasks done</span>
-                : <>
-                    <PriorityChip priority={activeTask.priority} />
-                    <span className="text-sm font-semibold text-tx truncate">{activeTask.title}</span>
-                  </>
-              }
-              {quickMode && (
-                <span className="ml-auto text-xs font-bold text-sub">
-                  Quick Mode
-                </span>
-              )}
-            </div>
-            <button onClick={onNavToTasks}
-              className="text-xs text-sub hover:text-accent transition-colors flex items-center gap-0.5 shrink-0 ml-3">
-              Tasks <HiChevronRight size={12} />
-            </button>
-          </div>
-
-          {!allDone && activeTask.estimatedSessions > 0 && (
-            <div className="px-5 pt-3 flex items-center gap-2">
-              <div className="flex gap-1 flex-1">
-                {Array.from({ length: activeTask.estimatedSessions }).map((_, i) => (
-                  <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300
-                    ${i < activeTask.completedSessions ? "bg-tx" : "bg-ring"}`} />
-                ))}
-              </div>
-              <span className="text-xs text-sub shrink-0">
-                {activeTask.completedSessions}/{activeTask.estimatedSessions}
-              </span>
-            </div>
-          )}
-
-          <div className="flex flex-col items-center gap-4 px-5 py-4">
-            <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold
-              ${phase === "focus" ? "bg-accent/10 text-accent" : "bg-priority-low/10 text-priority-low"}`}>
-              <span className={`w-2 h-2 rounded-full ${running ? "animate-pulse" : ""}`}
-                style={{ background: ringColor }} />
-              {label} · {phase === "focus" ? focusMins : currentBreakMins} min
-            </div>
-
-            <div className="my-4 relative cursor-pointer group" style={{ width: size, height: size }}
-              onClick={onNavToTimer}>
-              <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-                <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--ring)" strokeWidth={6} />
-                <circle cx={cx} cy={cx} r={r} fill="none" strokeWidth={6}
-                  strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - progress)}
-                  style={{ stroke: ringColor, transition: "stroke-dashoffset 1s linear" }} />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                <span className="text-5xl font-semibold text-tx tabular-nums leading-none tracking-tight">
-                  {minutes}:{seconds.toString().padStart(2, "0")}
-                </span>
-                <span className="text-sm text-sub">
-                  {phase === "focus" ? `session ${sessions + 1} of ${totalSessions}` : "take a break"}
-                </span>
-                <span className="text-caption text-sub group-hover:text-tx transition-colors">
-                  tap to expand
-                </span>
-              </div>
-            </div>
-            <button onClick={onTimerToggle}
-              className={`w-full py-3.5 rounded-xl text-white text-sm font-semibold active:scale-95 transition-all duration-150
-                ${phase === "focus" ? "bg-accent hover:bg-accent-hover" : "bg-priority-low hover:bg-[#42c956]"}`}>
-              <span className="flex items-center justify-center gap-2">
-                {running
-                  ? <><HiPauseCircle size={18} /> Pause</>
-                  : <><HiPlayCircle size={18} /> {phase === "focus" ? "Start Focus" : phase === "longbreak" ? "Long Break" : "Start Break"}</>
-                }
-              </span>
-            </button>
-                        
-          </div>
+      {/* ── Focus poster — the only glowing thing on the page ──────────────── */}
+      <div className="rounded-panel bg-accent text-bg shadow-glow px-5 py-5 flex flex-col gap-4">
+        <div className="flex items-center gap-2.5 text-caption font-extrabold uppercase tracking-widest">
+          <span className={`w-2 h-2 rounded-pill bg-bg shrink-0 ${running ? "animate-pulse" : ""}`} />
+          <span>{kicker}</span>
+          <span className="ml-auto opacity-85 tracking-wider">
+            {phase === "focus" ? `Session ${Math.min(sessions + 1, totalSessions)} of ${totalSessions}` : `${currentBreakMins} min break`}
+          </span>
         </div>
 
-        {/* Right column */}
-        <div className="col-span-12 md:col-span-6 lg:col-span-7 flex flex-col gap-3">
+        <h2 className="text-display font-extrabold leading-none wrap-break-words line-clamp-2">
+          {posterTitle}
+        </h2>
 
-          {/* Today's goal */}
-          <div className={`hidden sm:grid rounded-2xl border bg-surface px-5 py-4 transition-colors duration-300
-            ${goalHit ? "border-border bg-surface2" : "border-border"}`}>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold text-sub">Today&apos;s Goal</span>
-              <span className={`text-sm font-bold ${goalHit ? "text-tx" : "text-sub"}`}>
-                {sessions} / {totalSessions} sessions              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {Array.from({ length: totalSessions }).map((_, i) => (
-                <div key={i} className={`h-2.5 flex-1 rounded-full transition-all duration-500
-                  ${i < sessions ? "bg-tx" : "bg-ring"}`} />
-              ))}
-            </div>
-          </div>
+        {posterMeta && <p className="text-meta opacity-90 -mt-1">{posterMeta}</p>}
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <StatTile icon={<HiFire size={14} />}        label="Streak" value={`${streak}d`} />
-            <StatTile icon={<HiCheckCircle size={14} />} label="Done"   value={doneTasks.length} suffix={`of ${tasks.length} tasks`} />
-          </div>
-
-          {/* Up Next and Calendar */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-
-            {/* Up Next */}
-            <div className="glass rounded-2xl px-5 py-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <HiListBullet size={14} className="text-sub" />
-                  <span className="text-xs font-bold text-sub">Up Next</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={onQuickAdd}
-                    className="hidden md:flex items-center gap-0.5 text-xs text-sub hover:text-accent transition-colors">
-                    <HiPlus size={11} /> Add
-                  </button>
-                  <button onClick={onNavToTasks}
-                    className="text-xs text-accent hover:underline flex items-center gap-0.5">
-                    All <HiChevronRight size={11} />
-                  </button>
-                </div>
-              </div>
-
-              {pendingTasks.length === 0
-                ? <p className="text-sm text-sub italic text-center py-3">
-                    {allDone ? "All tasks completed" : "No pending tasks"}
-                  </p>
-                : <div className="flex flex-col gap-2">
-                    {pendingTasks.slice(0, 3).map(t => (
-                      <TaskCard key={t.id} task={t} onToggle={onToggleTask}
-                        onClick={() => onOpenTask(t)} onQuickStart={onStartFocus}
-                        onPin={togglePin} isPinned={pinned.has(t.id)} compact />
-                    ))}
-                    {pendingTasks.length > 3 && (
-                      <button onClick={onNavToTasks}
-                        className="text-xs text-sub hover:text-accent transition-colors text-center pt-1">
-                        +{pendingTasks.length - 3} more
-                      </button>
-                    )}
-                  </div>
-              }
-            </div>
-
-            {/* Calendar */}
-            <div className="glass rounded-2xl px-5 py-4 flex flex-col">
-              <MiniCalendar allHistory={allHistory} onNavToCalendar={onNavToCalendar} />
-            </div>
-
-          </div>
+        <div className="h-1.5 rounded-chip bg-bg/30 overflow-hidden">
+          <div className="h-full rounded-chip bg-bg transition-[width] duration-1000 ease-linear"
+            style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
 
+        <div className="flex gap-2">
+          <button onClick={onTimerToggle}
+            className="flex-1 min-h-14 flex items-center gap-3 px-5 rounded-control bg-bg text-tx
+              text-heading font-extrabold hover:brightness-95 active:scale-[0.98] transition-all">
+            {running ? <HiPause size={18} /> : <HiPlay size={18} />}
+            <span>{runLabel}</span>
+            <span className="ml-auto tabular-nums tracking-tight">{timeLabel}</span>
+          </button>
+          <button onClick={onNavToTimer} aria-label="Open the timer"
+            className="w-14 min-h-14 grid place-items-center rounded-control bg-bg/20 text-bg
+              hover:bg-bg/30 active:scale-95 transition-all">
+            <HiChevronRight size={20} />
+          </button>
+        </div>
       </div>
+
+      {/* ── Today at a glance ──────────────────────────────────────────────── */}
+      <div className="grid grid-cols-3 gap-gutter">
+        <StatTile label="Sessions" value={sessions} suffix={`of ${totalSessions}`}
+          footnote={
+            <div className="flex gap-1 mt-0.5">
+              {Array.from({ length: totalSessions }).map((_, i) => (
+                <span key={i} className={`h-1.5 flex-1 rounded-chip transition-colors duration-500
+                  ${i < sessions ? "bg-accent" : "bg-border"}`} />
+              ))}
+            </div>
+          } />
+        <StatTile icon={<HiFire size={14} />} label="Streak" value={`${streak}d`}
+          footnote={streak > 0 ? "Keep it going" : "Start one today"} />
+        <StatTile icon={<HiCheckCircle size={14} />} label="Done" value={doneTasks.length}
+          footnote={`${tasks.length - doneTasks.length} open`} />
+      </div>
+
+      {/* ── Up next ────────────────────────────────────────────────────────── */}
+      <Panel className="flex flex-col gap-1">
+        <div className="flex items-center gap-2 mb-1">
+          <HiListBullet size={15} className="text-sub" />
+          <h3 className="text-caption font-extrabold uppercase tracking-wider text-sub">Up next</h3>
+          <button onClick={onNavToTasks}
+            className="ml-auto flex items-center gap-0.5 min-h-11 text-meta font-extrabold text-accent hover:underline">
+            All tasks <HiChevronRight size={13} />
+          </button>
+        </div>
+
+        {pendingTasks.length === 0 ? (
+          <p className="text-meta text-sub py-3">
+            {allDone ? "Everything's done. Enjoy the quiet." : "Nothing queued — add what's on your mind."}
+          </p>
+        ) : (
+          <>
+            {pendingTasks.slice(0, 3).map(t => (
+              <TaskCard key={t.id} task={t} onToggle={onToggleTask}
+                onClick={() => onOpenTask(t)} onQuickStart={onStartFocus}
+                onPin={togglePin} isPinned={pinned.has(t.id)} compact />
+            ))}
+            {pendingTasks.length > 3 && (
+              <button onClick={onNavToTasks}
+                className="min-h-11 text-meta text-sub hover:text-accent transition-colors text-left">
+                +{pendingTasks.length - 3} more
+              </button>
+            )}
+          </>
+        )}
+      </Panel>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+
+        {/* ── This week ────────────────────────────────────────────────────── */}
+        <Panel className="flex flex-col gap-3">
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-caption font-extrabold uppercase tracking-wider text-sub">This week</h3>
+            <span className="ml-auto text-caption text-sub tabular-nums">
+              {weekTotal} session{weekTotal === 1 ? "" : "s"}
+            </span>
+          </div>
+          <div className="grid grid-cols-7 gap-1.5 items-end h-24">
+            {week.map(d => (
+              <div key={d.ds} className="h-full flex items-end">
+                <span aria-hidden="true"
+                  className={`block w-full rounded-chip transition-colors ${d.isToday ? "bg-accent" : "bg-surface2"}`}
+                  style={{ height: `${Math.max(6, (d.count / weekPeak) * 100)}%` }} />
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1.5 border-t border-border pt-2">
+            {week.map(d => (
+              <span key={d.ds}
+                className={`text-center text-caption font-semibold ${d.isToday ? "text-accent" : "text-sub"}`}>
+                {d.label}
+              </span>
+            ))}
+          </div>
+          <p className="text-caption text-sub">
+            {weekMins >= 60 ? `${Math.floor(weekMins / 60)}h ${weekMins % 60}m` : `${weekMins}m`} focused
+          </p>
+        </Panel>
+
+        {/* ── Projects ─────────────────────────────────────────────────────── */}
+        <Panel className="flex flex-col gap-1">
+          <div className="flex items-baseline gap-2 mb-1">
+            <h3 className="text-caption font-extrabold uppercase tracking-wider text-sub">Projects</h3>
+            <span className="ml-auto text-caption text-sub">
+              {projectRows.length || "none"} {projectRows.length === 1 ? "project" : projectRows.length ? "projects" : "yet"}
+            </span>
+          </div>
+          {projectRows.length === 0 ? (
+            <button onClick={onNavToTasks}
+              className="min-h-11 text-meta text-sub hover:text-accent transition-colors text-left">
+              Group related tasks into a project →
+            </button>
+          ) : projectRows.map(p => (
+            <button key={p.id} onClick={onNavToTasks}
+              className="flex flex-col gap-2 py-2.5 border-t border-border text-left first:border-t-0 hover:opacity-80 transition-opacity">
+              <span className="flex items-baseline gap-2">
+                <span className="text-meta font-extrabold text-tx truncate">{p.name}</span>
+                <span className="ml-auto text-caption text-sub tabular-nums shrink-0">
+                  {p.total === 0 ? "empty" : `${p.done}/${p.total}`}
+                </span>
+              </span>
+              <span className="block h-1.5 rounded-chip bg-surface2 overflow-hidden">
+                <span className="block h-full rounded-chip transition-[width] duration-500"
+                  style={{ width: `${p.progress * 100}%`, backgroundColor: p.color }} />
+              </span>
+            </button>
+          ))}
+        </Panel>
+      </div>
+
+      {quickMode && (
+        <p className="flex items-center gap-1.5 text-caption text-sub">
+          <HiBolt size={12} className="text-accent" /> Quick Mode — sessions aren&apos;t tied to a task
+        </p>
+      )}
     </div>
   )
 }
