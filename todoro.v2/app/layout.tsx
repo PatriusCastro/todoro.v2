@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next"
-import { Poppins } from "next/font/google"
 import "./globals.css"
 
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-})
+// Archivo is self-hosted from /public/fonts (see the @font-face block in
+// globals.css) rather than pulled through next/font/google. next/font fetches
+// from fonts.googleapis.com at *build* time, which makes the build fail on any
+// machine or CI runner without access to it — the repo carried that dependency
+// silently until a cache miss exposed it. Vendoring the three woff2 subsets
+// (~81 KB for the whole 100–900 variable range) removes it and matches the
+// offline-first promise the app already makes.
 
 // Runs before first paint: resolves the saved theme (with legacy migration) and
 // the OS preference, then sets the .dark class on <html> so there's no flash and
@@ -38,8 +39,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F4F6F8" },
-    { media: "(prefers-color-scheme: dark)",  color: "#0F1115" },
+    { media: "(prefers-color-scheme: light)", color: "#F4F4F6" },
+    { media: "(prefers-color-scheme: dark)",  color: "#0C0C0F" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -55,9 +56,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link
+          rel="preload"
+          href="/fonts/archivo-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`${poppins.variable} antialiased`}>
+      <body className="antialiased">
         {children}
       </body>
     </html>
