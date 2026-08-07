@@ -102,13 +102,17 @@ export default function AppShell({
   )
 
   // ── Tablet / desktop: side rail + top bar ────────────────────────────────
+  //
+  // Focus view hides the rail and the bar, but it must do that by dropping two
+  // children — never by returning a different tree. `pageInner` has to keep the
+  // same position across the switch: move it and React unmounts the page, which
+  // resets the very state that asked for focus view, which turns it back on.
+  // That loop is what made this screen flicker on tablet and desktop.
   if (isTablet) {
-    if (hideNavbar) {
-      return <div className="min-h-dvh bg-bg text-tx">{pageInner}</div>
-    }
     return (
       <div className="min-h-dvh bg-bg text-tx flex">
 
+        {!hideNavbar && (
         <nav aria-label="Main" className="fixed inset-y-0 left-0 w-59 flex flex-col border-r border-border bg-bg z-40">
           <div className="px-5 pt-6 pb-5 border-b border-border">
             <div className="flex items-center gap-2">
@@ -152,8 +156,10 @@ export default function AppShell({
             </span>
           </button>
         </nav>
+        )}
 
-        <div className="flex-1 flex flex-col min-w-0 ml-59">
+        <div className={`flex-1 flex flex-col min-w-0 ${hideNavbar ? "" : "ml-59"}`}>
+          {!hideNavbar && (
           <header className={`sticky top-0 z-30 flex items-center gap-4 px-6 py-3.5 border-b border-border bg-bg
             transition-opacity duration-500 ${mounted ? "opacity-100" : "opacity-0"}`}>
             <div className="min-w-0">
@@ -169,6 +175,7 @@ export default function AppShell({
               </button>
             )}
           </header>
+          )}
           <main className="flex-1">{pageInner}</main>
         </div>
       </div>
