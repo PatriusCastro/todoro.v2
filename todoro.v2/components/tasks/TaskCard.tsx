@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { HiPencil, HiChevronDown, HiCheck, HiPlay, HiMapPin, HiTrash, HiArrowPath, HiFolder } from "react-icons/hi2"
-import { getPriority, type Priority } from "../../lib/theme"
+import { type Priority } from "../../lib/theme"
 import { useSwipe } from "../../hooks/useSwipe"
 import PriorityChip from "../shared/PriorityChip"
 
@@ -48,7 +48,6 @@ export default function TaskCard({
     onSwipeLeft:  onDelete ? () => onDelete(task) : undefined,
   })
 
-  const dot        = getPriority(task.priority)
   const doneCount  = task.subtasks.filter(s => s.done).length
   const hasDetails = task.subtasks.length > 0 || task.estimatedSessions > 0
   const expandable = !compact && hasDetails
@@ -111,8 +110,7 @@ export default function TaskCard({
             onClick={() => onClick ? onClick(task) : expandable && setExpanded(v => !v)}>
 
             <div className="flex items-center gap-2 min-w-0">
-              {isPinned && <HiMapPin size={10} className="text-accent shrink-0" />}
-              {isActive  && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 animate-pulse" />}
+              {isPinned && <HiMapPin size={12} className="text-accent shrink-0" />}
               <PriorityChip priority={task.priority} />
               {/* Wraps to two lines instead of hiding behind a tap-to-expand
                   that sat pixels away from "open task" and fired by mistake. */}
@@ -164,6 +162,14 @@ export default function TaskCard({
 
           {/* Actions */}
           <div className="flex items-center gap-0.5 shrink-0">
+            {/* A word beats a pulsing dot: "Now" says which task the timer is on
+                without the reader having to learn what the dot meant. */}
+            {isActive && !task.done && (
+              <span className="mr-1 shrink-0 px-2 py-1 rounded-chip bg-accent text-white
+                text-caption font-extrabold uppercase tracking-wider leading-none">
+                Now
+              </span>
+            )}
             {onPin && !task.done && (
               <button
                 onPointerDown={e => e.stopPropagation()}
@@ -218,13 +224,8 @@ export default function TaskCard({
                   {Array.from({ length: task.estimatedSessions }).map((_, i) => (
                     <div
                       key={i}
-                      className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
-                        i >= task.completedSessions ? "bg-border" : ""
-                      }`}
-                      style={{
-                        backgroundColor:
-                          i < task.completedSessions ? dot : undefined,
-                      }}
+                      className={`h-1.5 flex-1 rounded-chip transition-colors duration-300
+                        ${i < task.completedSessions ? "bg-accent" : "bg-border"}`}
                     />
                   ))}
                 </div>

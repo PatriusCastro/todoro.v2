@@ -7,7 +7,8 @@ import {
   HiChevronLeft, HiChevronRight, HiFolderOpen, HiPlus,
 } from "react-icons/hi2"
 import { type Task, type Subtask, type Repeat } from "../tasks/TaskCard"
-import { type Priority, getPriority } from "../../lib/theme"
+import { type Priority } from "../../lib/theme"
+import PriorityChip from "../shared/PriorityChip"
 
 export interface Project { id: string; name: string; color: string }
 
@@ -176,13 +177,18 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
             placeholder="What needs to be done?" autoFocus
             className="w-full bg-surface2 border border-border rounded-2xl px-4 py-3 text-sm font-semibold text-tx placeholder:text-sub outline-none focus:border-accent transition-colors" />
 
-          {/* Priority */}
+          {/* Priority — the picker previews the chip the task will actually
+              wear in the list, rather than a red/amber/green swatch it won't. */}
           <div className="flex gap-2">
             {PRIORITIES.map(p => (
               <button key={p} onClick={() => setPriority(p)}
-                className={`flex-1 py-2.5 rounded-xl text-xs font-bold border transition-all duration-200
-                  ${priority === p ? "text-white" : "bg-transparent text-sub border-border hover:border-accent/40"}`}
-                style={priority === p ? { background: getPriority(p), borderColor: getPriority(p) } : {}}>
+                aria-pressed={priority === p}
+                className={`flex-1 flex items-center justify-center gap-1.5 min-h-12 rounded-control
+                  text-meta font-extrabold border transition-all duration-200
+                  ${priority === p
+                    ? "bg-accent text-white border-accent"
+                    : "bg-transparent text-tx border-border hover:border-accent/40"}`}>
+                {priority !== p && <PriorityChip priority={p} />}
                 {LABELS[p]}
               </button>
             ))}

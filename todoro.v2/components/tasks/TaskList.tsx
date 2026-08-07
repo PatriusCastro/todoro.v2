@@ -1,0 +1,128 @@
+"use client"
+
+import { HiMapPin, HiFolder } from "react-icons/hi2"
+import { type Task } from "./TaskCard"
+import { type Project } from "./TaskModal"
+import Panel from "../shared/Panel"
+
+interface TaskListProps {
+  /** Already filtered and sorted by the caller — this component only groups. */
+  pending:   Task[]
+  projects:  Project[]
+  pinnedIds: ReadonlySet<string>
+  /** Non-null when a calendar day is selected; switches to the single-day view. */
+  selectedDate: string | null
+  view:      "all" | "project"
+  onViewChange: (v: "all" | "project") => void
+  onOpenProject: (p: Project) => void
+  renderTask: (t: Task) => React.ReactNode
+  /** Distinguishes "no tasks at all" from "nothing matches this filter". */
+  hasAnyPending: boolean
+}
+
+function SectionLabel({ children, tone = "sub", icon }: {
+  children: React.ReactNode; tone?: "sub" | "accent"; icon?: React.ReactNode
+}) {
+  return (
+    <div className={`flex items-center gap-1.5 px-1 pt-1 pb-2 text-caption font-extrabold uppercase tracking-wider
+      ${tone === "accent" ? "text-accent" : "text-sub"}`}>
+      {icon}
+      {children}
+    </div>
+  )
+}
+
+/**
+ * The pending region of the Tasks page. Split out of TasksPage, which was doing
+ * filtering, project CRUD, modals and three list layouts in one 480-line file.
+ */
+export default function TaskList({
+  pending, projects, pinnedIds, selectedDate, view, onViewChange,
+  onOpenProject, renderTask, hasAnyPending,
+}: TaskListProps) {
+
+  // Single-day view — the calendar already says which day, so no view switch.
+  if (selectedDate) {
+    if (pending.length === 0) return null
+    return (
+      <Panel bare className="px-3 py-2">
+        <SectionLabel>Due this day — {pending.length}</SectionLabel>
+        {pending.map(renderTask)}
+      </Panel>
+    )
+  }
+
+  const pinned     = pending.filter(t => pinnedIds.has(t.id))
+  const unpinned   = pending.filter(t => !pinnedIds.has(t.id))
+  const assigned   = new Set(projects.map(p => p.id))
+  const unassigned = pending.filter(t => !t.projectId || !assigned.has(t.projectId))
+
+  return (
+    <Panel bare className="px-3 py-2">
+      <div className="flex items-center gap-3 px-1 pt-1 pb-2">
+        <span className="text-caption font-extrabold uppercase tracking-wider text-sub">
+          Pending — {pending.length}
+        </span>
+        {projects.length > 0 && (
+          <div className="ml-auto shrink-0 flex items-center rounded-control border border-border overflow-hidden">
+            {([["all", "All"], ["project", "By project"]] as const).map(([key, label], i) => (
+              <button key={key} onClick={() => onViewChange(key)}
+                aria-pressed={view === key}
+                className={`min-h-11 px-3 text-meta font-extrabold transition-colors
+                  ${i > 0 ? "border-l border-border" : ""}
+                  ${view === key ? "bg-accent text-white" : "text-tx hover:bg-surface2"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {pending.length === 0 ? (
+        <p className="text-meta text-sub px-1 py-6">
+          {hasAnyPending
+            ? "No tasks match this filter."
+            : "Nothing pending — you're all caught up."}
+        </p>
+      ) : view === "all" || projects.length === 0 ? (
+        <>
+          {pinned.length > 0 && (
+            <>
+              <SectionLabel tone="accent" icon={<HiMapPin size={12} />}>
+                Pinned — {pinned.length}
+              </SectionLabel>
+              {pinned.map(renderTask)}
+              <div className="h-px bg-border my-2" />
+            </>
+          )}
+          {unpinned.map(renderTask)}
+        </>
+      ) : (
+        <>
+          {projects.map(proj => {
+            const group = pending.filter(t => t.projectId === proj.id)
+            if (group.length === 0) return null
+            return (
+              <div key={proj.id}>
+                <button onClick={() => onOpenProject(proj)}
+                  className="flex items-center gap-1.5 min-h-11 px-1 group/h">
+                  <HiFolder size={12} style={{ color: proj.color }} />
+                  <span className="text-caption font-extrabold uppercase tracking-wider text-sub group-hover/h:text-accent transition-colors">
+                    {proj.name} — {group.length}
+                  </span>
+                </button>
+                {group.map(renderTask)}
+              </div>
+            )
+          })}
+          {unassigned.length > 0 && (
+            <div>
+              <SectionLabel>No project — {unassigned.length}</SectionLabel>
+              {unassigned.map(renderTask)}
+            </div>
+          )}
+        </>
+      )}
+    </Panel>
+  )
+}

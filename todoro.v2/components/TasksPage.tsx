@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiArrowsRightLeft, HiCalendarDays, HiMapPin } from "react-icons/hi2"
+import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiArrowsRightLeft, HiCalendarDays } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import TasksCalendar, { FocusHistory } from "../components/tasks/TasksCalendar"
 import { type SessionRecord } from "../app/page"
@@ -9,6 +9,7 @@ import TaskModal from "../components/tasks/TaskModal"
 import ProjectCard from "../components/tasks/ProjectCard"
 import ProjectModal from "../components/tasks/ProjectModal"
 import ProjectPage from "../components/tasks/ProjectPage"
+import TaskList from "../components/tasks/TaskList"
 import { type Project } from "../components/tasks/TaskModal"
 import { type Priority } from "../lib/theme"
 import PriorityChip from "../components/shared/PriorityChip"
@@ -147,12 +148,7 @@ export default function TasksPage({
   const allPending = useSortedTasks(visible.filter(t => !t.done), activeTask.id, pinned)
   const done       = visible.filter(t => t.done)
 
-  // Group unassigned tasks
-  const assignedIds = new Set(projects.map(p => p.id))
-  const unassigned  = allPending.filter(t => !t.projectId || !assignedIds.has(t.projectId))
-  const projectOf   = (t: Task) => t.projectId ? projects.find(p => p.id === t.projectId) : undefined
-
-  const pinnedPending = allPending.filter(t => pinned.has(t.id))
+  const projectOf = (t: Task) => t.projectId ? projects.find(p => p.id === t.projectId) : undefined
 
   const renderTask = (task: Task) => {
     const proj = projectOf(task)
@@ -207,27 +203,23 @@ export default function TasksPage({
       {/* Task action toast */}
       <Toast open={!!toast} title={toast?.title} sub={toast?.sub} onAction={toast?.undoFn} />
 
-      {/* Page header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-tx">Tasks</h1>
-          <p className="text-sm text-sub mt-0.5">{pendingCount} pending · {doneCount} done</p>
-        </div>
-        <button
-          onClick={() => { setModalTask(undefined); setShowModal(true) }}
-          className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover active:scale-95 transition-all">
-          <HiPlus size={14} /> New task
-        </button>
+      {/* Page header — phone only; the top bar carries it on large screens */}
+      <div className="md:hidden">
+        <h1 className="text-title font-extrabold text-tx leading-tight">Tasks</h1>
+        <p className="text-meta text-sub">{pendingCount} open · {doneCount} done</p>
       </div>
 
       {/* Search */}
-      <div className="glass flex items-center gap-3 rounded-xl px-4 py-2.5">
-        <HiMagnifyingGlass size={14} className="text-sub shrink-0" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks, subtasks, projects…"
-          className="bg-transparent outline-none text-sm text-tx placeholder:text-sub flex-1" />
+      <div className="flex items-center gap-3 min-h-13 px-4 rounded-control border border-border bg-panel">
+        <HiMagnifyingGlass size={17} className="text-sub shrink-0" />
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          aria-label="Search tasks"
+          placeholder="Search tasks, subtasks, projects…"
+          className="flex-1 min-w-0 bg-transparent outline-none text-body text-tx placeholder:text-sub py-3" />
         {search && (
-          <button onClick={() => setSearch("")} aria-label="Clear search" className="text-sub hover:text-tx">
-            <HiXMark size={13} />
+          <button onClick={() => setSearch("")} aria-label="Clear search"
+            className="w-11 h-11 -mr-2 shrink-0 grid place-items-center text-sub hover:text-tx transition-colors">
+            <HiXMark size={16} />
           </button>
         )}
       </div>
@@ -236,7 +228,7 @@ export default function TasksPage({
       <TasksCalendar tasks={tasks} allHistory={allHistory} selected={selectedDate} onSelect={setSelectedDate} />
 
       {selectedDate ? (
-        <div className="flex items-center gap-3 glass rounded-xl px-4 py-2.5">
+        <div className="flex items-center gap-3 min-h-13 px-4 rounded-control border border-border bg-panel">
           <HiCalendarDays size={15} className="text-accent shrink-0" />
           <span className="flex-1 text-sm font-semibold text-tx truncate">
             {new Date(selectedDate + "T00:00").toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}
@@ -337,85 +329,18 @@ export default function TasksPage({
       )}
 
       {/* ── Pending tasks ─────────────────────────────────────────────────── */}
-      {selectedDate ? (
-        allPending.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between py-1">
-              <span className="text-xs font-bold text-sub">Due this day — {allPending.length}</span>
-            </div>
-            <div className="h-px bg-border mb-1" style={{ opacity: 0.5 }} />
-            {allPending.map(task => renderTask(task))}
-          </div>
-        )
-      ) : visible.length > 0 ? (
-        <div className="flex flex-col gap-1.5">
-
-          {/* Section header + view switch */}
-          <div className="flex items-center justify-between py-1 gap-3">
-            <span className="text-xs font-bold text-sub">
-              Pending — {allPending.length}
-            </span>
-            {projects.length > 0 && (
-              <div className="flex items-center gap-0.5 rounded-lg border border-border bg-surface2 p-0.5 shrink-0">
-                {([["all", "All tasks"], ["project", "By project"]] as const).map(([key, label]) => (
-                  <button key={key} onClick={() => setView(key)}
-                    aria-pressed={view === key}
-                    className={`min-h-11 px-3 rounded-md text-meta font-bold transition-colors
-                      ${view === key ? "bg-accent text-white" : "text-sub hover:text-tx"}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="h-px bg-border mb-1" style={{ opacity: 0.5 }} />
-
-          {allPending.length === 0 ? (
-            <p className="text-sm text-sub italic py-4 text-center">
-              {tasks.some(t => !t.done) ? "No pending tasks match this filter" : "Nothing pending — you're all caught up"}
-            </p>
-          ) : view === "all" || projects.length === 0 ? (
-            <>
-              {pinnedPending.length > 0 && (
-                <>
-                  <div className="flex items-center gap-1.5 pt-0.5">
-                    <HiMapPin size={11} className="text-accent" />
-                    <span className="text-caption font-bold text-accent">Pinned — {pinnedPending.length}</span>
-                  </div>
-                  {pinnedPending.map(task => renderTask(task))}
-                  <div className="h-px bg-border my-1.5" style={{ opacity: 0.5 }} />
-                </>
-              )}
-              {allPending.filter(t => !pinned.has(t.id)).map(task => renderTask(task))}
-            </>
-          ) : (
-            <>
-              {projects.map(proj => {
-                const group = allPending.filter(t => t.projectId === proj.id)
-                if (group.length === 0) return null
-                return (
-                  <div key={proj.id} className="flex flex-col gap-1.5">
-                    <button onClick={() => setActiveProject(proj)}
-                      className="flex items-center gap-1.5 pt-1 self-start group/h">
-                      <HiFolder size={11} style={{ color: proj.color }} />
-                      <span className="text-caption font-bold text-sub group-hover/h:text-accent transition-colors">
-                        {proj.name} — {group.length}
-                      </span>
-                    </button>
-                    {group.map(task => renderTask(task))}
-                  </div>
-                )
-              })}
-              {unassigned.length > 0 && (
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-caption font-bold text-sub pt-1">No project — {unassigned.length}</span>
-                  {unassigned.map(task => renderTask(task))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      ) : null}
+      {(selectedDate || visible.length > 0) && (
+        <TaskList
+          pending={allPending}
+          projects={projects}
+          pinnedIds={pinned}
+          selectedDate={selectedDate}
+          view={view}
+          onViewChange={setView}
+          onOpenProject={setActiveProject}
+          renderTask={renderTask}
+          hasAnyPending={tasks.some(t => !t.done)} />
+      )}
 
       {/* Completed */}
       {done.length > 0 && (
@@ -444,7 +369,7 @@ export default function TasksPage({
 
       {/* Empty state */}
       {visible.length === 0 && !deletePending && (
-        <div className="glass rounded-2xl px-5 py-12 text-center">
+        <div className="panel px-5 py-12 text-center">
           <HiFolderOpen size={28} className="text-sub mx-auto mb-3" />
           <p className="text-sub text-sm">{selectedDate ? "No tasks due this day" : "No tasks found"}</p>
           <button onClick={() => { setModalTask(undefined); setShowModal(true) }}

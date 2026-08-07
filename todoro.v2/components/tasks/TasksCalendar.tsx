@@ -4,7 +4,6 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react"
 import { HiChevronLeft, HiChevronRight, HiCalendarDays } from "react-icons/hi2"
 import { type Task } from "./TaskCard"
 import { type SessionRecord } from "../../app/page"
-import { getPriority } from "../../lib/theme"
 import Sheet from "../shared/Sheet"
 
 function localDate(ts: number = Date.now()) {
@@ -68,12 +67,13 @@ function DayCell({ ds, dayNum, isToday, isSel, dayTasks, sessions, ariaLabel, on
         </div>
       )}
 
-      {/* Task due dots — priority colors carry meaning */}
+      {/* Tasks due — accent means work owed, the neutral dots above mean work
+          done. These used to be tinted by priority, which was the last place in
+          the app where a colour alone carried meaning, at 6px. */}
       {dayTasks.length > 0 && (
-        <div className="flex gap-0.5 mt-0.5 flex-wrap justify-center px-1">
-          {dayTasks.slice(0, 3).map((t, j) => (
-            <span key={j} className="w-1.5 h-1.5 rounded-full"
-              style={{ background: getPriority(t.priority) }} />
+        <div className="flex gap-0.5 mt-0.5 justify-center px-1">
+          {dayTasks.slice(0, 3).map((_, j) => (
+            <span key={j} className="w-1.5 h-1.5 rounded-pill bg-accent" />
           ))}
         </div>
       )}
@@ -176,7 +176,7 @@ export default function TasksCalendar({ tasks, allHistory, selected, onSelect }:
 
   return (
     <>
-      <div className="glass rounded-2xl overflow-hidden">
+      <div className="panel overflow-hidden">
 
         {/* Header — week label + expand to month */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
@@ -270,7 +270,7 @@ export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
         </div>
       </div>
 
-      <div ref={scrollerRef} className="glass rounded-2xl px-4 py-4 overflow-x-auto">
+      <div ref={scrollerRef} className="panel px-4 py-4 overflow-x-auto">
         <div className="flex gap-1 min-w-max">
           {weeks.map((week, wi) => (
             <div key={wi} className="flex flex-col gap-1">
