@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { HiArrowsPointingOut, HiChevronLeft, HiArrowTopRightOnSquare, HiCheck } from "react-icons/hi2"
+import { HiArrowsPointingOut, HiChevronLeft, HiChevronRight, HiArrowTopRightOnSquare, HiCheck } from "react-icons/hi2"
 import TimerRing from "../components/timer/TimerRing"
-import ModeSelector, { type Mode } from "../components/timer/ModeSelector"
+import SessionSheet, { type Mode } from "../components/timer/SessionSheet"
 import TimerControls from "../components/timer/TimerControls"
 import TaskSelector from "../components/timer/TaskSelector"
+import Panel from "../components/shared/Panel"
 import { useTimerKeys } from "../hooks/useTimerKeys"
 import { useIsDesktop } from "../hooks/useMediaQuery"
 import { usePiP } from "../hooks/usePiP"
@@ -29,6 +30,8 @@ interface TimerPageProps {
   onQuickMode: (v: boolean) => void
   onStopAndRest: () => void
   onReverseMode: (v: boolean) => void
+  autoStart: boolean
+  onAutoStart: (v: boolean) => void
 }
 
 const PHASE = {
@@ -43,9 +46,11 @@ export default function TimerPage({
   reverseMode, dark,
   onToggle, onReset, onSkip, onModeChange, onTaskChange, onToggleSub,
   onFocusedChange, onQuickMode, onStopAndRest, onReverseMode,
+  autoStart, onAutoStart,
 }: TimerPageProps) {
   const [focused, setFocused] = useState(false)
   const [pipActive,  setPipActive]  = useState(false)
+  const [sheetOpen,  setSheetOpen]  = useState(false)
   const isDesktop = useIsDesktop()
   useTimerKeys({ onToggle, onReset, onSkip })
 
@@ -68,6 +73,7 @@ export default function TimerPage({
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
   }
   const todayKey = localDate()
+  const todayLog = allHistory.filter(s => localDate(s.at) === todayKey).slice().reverse()
   const todaySessionsForTask = allHistory.filter(s => s.taskId === activeTask.id && localDate(s.at) === todayKey).length
 
   const taskTitle = quickMode && !activeTask.title ? "" : activeTask.title
@@ -89,19 +95,18 @@ export default function TimerPage({
     alert("Picture-in-Picture is not supported in this browser.")
   }
 
-  // Rolling 25-min cycle progress for the progress bar in reverse mode
-  const REVERSE_CYCLE = 25 * 60
-  const reverseBarProgress = reverseMode && phase === "focus"
-    ? ((time % REVERSE_CYCLE) / REVERSE_CYCLE) * 100
-    : progress * 100
-
   const SubtaskList = () => <>{activeTask.subtasks.map(s => (
-    <div key={s.id} className="flex items-center gap-3">
-      <button onMouseDown={() => onToggleSub(activeTask.id, s.id)}
-        className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center ${s.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
-        {s.done && <HiCheck size={9} className="text-white" />}
+    <div key={s.id} className="flex items-center gap-2">
+      <button onClick={() => onToggleSub(activeTask.id, s.id)}
+        aria-pressed={s.done}
+        aria-label={s.done ? `Mark "${s.title}" as not done` : `Complete "${s.title}"`}
+        className="w-11 h-11 -ml-3.5 -my-2 shrink-0 grid place-items-center">
+        <span className={`w-4.5 h-4.5 rounded border-2 grid place-items-center transition-colors
+          ${s.done ? "bg-accent border-accent" : "border-border"}`}>
+          {s.done && <HiCheck size={9} className="text-white" />}
+        </span>
       </button>
-      <span className={`text-xs truncate flex-1 ${s.done ? "line-through text-sub" : "text-tx"}`}>{s.title}</span>
+      <span className={`text-meta truncate flex-1 ${s.done ? "line-through text-sub" : "text-tx"}`}>{s.title}</span>
     </div>
   ))}</>
 
@@ -109,7 +114,7 @@ export default function TimerPage({
     <div className="flex items-center gap-2">
       <div className="flex gap-1 flex-1">
         {Array.from({ length: activeTask.estimatedSessions }).map((_, i) => (
-          <div key={i} className={`h-1.5 flex-1 rounded-full ${i < activeTask.completedSessions ? "bg-tx" : "bg-ring"}`} />
+          <div key={i} className={`h-1.5 flex-1 rounded-chip ${i < activeTask.completedSessions ? "bg-accent" : "bg-border"}`} />
         ))}
       </div>
       <span className="text-caption text-sub">{activeTask.completedSessions}/{activeTask.estimatedSessions}</span>
@@ -157,129 +162,140 @@ export default function TimerPage({
   )
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-semibold text-tx">Timer</h1>
-          <p className="text-sm text-sub mt-0.5">
-            {allDone ? "All tasks completed" : `Session ${sessions + 1}/${totalSessions}`}
+    <div className="flex flex-col gap-gutter">
+
+      {/* Header — phone only; the top bar carries it on large screens */}
+      <div className="flex items-center gap-2">
+        <div className="md:hidden min-w-0">
+          <h1 className="text-title font-extrabold text-tx leading-tight">Timer</h1>
+          <p className="text-meta text-sub">
+            {allDone ? "All tasks completed" : `Session ${Math.min(sessions + 1, totalSessions)} of ${totalSessions}`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {/* PiP / Float button */}
+        <div className="ml-auto flex items-center gap-2">
           <button onClick={handlePiP}
             aria-label="Picture-in-Picture"
+            aria-pressed={pipActive}
             title={pip.supportsPiP ? "Picture-in-Picture" : "Float window (not supported)"}
-            className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-semibold transition-all
+            className={`w-11 h-11 grid place-items-center rounded-control border transition-all
               ${pipActive
                 ? "bg-accent/10 border-accent/40 text-accent"
                 : "bg-surface border-border text-sub hover:text-accent hover:border-accent/40"}`}>
-            <HiArrowTopRightOnSquare size={16} />
+            <HiArrowTopRightOnSquare size={17} />
           </button>
-          {/* Focus view */}
           <button onClick={() => setFocused(true)}
             aria-label="Enter focus view"
-            className="flex items-center gap-2 p-3 rounded-xl bg-surface2 border border-border text-sm font-semibold text-sub hover:text-accent hover:border-accent/40">
-            <HiArrowsPointingOut size={16} />
+            className="w-11 h-11 grid place-items-center rounded-control bg-surface border border-border
+              text-sub hover:text-accent hover:border-accent/40 transition-all">
+            <HiArrowsPointingOut size={17} />
           </button>
         </div>
       </div>
 
-      <div className="flex flex-col-reverse lg:flex-row gap-4">
-        <div className="glass flex flex-col items-center gap-3 sm:min-w-2xl shrink-0 rounded-2xl py-6">
-          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold border ${badge}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${dot} ${running ? "animate-pulse" : ""}`} />
+      {/* ── The timer. One ring, one button. ─────────────────────────────── */}
+      <Panel className="flex flex-col gap-5">
+        <div className="flex items-center gap-3">
+          <span className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-pill border
+            text-caption font-extrabold uppercase tracking-wider ${badge}`}>
+            <span className={`w-2 h-2 rounded-pill ${dot} ${running ? "animate-pulse" : ""}`} />
             {badgeLabel}
-            <span className="text-sub">·</span>
-            <span className="text-sub">
-              {reverseMode && phase === "focus"
-                ? "open-ended"
-                : `${!allDone && phase === "focus" ? focusMins : phase === "longbreak" ? longBreakMins : breakMins} min`}
-            </span>
-          </div>
+          </span>
+          <span className="ml-auto text-caption font-extrabold uppercase tracking-wider text-sub tabular-nums">
+            {reverseMode && phase === "focus"
+              ? `${minutes}m elapsed`
+              : `${Math.round(progress * 100)}% through`}
+          </span>
+        </div>
+
+        <div className="self-center">
           <TimerRing
             minutes={minutes} seconds={seconds} progress={progress}
             label={badgeLabel} spentLabel={spentLabel}
-            size={isDesktop ? 280 : 220} color={color}
+            size={isDesktop ? 280 : 240} color={color}
             reverseMode={reverseMode && phase === "focus"} />
-          <TimerControls
-            running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip}
-            phase={phase} reverseMode={reverseMode} onStopAndRest={onStopAndRest} />
         </div>
 
-        <div className="flex flex-col-reverse lg:flex-col flex-1 gap-5">
-          <div className="glass flex flex-col gap-3 rounded-2xl px-5 py-4">
-            <TaskSelector tasks={tasks} active={activeTask} onChange={onTaskChange} quickMode={quickMode} />
-            <ModeSelector
-              active={mode} customFocus={focusMins} customBreak={breakMins}
-              onChange={onModeChange}
-              reverseMode={reverseMode}
-              onReverseMode={onReverseMode}
-              quickMode={quickMode}
-              onQuickMode={onQuickMode} />
-            {isDesktop && (
-              <div className="flex items-center justify-center gap-4">
-                {[["Space", "Play/Pause"], ["R", "Reset"], ["S", "Skip"]].map(([k, a]) => (
-                  <div key={k} className="flex items-center gap-1.5">
-                    <kbd className="px-2 py-0.5 rounded-lg border border-border bg-surface text-caption font-mono">{k}</kbd>
-                    <span className="text-caption text-sub">{a}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="glass rounded-2xl px-5 py-4 flex flex-col gap-3">
-            <div className="flex justify-between text-xs font-semibold text-sub">
-              <span>
-                {reverseMode && phase === "focus"
-                  ? "↑ Counting up"
-                  : !allDone && phase === "focus" ? `Focus — ${focusMins} min`
-                  : phase === "longbreak" ? `Long Break — ${longBreakMins} min`
-                  : `Break — ${currentBreakMins} min`}
-              </span>
-              <span>
-                {reverseMode && phase === "focus"
-                  ? `${minutes}m elapsed`
-                  : `${Math.round(progress * 100)}%`}
-              </span>
+        {/* Working on */}
+        <div className="flex flex-col gap-2 border-t border-border pt-4">
+          <span className="text-caption font-extrabold uppercase tracking-wider text-sub">Working on</span>
+          <TaskSelector tasks={tasks} active={activeTask} onChange={onTaskChange} quickMode={quickMode} />
+          {!allDone && phase === "focus" && activeTask.estimatedSessions > 0 && <SessionBar />}
+          {!allDone && phase === "focus" && activeTask.subtasks.length > 0 && (
+            <div className="flex flex-col gap-2 pt-1">
+              <SubtaskList />
             </div>
-            <div className="h-2 rounded-full bg-ring overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-1000 ease-linear bg-tx"
-                style={{ width: `${reverseBarProgress}%` }} />
-            </div>
-            {!allDone && phase === "focus" && (
-              <div className="border-t border-border pt-3 flex flex-col gap-3">
-                {!quickMode || activeTask.title ? (
-                  <>
-                    <p className="text-xs font-semibold text-sub">{activeTask.title}</p>
-                    {todaySessionsForTask > 0 && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-sub">{todaySessionsForTask} {todaySessionsForTask === 1 ? "Pomodoro" : "Pomodoros"} today</span>
-                        <div className="flex gap-1 flex-1">
-                          {Array.from({ length: Math.min(todaySessionsForTask, 5) }).map((_, i) => (
-                            <div key={i} className="h-1.5 flex-1 rounded-full bg-tx" />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {activeTask.estimatedSessions > 0 && (
-                      <>
-                        <p className="text-xs font-semibold text-sub mt-2">Session Goal</p>
-                        <SessionBar />
-                      </>
-                    )}
-                    {activeTask.subtasks.length > 0 && <SubtaskList />}
-                  </>
-                ) : (
-                  <p className="text-xs text-sub italic">No task selected — Quick Mode active</p>
-                )}
-              </div>
-            )}
-          </div>
+          )}
         </div>
+
+        <TimerControls
+          running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip}
+          phase={phase} reverseMode={reverseMode} onStopAndRest={onStopAndRest} />
+
+        {isDesktop && (
+          <div className="flex items-center justify-center gap-4 border-t border-border pt-4">
+            {[["Space", "Play/Pause"], ["R", "Reset"], ["S", "Skip"]].map(([k, a]) => (
+              <div key={k} className="flex items-center gap-1.5">
+                <kbd className="px-2 py-0.5 rounded-chip border border-border bg-surface text-caption font-mono">{k}</kbd>
+                <span className="text-caption text-sub">{a}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+
+        {/* ── Today's sessions ──────────────────────────────────────────── */}
+        <Panel className="flex flex-col">
+          <h3 className="text-caption font-extrabold uppercase tracking-wider text-sub mb-1">Today&apos;s sessions</h3>
+          {todayLog.length === 0 ? (
+            <p className="text-meta text-sub py-3">Nothing logged yet — the first one starts above.</p>
+          ) : todayLog.map((s, i) => (
+            <div key={`${s.at}-${i}`} className="flex items-center gap-3 py-3 border-t border-border">
+              <span className="w-2.5 h-2.5 rounded-pill bg-accent shrink-0" />
+              <span className="flex-1 min-w-0 text-meta text-tx truncate">
+                {s.taskTitle || "Quick focus"}
+              </span>
+              <span className="text-caption text-sub tabular-nums shrink-0">
+                {new Date(s.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </div>
+          ))}
+        </Panel>
+
+        {/* ── Session settings ──────────────────────────────────────────── */}
+        <Panel className="flex flex-col">
+          <h3 className="text-caption font-extrabold uppercase tracking-wider text-sub mb-1">Session settings</h3>
+          <button onClick={() => setSheetOpen(true)}
+            className="flex items-center gap-3 py-4 border-t border-border text-left">
+            <span className="flex-1 min-w-0">
+              <span className="block text-lead font-extrabold text-tx">Length &amp; modes</span>
+              <span className="block text-meta text-sub">
+                {reverseMode ? "Counting up" : `${focusMins} + ${breakMins} min`}
+                {" · "}{autoStart ? "auto-start on" : "manual start"}
+                {quickMode ? " · quick focus" : ""}
+              </span>
+            </span>
+            <HiChevronRight size={17} className="text-sub shrink-0" />
+          </button>
+          <div className="flex items-center gap-3 py-4 border-t border-border">
+            <span className="flex-1 min-w-0">
+              <span className="block text-lead font-extrabold text-tx">Daily goal</span>
+              <span className="block text-meta text-sub">{totalSessions} sessions a day · set in Settings</span>
+            </span>
+          </div>
+        </Panel>
       </div>
+
+      {sheetOpen && (
+        <SessionSheet
+          mode={mode} focusMins={focusMins} breakMins={breakMins}
+          onModeChange={onModeChange}
+          quickMode={quickMode} onQuickMode={onQuickMode}
+          reverseMode={reverseMode} onReverseMode={onReverseMode}
+          autoStart={autoStart} onAutoStart={onAutoStart}
+          onClose={() => setSheetOpen(false)} />
+      )}
     </div>
   )
 }

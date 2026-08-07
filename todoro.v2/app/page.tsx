@@ -10,7 +10,7 @@ import Onboarding   from "../components/Onboarding"
 import NotifPrompt  from "../components/NotifPrompt"
 import ShopModal    from "../components/ShopModal"
 import Toast        from "../components/shared/Toast"
-import { type Mode } from "../components/timer/ModeSelector"
+import { type Mode } from "../components/timer/SessionSheet"
 import { type Task } from "../components/tasks/TaskCard"
 import TaskModal, { type Project, formatDueLabel } from "../components/tasks/TaskModal"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
@@ -723,7 +723,8 @@ export default function Home() {
           onToggle={handleToggle} onReset={handleReset} onSkip={handleSkip}
           onModeChange={handleModeChange} onTaskChange={handleSelectTask} onQuickMode={setQuickMode}
           onToggleSub={handleToggleSub} onFocusedChange={setFocusedView} allHistory={allHistory}
-          onStopAndRest={handleStopAndRest} onReverseMode={setReverseMode} />
+          onStopAndRest={handleStopAndRest} onReverseMode={setReverseMode}
+          autoStart={autoStart} onAutoStart={setAutoStart} />
       )}
 
       {tab === "tasks" && (
