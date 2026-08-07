@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { HiUser, HiMoon, HiSun, HiComputerDesktop, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward, HiTrash } from "react-icons/hi2"
+import { HiUser, HiMoon, HiSun, HiComputerDesktop, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward, HiTrash, HiPlay } from "react-icons/hi2"
 import { MdColorLens } from "react-icons/md";
 import { FaBullseye } from "react-icons/fa"
 import Panel from "./shared/Panel"
@@ -9,6 +9,7 @@ import Toggle from "./shared/Toggle"
 import Stepper from "./shared/Stepper"
 import Segmented, { type SegmentedOption } from "./shared/Segmented"
 import { adjustmentNote, parseHex, type AccentSet } from "../lib/accent"
+import { ALERT_SOUNDS, MAX_CUSTOM_BYTES, playAlert, readAudioFile, stopAlert, type AlertSound } from "../lib/sound"
 
 type Theme = "system" | "light" | "dark"
 
@@ -16,6 +17,9 @@ interface SettingsPageProps {
   userName: string;  onUserName: (v: string) => void
   theme: Theme;      onTheme:    (v: Theme) => void
   sound: boolean;    onSound:    (v: boolean) => void
+  alertSound: AlertSound;   onAlertSound:  (v: AlertSound) => void
+  alertVolume: number;      onAlertVolume: (v: number) => void
+  alertCustom: string | null; onAlertCustom: (v: string | null) => void
   dailyGoal: number; onDailyGoal:(v: number) => void
   avatarUrl: string; onAvatarUrl:(v: string) => void
   accentTheme: string; onAccentTheme: (v: string) => void
@@ -32,11 +36,32 @@ const THEMES: SegmentedOption<Theme>[] = [
 
 export default function SettingsPage({
   userName, onUserName, theme, onTheme, sound, onSound, dailyGoal, onDailyGoal,
+  alertSound, onAlertSound, alertVolume, onAlertVolume, alertCustom, onAlertCustom,
   avatarUrl, onAvatarUrl, accentTheme, onAccentTheme, accentCustom, onAccentCustom,
   notifications, onNotifications, autoStart, onAutoStart
 }: SettingsPageProps) {
   const fileRef   = useRef<HTMLInputElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
+  const soundRef  = useRef<HTMLInputElement>(null)
+  const [soundError, setSoundError] = useState<string | null>(null)
+
+  const preview = () => playAlert({ sound: alertSound, custom: alertCustom, volume: alertVolume })
+
+  const handleSoundUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ""            // let the same file be picked again after an error
+    if (!file) return
+    setSoundError(null)
+    try {
+      const dataUrl = await readAudioFile(file)
+      onAlertCustom(dataUrl)
+      onAlertSound("custom")
+      stopAlert()
+      playAlert({ sound: "custom", custom: dataUrl, volume: alertVolume })
+    } catch (err) {
+      setSoundError(err instanceof Error ? err.message : "Couldn't use that file.")
+    }
+  }
 
   // The hex field is free text while you type; it only commits once it parses.
   const [hexDraft, setHexDraft] = useState((accentCustom?.raw ?? "#7C3AED").toUpperCase())
@@ -248,8 +273,87 @@ export default function SettingsPage({
         </div>
       </Section>
 
-      <Section label="Focus">
+      <Section label="Alert sound">
         <ToggleRow label="Sound Effects" icon={<HiSpeakerWave size={18} className="text-sub shrink-0" />} value={sound} onChange={onSound} />
+
+        {sound && (
+          <div className="flex flex-col gap-3 px-4 py-4">
+            <div className="flex items-center gap-3">
+              <span className="flex-1 text-caption font-extrabold uppercase tracking-wider text-tx">
+                Sound
+              </span>
+              <button onClick={preview}
+                className="shrink-0 flex items-center gap-1.5 min-h-11 px-3.5 rounded-control border border-border
+                  text-meta font-extrabold text-tx hover:border-accent hover:text-accent transition-colors">
+                <HiPlay size={14} /> Preview
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              {ALERT_SOUNDS.map(({ id, label, hint }) => {
+                const active   = alertSound === id
+                const disabled = id === "custom" && !alertCustom
+                return (
+                  <button key={id}
+                    onClick={() => { if (!disabled) { onAlertSound(id); playAlert({ sound: id, custom: alertCustom, volume: alertVolume }) } }}
+                    disabled={disabled}
+                    aria-pressed={active}
+                    className={`flex items-center gap-3 min-h-14 px-3.5 rounded-control border text-left
+                      transition-colors disabled:opacity-40
+                      ${active ? "border-accent bg-accent/10" : "border-border hover:border-accent/40"}`}>
+                    <span className={`w-4.5 h-4.5 shrink-0 rounded-pill border-2 grid place-items-center
+                      ${active ? "border-accent" : "border-border"}`}>
+                      {active && <span className="w-2 h-2 rounded-pill bg-accent" />}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`block text-meta font-extrabold ${active ? "text-accent" : "text-tx"}`}>{label}</span>
+                      <span className="block text-caption text-sub truncate">
+                        {id === "custom" && !alertCustom ? "Upload a file to use this" : hint}
+                      </span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Upload */}
+            <div className="flex items-center gap-2">
+              <button onClick={() => soundRef.current?.click()}
+                className="flex items-center gap-1.5 min-h-11 px-3.5 rounded-control border border-border
+                  text-meta font-extrabold text-tx hover:border-accent hover:text-accent transition-colors">
+                <HiArrowUpTray size={14} /> {alertCustom ? "Replace file" : "Upload sound"}
+              </button>
+              {alertCustom && (
+                <button onClick={() => { onAlertCustom(null); if (alertSound === "custom") onAlertSound("chime") }}
+                  className="min-h-11 px-3 text-meta font-extrabold text-priority-high hover:underline">
+                  Remove
+                </button>
+              )}
+            </div>
+            <input ref={soundRef} type="file" accept="audio/*" className="hidden" onChange={handleSoundUpload} />
+            <p className={`text-caption ${soundError ? "text-priority-high" : "text-sub"}`}>
+              {soundError ??
+                `Any audio file up to ${Math.round(MAX_CUSTOM_BYTES / 1024)} KB. Long files stop after 8 seconds.`}
+            </p>
+
+            {/* Volume */}
+            <label className="flex items-center gap-3 pt-1">
+              <span className="text-caption font-extrabold uppercase tracking-wider text-tx shrink-0">Volume</span>
+              <input type="range" min={0} max={100} step={5}
+                value={Math.round(alertVolume * 100)}
+                onChange={e => onAlertVolume(Number(e.target.value) / 100)}
+                onMouseUp={preview} onTouchEnd={preview}
+                aria-label="Alert volume"
+                className="flex-1 accent-accent min-h-11" />
+              <span className="text-meta font-extrabold text-tx tabular-nums w-10 text-right shrink-0">
+                {Math.round(alertVolume * 100)}
+              </span>
+            </label>
+          </div>
+        )}
+      </Section>
+
+      <Section label="Focus">
         <ToggleRow label="Push Notifications" icon={<HiBell size={18} className="text-sub shrink-0" />} value={notifications} onChange={handleNotificationsToggle} />
         <ToggleRow label="Auto-start breaks & focus" icon={<HiForward size={18} className="text-sub shrink-0" />} value={autoStart} onChange={onAutoStart} />
         <div className="flex items-center gap-3 px-4 py-4">
@@ -292,7 +396,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.14.0" />
+        <InfoRow label="Version" value="2.15.0" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
     </div>

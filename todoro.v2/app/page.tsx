@@ -16,6 +16,7 @@ import TaskModal, { type Project, formatDueLabel } from "../components/tasks/Tas
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
 import { pickNextTask, sortTasks } from "../lib/taskOrder"
 import { applyAccentSet, buildAccentSet, type AccentSet } from "../lib/accent"
+import { playAlert, type AlertSound } from "../lib/sound"
 import { useWakeLock } from "../hooks/useWakeLock"
 import { useDocumentTitle } from "../hooks/useDocumentTitle"
 import { useNotifications } from "../hooks/useNotifications"
@@ -205,6 +206,9 @@ export default function Home() {
   const [systemDark, setSystemDark] = useState(systemPrefersDark)
   const dark = theme === "system" ? systemDark : theme === "dark"
   const [sound,     setSound]     = useState(() => load("todoro:sound",     true))
+  const [alertSound,  setAlertSound]  = useState<AlertSound>(() => load("todoro:alertSound", "chime"))
+  const [alertVolume, setAlertVolume] = useState<number>(() => load("todoro:alertVolume", 0.9))
+  const [alertCustom, setAlertCustom] = useState<string | null>(() => load("todoro:alertCustom", null))
   const [dailyGoal, setDailyGoal] = useState(() => load("todoro:dailyGoal", 5))
   const [avatarUrl, setAvatarUrl] = useState(() => load("todoro:avatarUrl", ""))
   const [quickMode, setQuickMode] = useState(() => load("todoro:quickMode", false))
@@ -277,7 +281,6 @@ export default function Home() {
   useEffect(() => { save("todoro:projects", projects) }, [projects])
   // ─────────────────────────────────────────────────────────────────
 
-  const audioCtxRef = useRef<AudioContext | null>(null)
 
   const currentBreakMins = phase === "longbreak" ? LONG_BREAK_MINS : breakMins
   const maxTime  = phase === "focus" ? focusMins * 60 : currentBreakMins * 60
@@ -346,6 +349,9 @@ export default function Home() {
   useEffect(() => { save("todoro:userName",    userName)    }, [userName])
   useEffect(() => { save("todoro:theme",       theme)       }, [theme])
   useEffect(() => { save("todoro:sound",       sound)       }, [sound])
+  useEffect(() => { save("todoro:alertSound",  alertSound)  }, [alertSound])
+  useEffect(() => { save("todoro:alertVolume", alertVolume) }, [alertVolume])
+  useEffect(() => { save("todoro:alertCustom", alertCustom) }, [alertCustom])
   useEffect(() => { save("todoro:dailyGoal",   dailyGoal)   }, [dailyGoal])
   useEffect(() => { save("todoro:avatarUrl",   avatarUrl)   }, [avatarUrl])
   useEffect(() => { save("todoro:quickMode",   quickMode)   }, [quickMode])
@@ -411,21 +417,8 @@ export default function Home() {
 
   const playChime = useCallback((isFocus: boolean) => {
     if (!sound) return
-    try {
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext()
-      const ctx   = audioCtxRef.current
-      const freqs = isFocus ? [784, 659, 523] : [523, 659, 784]
-      freqs.forEach((freq, i) => {
-        const osc = ctx.createOscillator(); const gain = ctx.createGain()
-        osc.connect(gain); gain.connect(ctx.destination)
-        osc.frequency.value = freq
-        const t = ctx.currentTime + i * 0.15
-        gain.gain.setValueAtTime(0.15, t)
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4)
-        osc.start(t); osc.stop(t + 0.4)
-      })
-    } catch {}
-  }, [sound])
+    playAlert({ sound: alertSound, custom: alertCustom, volume: alertVolume, rising: isFocus })
+  }, [sound, alertSound, alertCustom, alertVolume])
 
   const advancePhase = useCallback((completed: boolean) => {
     setRunning(false)
@@ -769,6 +762,9 @@ export default function Home() {
           userName={userName}     onUserName={setUserName}
           theme={theme}           onTheme={setTheme}
           sound={sound}           onSound={setSound}
+          alertSound={alertSound}   onAlertSound={setAlertSound}
+          alertVolume={alertVolume} onAlertVolume={setAlertVolume}
+          alertCustom={alertCustom} onAlertCustom={setAlertCustom}
           dailyGoal={dailyGoal}   onDailyGoal={setDailyGoal}
           avatarUrl={avatarUrl}   onAvatarUrl={setAvatarUrl}
           accentTheme={accentTheme} onAccentTheme={setAccentTheme}
