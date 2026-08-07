@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import { HiUser, HiMoon, HiSun, HiComputerDesktop, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward, HiTrash } from "react-icons/hi2"
 import { MdColorLens } from "react-icons/md";
 import { FaBullseye } from "react-icons/fa"
@@ -8,6 +8,7 @@ import Panel from "./shared/Panel"
 import Toggle from "./shared/Toggle"
 import Stepper from "./shared/Stepper"
 import Segmented, { type SegmentedOption } from "./shared/Segmented"
+import { adjustmentNote, parseHex, type AccentSet } from "../lib/accent"
 
 type Theme = "system" | "light" | "dark"
 
@@ -18,6 +19,7 @@ interface SettingsPageProps {
   dailyGoal: number; onDailyGoal:(v: number) => void
   avatarUrl: string; onAvatarUrl:(v: string) => void
   accentTheme: string; onAccentTheme: (v: string) => void
+  accentCustom: AccentSet | null; onAccentCustom: (rawHex: string) => void
   notifications: boolean; onNotifications: (v: boolean) => void
   autoStart: boolean; onAutoStart: (v: boolean) => void
 }
@@ -30,11 +32,21 @@ const THEMES: SegmentedOption<Theme>[] = [
 
 export default function SettingsPage({
   userName, onUserName, theme, onTheme, sound, onSound, dailyGoal, onDailyGoal,
-  avatarUrl, onAvatarUrl, accentTheme, onAccentTheme, notifications, onNotifications,
-  autoStart, onAutoStart
+  avatarUrl, onAvatarUrl, accentTheme, onAccentTheme, accentCustom, onAccentCustom,
+  notifications, onNotifications, autoStart, onAutoStart
 }: SettingsPageProps) {
   const fileRef   = useRef<HTMLInputElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
+
+  // The hex field is free text while you type; it only commits once it parses.
+  const [hexDraft, setHexDraft] = useState((accentCustom?.raw ?? "#7C3AED").toUpperCase())
+  const draftHex   = parseHex(hexDraft)
+  const customSwatch = accentCustom?.raw ?? "#7c3aed"
+  const commitHex = (v: string) => {
+    setHexDraft(v)
+    const ok = parseHex(v)
+    if (ok) onAccentCustom(ok)
+  }
 
   const handleNotificationsToggle = async (v: boolean) => {
     if (v && "Notification" in window && Notification.permission !== "granted") {
@@ -193,17 +205,45 @@ export default function SettingsPage({
               {ACCENT_THEMES.find(t => t.id === accentTheme)?.label ?? accentTheme}
             </span>
           </div>
-          <div className="flex flex-wrap gap-2.5 pl-8">
+          <div className="flex flex-wrap gap-2 pl-8">
             {ACCENT_THEMES.map(({ id, color, label }) => (
               <button key={id} onClick={() => onAccentTheme(id)} title={label} aria-label={label}
-                className="w-7 h-7 rounded-full transition-all duration-100 active:scale-90"
-                style={{
-                  backgroundColor: color,
-                  outline: accentTheme === id ? `2px solid ${color}` : "none",
-                  outlineOffset: "2px",
-                  transform: accentTheme === id ? "scale(1.18)" : "scale(1)",
-                }} />
+                aria-pressed={accentTheme === id}
+                className="w-11 h-11 grid place-items-center rounded-control active:scale-90 transition-transform">
+                <span className="w-7 h-7 rounded-pill block"
+                  style={{
+                    backgroundColor: color,
+                    outline: accentTheme === id ? `2px solid ${color}` : "none",
+                    outlineOffset: "2px",
+                  }} />
+              </button>
             ))}
+          </div>
+
+          {/* Custom colour — any hex, nudged until it reads on both grounds */}
+          <div className={`flex items-center gap-3 pl-8 pr-1 py-3 rounded-control border transition-colors
+            ${accentTheme === "custom" ? "border-tx" : "border-border"}`}>
+            <label className="relative shrink-0 grid place-items-center cursor-pointer"
+              title="Pick a custom accent colour">
+              <span className="w-11 h-11 rounded-control border border-border block"
+                style={{ backgroundColor: accentTheme === "custom" ? "var(--accent)" : customSwatch }} />
+              <input type="color" value={customSwatch}
+                aria-label="Pick a custom accent colour"
+                onChange={e => commitHex(e.target.value.toUpperCase())}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer border-0 p-0" />
+            </label>
+            <div className="flex-1 min-w-0">
+              <p className="text-meta font-bold text-tx">Your own colour</p>
+              <p className="text-caption text-sub text-pretty">{adjustmentNote(hexDraft)}</p>
+            </div>
+            <input value={hexDraft}
+              aria-label="Accent hex colour"
+              placeholder="#7C3AED"
+              onChange={e => commitHex(e.target.value)}
+              onFocus={() => { if (draftHex && accentCustom) onAccentTheme("custom") }}
+              className={`w-26 min-h-11 shrink-0 px-2 rounded-control border bg-transparent text-tx
+                text-meta font-bold tracking-wider uppercase text-center outline-none transition-colors
+                ${draftHex ? "border-border focus:border-accent" : "border-priority-high"}`} />
           </div>
         </div>
       </Section>
@@ -252,7 +292,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.10.0" />
+        <InfoRow label="Version" value="2.11.0" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
     </div>

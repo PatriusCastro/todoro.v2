@@ -13,12 +13,18 @@ import "./globals.css"
 // the OS preference, then sets the .dark class on <html> so there's no flash and
 // portals/scrim inherit the right tokens.
 const themeScript = `(function(){try{
-var t=localStorage.getItem('todoro:theme');
+var tr=localStorage.getItem('todoro:theme');
+var t=tr&&tr.charAt(0)==='"'?JSON.parse(tr):tr;
 if(t==null){var d=localStorage.getItem('todoro:dark');t=(d==null)?'system':(JSON.parse(d)?'dark':'light');}
 var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
 document.documentElement.classList.toggle('dark',dark);
 var a=JSON.parse(localStorage.getItem('todoro:accentTheme')||'"blue"');
-if(a&&a!=='blue')document.documentElement.setAttribute('data-theme',a);
+if(a==='custom'){
+var c=JSON.parse(localStorage.getItem('todoro:accentCustom')||'null');
+if(c){var v=dark?c.dark:c.light,s=document.documentElement.style;
+s.setProperty('--accent',v.accent);s.setProperty('--accent-hover',v.hover);
+s.setProperty('--accent-dim',v.dim);s.setProperty('--accent-glow',v.glow);}
+}else if(a&&a!=='blue')document.documentElement.setAttribute('data-theme',a);
 }catch(e){}})();`
 
 export const metadata: Metadata = {

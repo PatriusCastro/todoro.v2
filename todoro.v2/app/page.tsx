@@ -15,6 +15,7 @@ import { type Task } from "../components/tasks/TaskCard"
 import TaskModal, { type Project, formatDueLabel } from "../components/tasks/TaskModal"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
 import { pickNextTask, sortTasks } from "../lib/taskOrder"
+import { applyAccentSet, buildAccentSet, type AccentSet } from "../lib/accent"
 import { useWakeLock } from "../hooks/useWakeLock"
 import { useDocumentTitle } from "../hooks/useDocumentTitle"
 import { useNotifications } from "../hooks/useNotifications"
@@ -96,7 +97,12 @@ function save(key: string, value: unknown) {
 // Tri-state theme with one-time migration from the old boolean `todoro:dark`.
 function loadTheme(): Theme {
   try {
-    const t = localStorage.getItem("todoro:theme")
+    // save() writes through JSON.stringify, so this arrives quoted ("dark").
+    // Both readers used to compare it raw, so an explicit Light/Dark choice
+    // never matched and silently fell back to "system" on every reload.
+    // Unquoted values are still accepted in case anything wrote one directly.
+    const raw = localStorage.getItem("todoro:theme")
+    const t   = raw && raw.charAt(0) === '"' ? JSON.parse(raw) : raw
     if (t === "system" || t === "light" || t === "dark") return t
     const old = localStorage.getItem("todoro:dark")
     if (old !== null) return JSON.parse(old) ? "dark" : "light"
@@ -211,6 +217,9 @@ export default function Home() {
   const [breakMins, setBreakMins] = useState<number>(() => load("todoro:breakMins", 5))
 
   const [accentTheme, setAccentTheme] = useState<string>(() => load("todoro:accentTheme", "blue"))
+  const [accentCustom, setAccentCustom] = useState<AccentSet | null>(
+    () => load<AccentSet | null>("todoro:accentCustom", null)
+  )
 
   // Restore the timer where it was left off — always paused, so time spent with
   // the app closed is never counted as focus.
@@ -343,6 +352,7 @@ export default function Home() {
   useEffect(() => { save("todoro:protectedDates", protectedDates) }, [protectedDates])
   useEffect(() => { save("todoro:history",     allHistory)  }, [allHistory])
   useEffect(() => { save("todoro:accentTheme", accentTheme) }, [accentTheme])
+  useEffect(() => { save("todoro:accentCustom", accentCustom) }, [accentCustom])
   useEffect(() => { save("todoro:notifications", notifications) }, [notifications])
   useEffect(() => { save("todoro:autoStart",     autoStart)     }, [autoStart])
   useEffect(() => { save("todoro:onboarded",     onboarded)     }, [onboarded])
@@ -364,9 +374,17 @@ export default function Home() {
 
   useEffect(() => {
     const html = document.documentElement
+    // A custom accent is applied as inline vars (both themes precomputed at save
+    // time); the presets are a data-theme attribute. Only ever one at a time.
+    if (accentTheme === "custom" && accentCustom) {
+      html.removeAttribute("data-theme")
+      applyAccentSet(accentCustom, dark)
+      return
+    }
+    applyAccentSet(null, dark)
     if (accentTheme === "blue") html.removeAttribute("data-theme")
     else html.setAttribute("data-theme", accentTheme)
-  }, [accentTheme])
+  }, [accentTheme, accentCustom, dark])
 
   // Track the OS color-scheme so "system" stays live as the user flips it
   useEffect(() => {
@@ -746,6 +764,13 @@ export default function Home() {
           dailyGoal={dailyGoal}   onDailyGoal={setDailyGoal}
           avatarUrl={avatarUrl}   onAvatarUrl={setAvatarUrl}
           accentTheme={accentTheme} onAccentTheme={setAccentTheme}
+          accentCustom={accentCustom}
+          onAccentCustom={raw => {
+            const set = buildAccentSet(raw)
+            if (!set) return
+            setAccentCustom(set)
+            setAccentTheme("custom")
+          }}
           notifications={notifications} onNotifications={setNotifications}
           autoStart={autoStart} onAutoStart={setAutoStart} />
       )}
