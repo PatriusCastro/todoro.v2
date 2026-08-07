@@ -644,9 +644,30 @@ export default function Home() {
     running, progress, sessions, totalSessions: dailyGoal, cycleCount,
   }
 
+  // Shell chrome. The header copy lives here rather than in AppShell because
+  // this is where the counts and timer state already are.
+  const openCount = tasks.filter(t => !t.done).length
+  const doneCount = tasks.length - openCount
+  const HEADERS: Record<Tab, [string, string]> = {
+    home:     [`${getGreeting()}, ${userName}`, `${sessions} of ${dailyGoal} sessions · ${openCount} open`],
+    tasks:    ["Tasks",    `${openCount} open · ${doneCount} done`],
+    timer:    ["Timer",    `Session ${Math.min(sessions + 1, dailyGoal)} of ${dailyGoal} · ${focusMins} + ${breakMins} min`],
+    settings: ["Settings", "Make Todoro yours"],
+  }
+  const shellProps = {
+    activeTab: tab, onTabChange: goToTab, dark, userName, streak, level: lvl.level,
+    running, phase, hideNavbar: focusedView, avatarUrl,
+    onQuickAdd: () => setShowAdd(true),
+    openCount,
+    headerTitle:    HEADERS[tab][0],
+    headerSubtitle: HEADERS[tab][1],
+    // Anything that owns the screen hides the FAB, so it can't sit on top of a sheet.
+    overlayOpen: showAdd || showShop || notifPrompt || !onboarded,
+  }
+
   if (!hydrated) {
     return (
-      <AppShell activeTab={tab} onTabChange={goToTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onQuickAdd={() => setShowAdd(true)}>
+      <AppShell {...shellProps}>
         {/* Skeleton of the Home layout — a blank "Loading…" reads as a broken
             launch on every cold start, which is every launch for a PWA. */}
         <div className="flex flex-col gap-5 animate-pulse" aria-busy="true" aria-label="Loading Todoro">
@@ -677,7 +698,7 @@ export default function Home() {
   }
 
   return (
-    <AppShell activeTab={tab} onTabChange={goToTab} dark={dark} userName={userName} streak={streak} running={running} phase={phase} hideNavbar={focusedView} avatarUrl={avatarUrl} onQuickAdd={() => setShowAdd(true)}>
+    <AppShell {...shellProps}>
 
       {/* Session complete toast */}
       <Toast

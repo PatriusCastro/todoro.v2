@@ -99,7 +99,7 @@ export default function ProjectModal({ project, taskCount = 0, onSave, onDelete,
               style={{ backgroundColor: `${color}22` }}>
               <HiFolder size={18} style={{ color }} />
             </div>
-            <span className="text-[13px] font-semibold text-tx truncate flex-1">
+            <span className="text-meta font-semibold text-tx truncate flex-1">
               {name.trim() || "Project name"}
             </span>
           </div>

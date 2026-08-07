@@ -29,7 +29,7 @@ export default function ProjectCard({ project, tasks, onClick }: ProjectCardProp
         <HiFolder size={24} style={{ color: project.color }} />
       </div>
       
-      <span className="w-full text-[13px] font-semibold text-tx truncate leading-none text-center">
+      <span className="w-full text-meta font-semibold text-tx truncate leading-none text-center">
         {project.name}
       </span>
 

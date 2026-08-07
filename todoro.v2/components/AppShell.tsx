@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { useIsTablet } from "../hooks/useMediaQuery"
-import { usePillAnimation } from "../hooks/usePillAnimation"
 import { HiHome, HiOutlineHome, HiClipboardList, HiOutlineClipboardList, HiClock, HiOutlineClock, HiCog, HiOutlineCog } from "react-icons/hi"
 import { HiPlus } from "react-icons/hi2"
 
@@ -16,43 +15,69 @@ interface AppShellProps {
   dark:          boolean
   userName:      string
   streak:        number
+  level:         number
   running:       boolean
   phase:         Phase
   hideNavbar?:   boolean
   avatarUrl?:    string
   onQuickAdd:    () => void
+  /** Pending tasks — badged on the Tasks rail item. */
+  openCount:     number
+  /** Large-screen top bar copy; the caller already holds the state to build it. */
+  headerTitle:    string
+  headerSubtitle: string
+  /** Suppresses the FAB while a modal or sheet owns the screen. */
+  overlayOpen?:   boolean
 }
 
 const NAV: { id: Tab; label: string }[] = [
-  { id: "home",     label: "Home"     },
+  { id: "home",     label: "Today"    },
   { id: "tasks",    label: "Tasks"    },
   { id: "timer",    label: "Timer"    },
   { id: "settings", label: "Settings" },
 ]
 
-function NavIcon({ id, active }: { id: Tab; active: boolean }) {
-  const sz = 20
+// The FAB only appears where creating a task is the obvious next action.
+const FAB_TABS: Record<Tab, string | null> = {
+  home: "Add", tasks: "New task", timer: null, settings: null,
+}
+
+function NavIcon({ id, active, size = 20 }: { id: Tab; active: boolean; size?: number }) {
   switch (id) {
-    case "home":     return active ? <HiHome size={sz} />          : <HiOutlineHome size={sz} />
-    case "tasks":    return active ? <HiClipboardList size={sz} /> : <HiOutlineClipboardList size={sz} />
-    case "timer":    return active ? <HiClock size={sz} />         : <HiOutlineClock size={sz} />
-    case "settings": return active ? <HiCog size={sz} />           : <HiOutlineCog size={sz} />
+    case "home":     return active ? <HiHome size={size} />          : <HiOutlineHome size={size} />
+    case "tasks":    return active ? <HiClipboardList size={size} /> : <HiOutlineClipboardList size={size} />
+    case "timer":    return active ? <HiClock size={size} />         : <HiOutlineClock size={size} />
+    case "settings": return active ? <HiCog size={size} />           : <HiOutlineCog size={size} />
   }
+}
+
+function Avatar({ userName, avatarUrl, size, ring }: {
+  userName: string; avatarUrl?: string; size: number; ring: string
+}) {
+  const initials = userName ? userName.slice(0, 2).toUpperCase() : "–"
+  return (
+    <div style={{ width: size, height: size }}
+      className={`rounded-control overflow-hidden shrink-0 border-2 transition-colors duration-300 ${ring}`}>
+      {avatarUrl
+        ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+        : <div className="w-full h-full bg-surface2 flex items-center justify-center text-sub font-extrabold"
+            style={{ fontSize: size * 0.32 }}>
+            {initials}
+          </div>
+      }
+    </div>
+  )
 }
 
 export default function AppShell({
   children, activeTab, onTabChange, dark,
-  userName, streak, running, phase, hideNavbar, avatarUrl,
-  onQuickAdd,
+  userName, streak, level, running, phase, hideNavbar, avatarUrl,
+  onQuickAdd, openCount, headerTitle, headerSubtitle, overlayOpen = false,
 }: AppShellProps) {
-  const isTablet  = useIsTablet()
-  const initials  = userName ? userName.slice(0, 2).toUpperCase() : "–"
-  const [mounted,  setMounted]  = useState(false)
-  const [animKey,  setAnimKey]  = useState(0)
+  const isTablet = useIsTablet()
+  const [mounted, setMounted] = useState(false)
+  const [animKey, setAnimKey] = useState(0)
   useEffect(() => { setTimeout(() => setMounted(true), 50) }, [])
-
-  const { containerRef: navContainerRef, btnRefs, pill } = usePillAnimation(activeTab, mounted)
-  const { containerRef: desktopNavRef, btnRefs: desktopBtnRefs, pill: desktopPill } = usePillAnimation(activeTab, mounted)
 
   const handleTabChange = (tab: Tab) => {
     if (tab === activeTab) return
@@ -60,156 +85,141 @@ export default function AppShell({
     onTabChange(tab)
   }
 
-  const ease      = "cubic-bezier(0.4,0,0.2,1)"
-  const pillTrans = `left 0.22s ${ease}, width 0.22s ${ease}`
-  const dotColor  = phase === "focus" ? "bg-priority-low" : "bg-priority-low"
+  const avatarRing = running
+    ? (phase === "focus" ? "border-accent" : "border-priority-low")
+    : "border-border"
 
-  const AvatarEl = ({ size = 32 }: { size?: number }) => (
-    <div style={{ width: size, height: size }}
-      className={`rounded-xl overflow-hidden shrink-0 border-2 transition-colors duration-300
-        ${running ? (phase === "focus" ? "border-accent" : "border-priority-low") : "border-border"}`}>
-      {avatarUrl
-        ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-        : <div className="w-full h-full bg-surface2 flex items-center justify-center text-sub font-semibold"
-            style={{ fontSize: size * 0.3 }}>
-            {initials}
-          </div>
-      }
+  const fabLabel  = FAB_TABS[activeTab]
+  const showFab   = !isTablet && !hideNavbar && !overlayOpen && fabLabel !== null
+  const showNewOnBar = activeTab === "home" || activeTab === "tasks"
+
+  const pageInner = (
+    <div key={animKey}
+      style={{ animation: "tabenter 0.2s ease both" }}
+      className="w-full max-w-7xl mx-auto px-4 lg:px-8 py-6">
+      {children}
     </div>
   )
 
-  // Mobile nav button — shared by the two halves either side of the center add
-  const renderNavButton = ({ id, label }: { id: Tab; label: string }) => {
-    const active = activeTab === id
-    const isMe   = id === "settings"
+  // ── Tablet / desktop: side rail + top bar ────────────────────────────────
+  if (isTablet) {
+    if (hideNavbar) {
+      return <div className="min-h-dvh bg-bg text-tx">{pageInner}</div>
+    }
     return (
-      <div key={id} className="flex-1 flex justify-center">
-      <button
-        ref={el => { if (el) btnRefs.current.set(id, el); else btnRefs.current.delete(id) }}
-        onClick={() => handleTabChange(id)}
-        aria-current={active ? "page" : undefined}
-        className={`relative z-10 flex flex-col items-center justify-center gap-1
-          min-h-14 px-4 py-2 select-none transition-colors duration-300
-          ${active ? "text-accent scale-105" : "text-sub hover:text-tx"}`}>
-        {isMe
-          ? <span className={`w-5 h-5 rounded-lg overflow-hidden border block
-                ${active ? "border-border" : "border-border/50"}`}>
-              {avatarUrl
-                ? <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
-                : <span className="w-full h-full flex items-center justify-center font-semibold text-[8px] bg-surface2 text-sub">
-                    {initials}
-                  </span>
-              }
+      <div className="min-h-dvh bg-bg text-tx flex">
+
+        <nav aria-label="Main" className="fixed inset-y-0 left-0 w-59 flex flex-col border-r border-border bg-bg z-40">
+          <div className="px-5 pt-6 pb-5 border-b border-border">
+            <div className="flex items-center gap-2">
+              <img src={dark ? "/icons/todoro-light.png" : "/icons/todoro-dark.png"} alt="" className="w-5 h-5" />
+              <span className="text-heading font-extrabold text-tx leading-none">Todoro</span>
+            </div>
+            <p className="text-caption uppercase tracking-wider text-sub mt-1.5">Focus &amp; tasks</p>
+          </div>
+
+          <div className="flex flex-col py-3">
+            {NAV.map(({ id, label }) => {
+              const active = activeTab === id
+              const badge  = id === "tasks" && openCount > 0 ? String(openCount) : null
+              return (
+                <button key={id} onClick={() => handleTabChange(id)}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-3 w-full min-h-12 pr-5 text-lead font-extrabold
+                    transition-colors duration-150 ${active ? "text-accent" : "text-tx hover:text-accent"}`}>
+                  <span className={`w-1 h-6 rounded-chip shrink-0 ${active ? "bg-accent" : "bg-transparent"}`} />
+                  <NavIcon id={id} active={active} size={19} />
+                  <span className="flex-1 text-left">{label}</span>
+                  {badge && (
+                    <span className={`text-meta font-semibold tabular-nums ${active ? "text-accent" : "text-sub"}`}>
+                      {badge}
+                    </span>
+                  )}
+                  {id === "timer" && running && (
+                    <span className="w-2 h-2 rounded-pill bg-priority-low shrink-0" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          <button onClick={() => handleTabChange("settings")}
+            className="mt-auto flex items-center gap-3 px-5 py-4 border-t border-border text-left hover:opacity-75 transition-opacity">
+            <Avatar userName={userName} avatarUrl={avatarUrl} size={38} ring={avatarRing} />
+            <span className="min-w-0">
+              <span className="block text-meta font-extrabold text-tx leading-tight truncate">{userName}</span>
+              <span className="block text-caption text-sub">Lv {level} · {streak}d streak</span>
             </span>
-          : <NavIcon id={id} active={active} />
-        }
-        <span className="font-semibold leading-none text-caption">{label}</span>
-        {id === "timer" && running && (
-          <span className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${dotColor}`} />
-        )}
-      </button>
+          </button>
+        </nav>
+
+        <div className="flex-1 flex flex-col min-w-0 ml-59">
+          <header className={`sticky top-0 z-30 flex items-center gap-4 px-6 py-3.5 border-b border-border bg-bg
+            transition-opacity duration-500 ${mounted ? "opacity-100" : "opacity-0"}`}>
+            <div className="min-w-0">
+              <h1 className="text-heading font-extrabold text-tx leading-tight truncate">{headerTitle}</h1>
+              <p className="text-meta text-sub truncate">{headerSubtitle}</p>
+            </div>
+            {showNewOnBar && (
+              <button onClick={onQuickAdd}
+                className="ml-auto shrink-0 flex items-center gap-2 min-h-11 px-4 rounded-control
+                  bg-accent text-white text-meta font-extrabold hover:bg-accent-hover active:scale-95 transition-all">
+                <HiPlus size={17} />
+                New task
+              </button>
+            )}
+          </header>
+          <main className="flex-1">{pageInner}</main>
+        </div>
       </div>
     )
   }
 
+  // ── Phone: bottom tabs + contextual FAB ──────────────────────────────────
   return (
-    <div>
-      <div className="min-h-dvh bg-bg text-tx flex flex-col">
+    <div className="min-h-dvh bg-bg text-tx flex flex-col">
+      <main className={`flex-1 ${hideNavbar ? "" : "pb-32"}`}>{pageInner}</main>
 
-        {/* Desktop header */}
-        {isTablet && !hideNavbar && (
-          <header className={`fixed top-0 inset-x-0 z-50 flex items-center gap-3 w-full py-2 mx-auto glass-strong
-              transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}>
-            <div className="max-w-7xl w-full h-12 mx-auto flex px-4 lg:px-8">
-              <div className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <img
-                  src={dark ? "/icons/todoro-light.png" : "/icons/todoro-dark.png"}
-                  alt="Todoro"
-                  className="w-5 h-5"
-                />
-                <span className="text-sm font-bold text-tx">Todoro</span>
-              </div>
+      {showFab && (
+        <button onClick={onQuickAdd}
+          className={`fixed right-4 bottom-24 z-40 flex items-center gap-2 min-h-14 px-5
+            rounded-pill bg-accent text-white text-lead font-extrabold shadow-glow
+            hover:brightness-105 active:scale-95 transition-all duration-500
+            ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+          <HiPlus size={19} />
+          {fabLabel}
+        </button>
+      )}
 
-              <div className="flex-1 flex justify-center">
-                <div ref={desktopNavRef} className="relative flex items-center p-1">
-                  {desktopPill.ready && (
-                    <div className="absolute top-1 bottom-1 bg-surface2 rounded-xl pointer-events-none"
-                      style={{ left: desktopPill.left, width: desktopPill.width, transition: pillTrans }} />
-                  )}
-                  {NAV.map(({ id, label }) => {
-                    const active = activeTab === id
-                    return (
-                      <button key={id}
-                        ref={el => { if (el) desktopBtnRefs.current.set(id, el); else desktopBtnRefs.current.delete(id) }}
-                        onClick={() => handleTabChange(id)}
-                        className={`relative z-10 flex items-center gap-2 px-4 py-1.5 rounded-xl text-sm font-semibold
-                          select-none transition-colors duration-150
-                          ${active ? "text-tx" : "text-sub hover:text-tx"}`}>
-                        <NavIcon id={id} active={active} />
-                        {label}
-                        {id === "timer" && running && (
-                          <span className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full border-2 border-bg ${dotColor}`} />
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2.5 px-3 py-2 shrink-0">
-                <button onClick={() => handleTabChange("settings")}
-                  className="flex items-center gap-2 transition-opacity hover:opacity-75">
-                  <div className="hidden lg:flex flex-col items-end">
-                    <span className="text-xs font-bold text-tx leading-none">{userName}</span>
-                    <span className="text-caption text-sub">{streak}d streak</span>
-                  </div>
-                  <AvatarEl size={28} />
-                </button>
-              </div>
-            </div>
-          </header>
-        )}
-
-        {/* Page content */}
-        <main className={`flex-1 overflow-y-auto ${isTablet && !hideNavbar ? "pt-20" : ""} ${isTablet ? "" : "pb-20"}`}>
-          <div key={animKey}
-            style={{ animation: "tabenter 0.2s ease both" }}
-            className="w-full max-w-7xl mx-auto px-4 lg:px-10 py-8">
-            {children}
-          </div>
-        </main>
-
-        {/* Mobile bottom nav */}
-        {!isTablet && !hideNavbar && (
-          <div className={`fixed bottom-4 inset-x-0 z-50 flex justify-center px-4 pointer-events-none
-            transition-all duration-500 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}>
-            <div ref={navContainerRef}
-              className="w-full pointer-events-auto relative flex items-center glass-strong rounded-3xl p-2">
-              {pill.ready && (
-                <div className="absolute top-1.5 bottom-1.5 bg-gray-500/10 rounded-2xl pointer-events-none"
-                  style={{ left: pill.left, width: pill.width, transition: pillTrans }} />
-              )}
-              {NAV.slice(0, 2).map(renderNavButton)}
-
-              {/* Center quick-add — frosted accent that echoes the glass bar */}
-              <div className="flex-1 flex justify-center">
-                <button onClick={onQuickAdd} aria-label="Add task"
-                  className="relative z-20 shrink-0 flex items-center justify-center
-                    w-11 h-11 rounded-full text-white
-                    bg-linear-to-b from-accent to-accent-hover
-                    ring-1 ring-inset ring-white/20
-                    shadow-[0_6px_18px_-7px_var(--color-accent-glow)]
-                    hover:brightness-105 active:scale-95 transition-all">
-                  <HiPlus size={20} />
-                </button>
-              </div>
-
-              {NAV.slice(2).map(renderNavButton)}
-            </div>
-          </div>
-        )}
-
-      </div>
+      {!hideNavbar && (
+        <nav aria-label="Main"
+          className={`fixed bottom-0 inset-x-0 z-50 grid grid-cols-4 border-t border-border bg-bg
+            pb-[env(safe-area-inset-bottom)] transition-transform duration-500
+            ${mounted ? "translate-y-0" : "translate-y-full"}`}>
+          {NAV.map(({ id, label }) => {
+            const active = activeTab === id
+            return (
+              <button key={id} onClick={() => handleTabChange(id)}
+                aria-current={active ? "page" : undefined}
+                className={`relative flex flex-col items-center justify-center gap-1 min-h-16 px-2 py-2
+                  select-none transition-colors duration-200
+                  ${active ? "text-accent" : "text-sub hover:text-tx"}`}>
+                <NavIcon id={id} active={active} size={22} />
+                <span className="text-caption font-semibold leading-none">{label}</span>
+                {id === "tasks" && openCount > 0 && !active && (
+                  <span className="absolute top-1.5 right-1/2 -mr-4 min-w-4.5 h-4.5 px-1 rounded-pill
+                    bg-accent text-white text-caption font-extrabold grid place-items-center tabular-nums leading-none">
+                    {openCount > 99 ? "99+" : openCount}
+                  </span>
+                )}
+                {id === "timer" && running && (
+                  <span className="absolute top-2.5 right-1/2 -mr-3.5 w-2 h-2 rounded-pill bg-priority-low" />
+                )}
+              </button>
+            )
+          })}
+        </nav>
+      )}
     </div>
   )
 }
