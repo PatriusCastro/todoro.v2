@@ -51,7 +51,7 @@ export default function ProjectModal({ project, taskCount = 0, onSave, onDelete,
       <div
         className="fixed inset-0 z-9999 flex items-end md:items-center justify-center p-4 bg-black/70"
         onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-        <div className="w-full max-w-md glass-strong rounded-3xl flex flex-col gap-4 p-5 max-h-[90dvh] overflow-y-auto">
+        <div className="w-full max-w-md panel bg-panel shadow-lg flex flex-col gap-4 p-5 max-h-[90dvh] overflow-y-auto">
 
           {/* Header */}
           <div className="flex items-center justify-between">

@@ -15,7 +15,7 @@ import "./globals.css"
 const themeScript = `(function(){try{
 var tr=localStorage.getItem('todoro:theme');
 var t=tr&&tr.charAt(0)==='"'?JSON.parse(tr):tr;
-if(t==null){var d=localStorage.getItem('todoro:dark');t=(d==null)?'system':(JSON.parse(d)?'dark':'light');}
+if(t!=='system'&&t!=='light'&&t!=='dark'){var d=localStorage.getItem('todoro:dark');t=(d==null)?'system':(JSON.parse(d)?'dark':'light');}
 var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
 document.documentElement.classList.toggle('dark',dark);
 var a=JSON.parse(localStorage.getItem('todoro:accentTheme')||'"blue"');

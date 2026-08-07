@@ -123,13 +123,6 @@
 
   --hairline: 1px;
 
-  /* Neutral glass — transitional. Nothing new should use these; the .glass
-     classes are removed once the last screen migrates to flat panels. */
-  --glass-bg:     rgba(255,255,255,0.60);
-  --glass-strong: rgba(255,255,255,0.74);
-  --glass-border: rgba(24,24,27,0.09);
-  --glass-shadow: 0 8px 30px -14px rgba(24,24,27,0.18), inset 0 1px 0 rgba(255,255,255,0.65);
-  --glass-blur:   14px;
 }
 
 .dark {
@@ -142,10 +135,6 @@
   --sub:     #9B9BA1;
   --ring:    rgba(244,244,245,0.13);
 
-  --glass-bg:     rgba(31,31,38,0.52);
-  --glass-strong: rgba(23,23,29,0.72);
-  --glass-border: rgba(244,244,245,0.10);
-  --glass-shadow: 0 10px 34px -16px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.05);
 }
 
 @theme static inline {
@@ -172,8 +161,8 @@ body {
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
   color: var(--tx);
-  /* Flat ground. The old radial wash worked under glass; under flat panels it
-     just makes the page look unevenly lit. */
+  /* Flat ground — a single colour. The radial wash this replaced read as
+     uneven lighting once the panels stopped being translucent. */
   background: var(--bg);
   transition: background 0.3s, color 0.3s;
 }
@@ -194,31 +183,9 @@ input, textarea { font-family: inherit; }
 }
 ::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); }
 
-/* ── Glass component language (transitional) ───────────────────────────────
-   Kept so the current screens keep rendering while they migrate one at a time.
-   Deleted in the cleanup phase along with --glass-* and the fallback below. */
-.glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-}
-.glass-strong {
-  background: var(--glass-strong);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
-  backdrop-filter: blur(20px) saturate(1.5);
-}
-
-/* Browsers without backdrop-filter fall back to a near-opaque surface */
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .glass, .glass-strong { background: var(--surface); }
-}
-
-/* ── Panel — the flat replacement for .glass ──────────────────────────────
-   One depth, hairline edge, no blur and no shadow. New work uses this. */
+/* ── Panel ────────────────────────────────────────────────────────────────
+   The one surface in the system: single depth, hairline edge, no blur and no
+   shadow. Elevation is for things that float over a scrim, not for cards. */
 .panel {
   background: var(--panel);
   border: var(--hairline) solid var(--border);

@@ -33,7 +33,7 @@ export default function Toast({ open, title, sub, actionLabel = "Undo", onAction
       className={`fixed left-1/2 -translate-x-1/2 z-10000 max-w-[calc(100vw-2rem)]
         transition-all duration-300
         ${open ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
-      <div className="glass flex items-center gap-3 px-5 py-3 rounded-2xl">
+      <div className="panel bg-panel flex items-center gap-3 px-5 py-3 shadow-md">
         <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
         <div className="flex flex-col min-w-0">
           <span className="text-sm font-semibold text-tx truncate">{title}</span>

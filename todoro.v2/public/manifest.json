@@ -5,9 +5,12 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#0F1115",
-  "theme_color": "#0F1115",
-  "categories": ["productivity", "utilities"],
+  "background_color": "#0C0C0F",
+  "theme_color": "#0C0C0F",
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "/icon-192.png",

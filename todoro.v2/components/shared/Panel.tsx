@@ -8,8 +8,9 @@ interface PanelProps {
 }
 
 /**
- * The flat replacement for `.glass` — one ground, one hairline, no blur and no
- * shadow. Depth in this system comes from the accent, not from stacking.
+ * The one surface in the system: single ground, hairline edge, no blur and no
+ * shadow. Emphasis comes from the accent, not from stacking translucent cards.
+ * Things that genuinely float — modals, sheets, toasts — add their own shadow.
  */
 export default function Panel({ children, className = "", bare = false }: PanelProps) {
   return (
