@@ -71,7 +71,7 @@ export default function ProjectModal({ project, taskCount = 0, onSave, onDelete,
             className={`w-full bg-surface2 border rounded-2xl px-4 py-3 text-sm font-semibold text-tx
               placeholder:text-sub outline-none transition-colors
               ${nameError ? "border-red-500/70 focus:border-red-500" : "border-border focus:border-accent"}`} />
-          {nameError && <p className="text-[11px] text-red-400 -mt-2">Name is required</p>}
+          {nameError && <p className="text-caption text-red-400 -mt-2">Name is required</p>}
 
           {/* Color */}
           <div className="flex flex-col gap-2">
@@ -111,7 +111,7 @@ export default function ProjectModal({ project, taskCount = 0, onSave, onDelete,
               <p className="text-xs font-bold text-tx">
                 Delete &ldquo;{project?.name}&rdquo;?
               </p>
-              <p className="text-[11px] text-sub leading-relaxed">
+              <p className="text-caption text-sub leading-relaxed">
                 {taskCount > 0
                   ? <>The folder is removed. Its <span className="font-bold text-tx">{taskCount} task{taskCount > 1 ? "s" : ""}</span> are kept and moved to <span className="font-bold text-tx">No project</span> — nothing is lost, and you can undo this.</>
                   : <>The folder is removed. It has no tasks in it, and you can undo this.</>}

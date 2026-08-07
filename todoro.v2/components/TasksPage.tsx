@@ -10,7 +10,8 @@ import ProjectCard from "../components/tasks/ProjectCard"
 import ProjectModal from "../components/tasks/ProjectModal"
 import ProjectPage from "../components/tasks/ProjectPage"
 import { type Project } from "../components/tasks/TaskModal"
-import { type Priority, getPriority } from "../lib/theme"
+import { type Priority } from "../lib/theme"
+import PriorityChip from "../components/shared/PriorityChip"
 import Toast from "../components/shared/Toast"
 import { useUndo } from "../hooks/useUndo"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
@@ -253,23 +254,27 @@ export default function TasksPage({
       {/* Filter pills */}
       <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-1 px-1">
         <button onClick={() => setFilter("all")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all shrink-0
-            ${filter === "all" ? "bg-accent text-white border-accent" : "border-border text-sub bg-surface"}`}>
+          aria-pressed={filter === "all"}
+          className={`min-h-11 px-4 rounded-pill text-meta font-bold border transition-all shrink-0
+            ${filter === "all" ? "bg-accent text-white border-accent" : "border-border text-tx bg-surface"}`}>
           All ({tasks.length})
         </button>
         {PRIORITIES.map(({ key, label }) => (
           <button key={key} onClick={() => setFilter(f => f === key ? "all" : key)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all shrink-0
-              ${filter === key ? "text-white border-transparent" : "border-border text-sub bg-surface"}`}
-            style={filter === key ? { background: getPriority(key), borderColor: getPriority(key) } : {}}>
-            <span className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: filter === key ? "rgba(255,255,255,0.8)" : getPriority(key) }} />
+            aria-pressed={filter === key}
+            className={`flex items-center gap-2 min-h-11 px-4 rounded-pill text-meta font-bold border transition-all shrink-0
+              ${filter === key ? "bg-accent text-white border-accent" : "border-border text-tx bg-surface"}`}>
+            {/* The chip is the unselected pill's only ranking cue; once the pill
+                is filled the label carries it, and an accent chip on an accent
+                pill would vanish. */}
+            {filter !== key && <PriorityChip priority={key} />}
             {label}
           </button>
         ))}
         <button onClick={() => setFilter(f => f === "done" ? "all" : "done")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all shrink-0
-            ${filter === "done" ? "bg-accent text-white border-accent" : "border-border text-sub bg-surface"}`}>
+          aria-pressed={filter === "done"}
+          className={`min-h-11 px-4 rounded-pill text-meta font-bold border transition-all shrink-0
+            ${filter === "done" ? "bg-accent text-white border-accent" : "border-border text-tx bg-surface"}`}>
           Done ({doneCount})
         </button>
       </div>
@@ -281,7 +286,8 @@ export default function TasksPage({
           <p className="text-xs text-tx flex-1">
             <span className="font-bold">Tip:</span> tap 📍 (or swipe right) to pin a task — it jumps to the top and becomes your next focus. Swipe left to delete.
           </p>
-          <button onClick={dismissSwipeHint} className="text-sub hover:text-tx transition-colors shrink-0">
+          <button onClick={dismissSwipeHint} aria-label="Dismiss tip"
+            className="w-11 h-11 -my-2 -mr-2 shrink-0 grid place-items-center text-sub hover:text-tx transition-colors">
             <HiXMark size={14} />
           </button>
         </div>
@@ -355,7 +361,7 @@ export default function TasksPage({
                 {([["all", "All tasks"], ["project", "By project"]] as const).map(([key, label]) => (
                   <button key={key} onClick={() => setView(key)}
                     aria-pressed={view === key}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors
+                    className={`min-h-11 px-3 rounded-md text-meta font-bold transition-colors
                       ${view === key ? "bg-accent text-white" : "text-sub hover:text-tx"}`}>
                     {label}
                   </button>
@@ -375,7 +381,7 @@ export default function TasksPage({
                 <>
                   <div className="flex items-center gap-1.5 pt-0.5">
                     <HiMapPin size={11} className="text-accent" />
-                    <span className="text-[11px] font-bold text-accent">Pinned — {pinnedPending.length}</span>
+                    <span className="text-caption font-bold text-accent">Pinned — {pinnedPending.length}</span>
                   </div>
                   {pinnedPending.map(task => renderTask(task))}
                   <div className="h-px bg-border my-1.5" style={{ opacity: 0.5 }} />
@@ -393,7 +399,7 @@ export default function TasksPage({
                     <button onClick={() => setActiveProject(proj)}
                       className="flex items-center gap-1.5 pt-1 self-start group/h">
                       <HiFolder size={11} style={{ color: proj.color }} />
-                      <span className="text-[11px] font-bold text-sub group-hover/h:text-accent transition-colors">
+                      <span className="text-caption font-bold text-sub group-hover/h:text-accent transition-colors">
                         {proj.name} — {group.length}
                       </span>
                     </button>
@@ -403,7 +409,7 @@ export default function TasksPage({
               })}
               {unassigned.length > 0 && (
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-bold text-sub pt-1">No project — {unassigned.length}</span>
+                  <span className="text-caption font-bold text-sub pt-1">No project — {unassigned.length}</span>
                   {unassigned.map(task => renderTask(task))}
                 </div>
               )}

@@ -55,12 +55,12 @@ export default function ShopModal({
             <div className="flex items-center gap-2.5 flex-1">
               <HiStar size={18} className="text-sub" />
               <div>
-                <p className="text-[11px] font-bold text-sub">Balance</p>
+                <p className="text-caption font-bold text-sub">Balance</p>
                 <p className="text-2xl font-semibold text-tx leading-none mt-0.5">{points} <span className="text-sm font-semibold text-sub">pts</span></p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[11px] font-bold text-sub">Freezes</p>
+              <p className="text-caption font-bold text-sub">Freezes</p>
               <p className="text-2xl font-semibold text-tx leading-none mt-0.5">{freezes}</p>
             </div>
           </div>
@@ -104,7 +104,7 @@ export default function ShopModal({
           {/* How points work */}
           <div className="flex items-start gap-2 px-1">
             <HiBolt size={13} className="text-sub mt-0.5 shrink-0" />
-            <p className="text-[11px] text-sub leading-relaxed">
+            <p className="text-caption text-sub leading-relaxed">
               Earn points every focus session — 1 per focused minute, plus up to a 70% bonus as your streak grows.
             </p>
           </div>

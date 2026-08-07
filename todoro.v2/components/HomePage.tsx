@@ -4,7 +4,7 @@ import { useState } from "react"
 import { HiStar, HiPlayCircle, HiPauseCircle, HiChevronRight, HiChevronLeft, HiFire, HiClock, HiCheckCircle, HiListBullet, HiPlus } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import { type Mode } from "../components/timer/ModeSelector"
-import { getPriority } from "../lib/theme"
+import PriorityChip from "./shared/PriorityChip"
 import { sortTasks } from "../lib/taskOrder"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
 import StatTile from "./shared/StatTile"
@@ -79,18 +79,18 @@ function MiniCalendar({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-3">
-        <button onClick={prevMonth} aria-label="Previous month" className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
+        <button onClick={prevMonth} aria-label="Previous month" className="w-11 h-11 grid place-items-center rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
           <HiChevronLeft size={15} />
         </button>
         <span className="text-sm font-semibold text-tx">{MONTHS_SHORT[month]} {year}</span>
-        <button onClick={nextMonth} aria-label="Next month" className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
+        <button onClick={nextMonth} aria-label="Next month" className="w-11 h-11 grid place-items-center rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
           <HiChevronRight size={15} />
         </button>
       </div>
 
       <div className="grid grid-cols-7 mb-1.5">
         {DAY_LABELS.map((d, i) => (
-          <div key={i} className="text-center text-[11px] font-bold text-sub/50">{d}</div>
+          <div key={i} className="text-center text-caption font-bold text-sub">{d}</div>
         ))}
       </div>
 
@@ -177,7 +177,7 @@ export default function HomePage({
         {/* Level + points — tap to open the rewards shop */}
         <button onClick={onOpenShop}
           className="flex items-center gap-2 border border-border rounded-xl pl-2 pr-3.5 py-1.5 bg-surface hover:border-accent/40 active:scale-95 transition-all">
-          <span className="text-[10px] font-semibold text-sub bg-surface2 rounded-lg px-1.5 py-1 leading-none">Lv {level}</span>
+          <span className="text-caption font-semibold text-sub bg-surface2 rounded-lg px-1.5 py-1 leading-none">Lv {level}</span>
           <HiStar size={13} className="text-sub" />
           <span className="text-sm font-bold text-tx">{totalPoints} pts</span>
         </button>
@@ -223,7 +223,7 @@ export default function HomePage({
               {allDone
                 ? <span className="text-sm text-sub italic">All tasks done</span>
                 : <>
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(activeTask.priority) }} />
+                    <PriorityChip priority={activeTask.priority} />
                     <span className="text-sm font-semibold text-tx truncate">{activeTask.title}</span>
                   </>
               }
@@ -276,7 +276,7 @@ export default function HomePage({
                 <span className="text-sm text-sub">
                   {phase === "focus" ? `session ${sessions + 1} of ${totalSessions}` : "take a break"}
                 </span>
-                <span className="text-[11px] text-sub/40 group-hover:text-sub/60 transition-colors">
+                <span className="text-caption text-sub group-hover:text-tx transition-colors">
                   tap to expand
                 </span>
               </div>

@@ -96,7 +96,8 @@ export default function ProjectPage({
       <div className="flex items-center gap-3">
         <button
           onClick={onBack}
-          className="p-2 rounded-xl border border-border bg-surface2 text-sub hover:text-tx hover:border-accent/40 transition-colors">
+          aria-label="Back to all tasks"
+          className="w-11 h-11 shrink-0 grid place-items-center rounded-xl border border-border bg-surface2 text-sub hover:text-tx hover:border-accent/40 transition-colors">
           <HiArrowLeft size={15} />
         </button>
 
@@ -116,7 +117,8 @@ export default function ProjectPage({
         {/* Edit project button */}
         <button
           onClick={() => setProjectModal(true)}
-          className="p-2 rounded-xl border border-border bg-surface2 text-sub
+          aria-label="Edit project"
+          className="w-11 h-11 shrink-0 grid place-items-center rounded-xl border border-border bg-surface2 text-sub
             hover:text-accent hover:border-accent/40 transition-colors"
           title="Edit project">
           <HiPencil size={14} />
@@ -138,7 +140,7 @@ export default function ProjectPage({
               className="h-full rounded-full transition-all duration-500"
               style={{ width: `${progress * 100}%`, backgroundColor: project.color }} />
           </div>
-          <span className="text-[11px] text-sub tabular-nums shrink-0">
+          <span className="text-caption text-sub tabular-nums shrink-0">
             {done.length}/{tasks.length} done
           </span>
         </div>

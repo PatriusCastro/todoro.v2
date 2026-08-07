@@ -150,7 +150,8 @@ export default function SettingsPage({
               }
             </div>
             <button onClick={() => fileRef.current?.click()}
-              className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-accent border-2 border-surface
+              aria-label="Upload a profile photo"
+              className="absolute -bottom-2 -right-2 w-9 h-9 rounded-full bg-accent border-2 border-surface
                 flex items-center justify-center hover:bg-accent-hover transition-colors">
               <HiArrowUpTray size={10} color="white" />
             </button>
@@ -251,7 +252,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.5.0" />
+        <InfoRow label="Version" value="2.6.0" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
     </div>

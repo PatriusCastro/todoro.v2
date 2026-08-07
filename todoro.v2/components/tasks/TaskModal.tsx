@@ -53,17 +53,19 @@ function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
   return (
     <div className="bg-surface2 rounded-2xl p-4 border border-border">
       <div className="flex items-center justify-between mb-3">
-        <button onClick={prev} className="p-1 rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">
+        <button onClick={prev} aria-label="Previous month"
+          className="w-11 h-11 grid place-items-center rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">
           <HiChevronLeft size={16} />
         </button>
         <span className="text-sm font-bold text-tx">{monthName}</span>
-        <button onClick={next} className="p-1 rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">
+        <button onClick={next} aria-label="Next month"
+          className="w-11 h-11 grid place-items-center rounded-lg hover:bg-border text-sub hover:text-tx transition-colors">
           <HiChevronRight size={16} />
         </button>
       </div>
       <div className="grid grid-cols-7 gap-1 mb-1">
         {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
-          <span key={d} className="text-center text-[10px] font-semibold text-sub">{d}</span>
+          <span key={d} className="text-center text-caption font-semibold text-sub">{d}</span>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1">
@@ -319,7 +321,8 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
             {subtasks.map(sub => (
               <div key={sub.id} className="flex items-center gap-3 bg-surface2 rounded-xl px-3 py-2.5 border border-border">
                 <span className="flex-1 text-sm text-tx truncate min-w-0">{sub.title}</span>
-                <button onClick={() => removeSub(sub.id)} className="text-sub hover:text-priority-high transition-colors">
+                <button onClick={() => removeSub(sub.id)} aria-label={`Remove subtask "${sub.title}"`}
+                  className="w-11 h-11 -my-2 shrink-0 grid place-items-center text-sub hover:text-priority-high transition-colors">
                   <HiXMark size={13} />
                 </button>
               </div>

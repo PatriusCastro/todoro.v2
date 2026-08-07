@@ -44,8 +44,8 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // No maximumScale / userScalable:false — blocking pinch-zoom locks out anyone
+  // who needs to magnify. The layout is responsive enough not to need it.
 }
 
 export default function RootLayout({

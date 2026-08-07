@@ -69,12 +69,12 @@ export default function TaskCard({
         style={{ opacity: isSwiped() ? 1 : 0 }}>
         <div className="flex flex-col items-center justify-center gap-1 w-20 bg-accent/10 rounded-l-xl">
           <HiMapPin size={14} className="text-accent" />
-          <span className="text-[10px] font-semibold text-accent">{isPinned ? "Unpin" : "Pin"}</span>
+          <span className="text-caption font-semibold text-accent">{isPinned ? "Unpin" : "Pin"}</span>
         </div>
         <div className="flex-1" />
         <div className="flex flex-col items-center justify-center gap-1 w-20 bg-red-500/10 rounded-r-xl">
           <HiTrash size={14} className="text-red-500" />
-          <span className="text-[10px] font-semibold text-red-500">Delete</span>
+          <span className="text-caption font-semibold text-red-500">Delete</span>
         </div>
       </div>
 
@@ -90,14 +90,19 @@ export default function TaskCard({
 
         <div className={`flex items-center gap-3 ${compact ? "px-3 py-2.5" : "px-4 py-3"}`}>
 
-          {/* Checkbox */}
+          {/* Checkbox — 22px circle inside a 44px target. Completing a task is
+              the single most-tapped control here and the easiest to fat-finger. */}
           <button
             onPointerDown={e => e.stopPropagation()}
             onClick={e => { e.stopPropagation(); onToggle?.(task.id) }}
-            className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center
+            aria-pressed={task.done}
+            aria-label={task.done ? `Mark "${task.title}" as not done` : `Complete "${task.title}"`}
+            className="w-11 h-11 -ml-2.5 shrink-0 grid place-items-center rounded-pill">
+            <span className={`w-5.5 h-5.5 rounded-full border-2 grid place-items-center
               transition-colors duration-150
               ${task.done ? "bg-accent border-accent" : "border-border"}`}>
-            {task.done && <HiCheck size={10} color="white" />}
+              {task.done && <HiCheck size={11} color="white" />}
+            </span>
           </button>
 
           {/* Text */}
@@ -113,7 +118,7 @@ export default function TaskCard({
                   that sat pixels away from "open task" and fired by mistake. */}
               <span
                 title={task.title}
-                className={`text-[13px] font-medium leading-snug wrap-break-words line-clamp-2 min-w-0
+                className={`text-body font-semibold leading-snug wrap-break-words line-clamp-2 min-w-0
                   ${task.done ? "line-through text-sub" : "text-tx"}`}>
                 {task.title}
               </span>
@@ -126,30 +131,30 @@ export default function TaskCard({
                   <span
                     onPointerDown={e => e.stopPropagation()}
                     onClick={e => { if (onProjectClick) { e.stopPropagation(); onProjectClick() } }}
-                    className={`inline-flex items-center gap-1 max-w-36 rounded-md px-1.5 py-0.5 text-[10px] font-semibold
+                    className={`inline-flex items-center gap-1 max-w-36 rounded-md px-1.5 py-0.5 text-caption font-semibold
                       ${onProjectClick ? "cursor-pointer hover:brightness-110" : ""}`}
                     style={{ backgroundColor: `${projectColor ?? "#888"}22`, color: projectColor ?? "#888" }}>
-                    <HiFolder size={9} className="shrink-0" />
+                    <HiFolder size={10} className="shrink-0" />
                     <span className="truncate">{projectName}</span>
                   </span>
                 )}
                 {task.repeat && task.repeat !== "none" && (
-                  <span className="text-[11px] text-accent flex items-center gap-0.5">
-                    <HiArrowPath size={9} /> <span className="capitalize">{task.repeat}</span>
+                  <span className="text-meta text-accent flex items-center gap-0.5">
+                    <HiArrowPath size={11} /> <span className="capitalize">{task.repeat}</span>
                   </span>
                 )}
                 {task.dueLabel && task.dueLabel !== "No due date" && (
-                  <span className={`text-[11px] ${task.dueLabel.startsWith("Overdue") ? "text-red-400" : "text-sub"}`}>
+                  <span className={`text-meta ${task.dueLabel.startsWith("Overdue") ? "text-red-400" : "text-sub"}`}>
                     {task.dueLabel}
                   </span>
                 )}
                 {task.subtasks.length > 0 && (
-                  <span className="text-[11px] text-sub">
+                  <span className="text-meta text-sub">
                     {task.dueLabel && task.dueLabel !== "No due date" ? "·" : ""} {doneCount}/{task.subtasks.length} subtasks
                   </span>
                 )}
                 {task.estimatedSessions > 0 && (
-                  <span className="text-[11px] text-sub">
+                  <span className="text-meta text-sub">
                     · {task.completedSessions}/{task.estimatedSessions} sessions
                   </span>
                 )}
@@ -166,33 +171,37 @@ export default function TaskCard({
                 aria-pressed={isPinned}
                 aria-label={isPinned ? "Unpin task" : "Pin task"}
                 title={isPinned ? "Unpin" : "Pin — work on this next"}
-                className={`p-1.5 rounded-lg transition-colors duration-150
+                className={`w-9 h-9 grid place-items-center rounded-lg transition-colors duration-150
                   ${isPinned ? "text-accent bg-accent/10" : "text-sub hover:text-accent hover:bg-accent/10"}`}>
-                <HiMapPin size={13} />
+                <HiMapPin size={15} />
               </button>
             )}
             {onQuickStart && !task.done && (
               <button
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); onQuickStart(task) }}
-                className="p-1.5 rounded-lg text-sub hover:text-accent hover:bg-accent/10 transition-colors duration-150">
-                <HiPlay size={13} />
+                aria-label={`Start a focus session on "${task.title}"`}
+                className="w-9 h-9 grid place-items-center rounded-lg text-sub hover:text-accent hover:bg-accent/10 transition-colors duration-150">
+                <HiPlay size={15} />
               </button>
             )}
             {onEdit && (
               <button
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); onEdit(task) }}
-                className="p-1.5 rounded-lg text-sub hover:text-accent hover:bg-accent/10 transition-colors duration-150">
-                <HiPencil size={13} />
+                aria-label={`Edit "${task.title}"`}
+                className="w-9 h-9 grid place-items-center rounded-lg text-sub hover:text-accent hover:bg-accent/10 transition-colors duration-150">
+                <HiPencil size={15} />
               </button>
             )}
             {expandable && (
               <button
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}
-                className="p-1.5 rounded-lg text-sub hover:text-tx transition-colors duration-150">
-                <HiChevronDown size={13}
+                aria-expanded={expanded}
+                aria-label={expanded ? "Hide details" : "Show details"}
+                className="w-9 h-9 grid place-items-center rounded-lg text-sub hover:text-tx transition-colors duration-150">
+                <HiChevronDown size={15}
                   className="transition-transform duration-200"
                   style={{ transform: expanded ? "rotate(180deg)" : "none" }} />
               </button>
@@ -219,7 +228,7 @@ export default function TaskCard({
                     />
                   ))}
                 </div>
-                <span className="text-[11px] text-sub tabular-nums shrink-0">
+                <span className="text-meta text-sub tabular-nums shrink-0">
                   {task.completedSessions}/{task.estimatedSessions}
                 </span>
               </div>
@@ -244,14 +253,18 @@ function SubtaskRow({ sub, taskId, onToggleSub }: {
       <button
         onPointerDown={e => e.stopPropagation()}
         onClick={e => { e.stopPropagation(); onToggleSub?.(taskId, sub.id) }}
-        className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center transition-colors duration-150
-          ${sub.done ? "bg-accent border-accent" : "border-border hover:border-accent"}`}>
-        {sub.done && <HiCheck size={8} color="white" />}
+        aria-pressed={sub.done}
+        aria-label={sub.done ? `Mark "${sub.title}" as not done` : `Complete "${sub.title}"`}
+        className="w-11 h-11 -ml-3.5 -my-2 shrink-0 grid place-items-center">
+        <span className={`w-4.5 h-4.5 rounded border-2 grid place-items-center transition-colors duration-150
+          ${sub.done ? "bg-accent border-accent" : "border-border"}`}>
+          {sub.done && <HiCheck size={9} color="white" />}
+        </span>
       </button>
       <span
         onPointerDown={e => e.stopPropagation()}
         onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}
-        className={`text-xs flex-1 min-w-0 cursor-pointer leading-snug
+        className={`text-meta flex-1 min-w-0 cursor-pointer leading-snug
           ${sub.done ? "line-through text-sub" : "text-tx"}
           ${expanded ? "wrap-break-words whitespace-normal" : "truncate"}`}>
         {sub.title}

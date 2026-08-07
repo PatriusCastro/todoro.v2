@@ -112,7 +112,7 @@ export default function TimerPage({
           <div key={i} className={`h-1.5 flex-1 rounded-full ${i < activeTask.completedSessions ? "bg-tx" : "bg-ring"}`} />
         ))}
       </div>
-      <span className="text-[11px] text-sub">{activeTask.completedSessions}/{activeTask.estimatedSessions}</span>
+      <span className="text-caption text-sub">{activeTask.completedSessions}/{activeTask.estimatedSessions}</span>
     </div>
   )
 
@@ -221,8 +221,8 @@ export default function TimerPage({
               <div className="flex items-center justify-center gap-4">
                 {[["Space", "Play/Pause"], ["R", "Reset"], ["S", "Skip"]].map(([k, a]) => (
                   <div key={k} className="flex items-center gap-1.5">
-                    <kbd className="px-2 py-0.5 rounded-lg border border-border bg-surface text-[11px] font-mono">{k}</kbd>
-                    <span className="text-[11px] text-sub">{a}</span>
+                    <kbd className="px-2 py-0.5 rounded-lg border border-border bg-surface text-caption font-mono">{k}</kbd>
+                    <span className="text-caption text-sub">{a}</span>
                   </div>
                 ))}
               </div>

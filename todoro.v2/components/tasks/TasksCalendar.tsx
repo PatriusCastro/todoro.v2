@@ -107,12 +107,12 @@ function MonthSheet({ anchor, maps, todayStr, selected, onSelect, onClose }: {
       {/* Month nav */}
       <div className="flex items-center justify-between px-2 py-1">
         <button onClick={prevMonth} aria-label="Previous month"
-          className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
+          className="w-11 h-11 grid place-items-center rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
           <HiChevronLeft size={18} />
         </button>
         <span className="text-sm font-semibold text-tx">{MONTHS[month]} {year}</span>
         <button onClick={nextMonth} aria-label="Next month"
-          className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
+          className="w-11 h-11 grid place-items-center rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
           <HiChevronRight size={18} />
         </button>
       </div>
@@ -120,7 +120,7 @@ function MonthSheet({ anchor, maps, todayStr, selected, onSelect, onClose }: {
       {/* Day headers */}
       <div className="grid grid-cols-7 pt-2 pb-1">
         {DAYS.map(d => (
-          <div key={d} className="text-center text-[11px] font-semibold text-sub py-1">{d}</div>
+          <div key={d} className="text-center text-caption font-semibold text-sub py-1">{d}</div>
         ))}
       </div>
 
@@ -192,7 +192,7 @@ export default function TasksCalendar({ tasks, allHistory, selected, onSelect }:
         {/* Day headers */}
         <div className="grid grid-cols-7 px-3 pt-3 pb-1">
           {DAYS.map(d => (
-            <div key={d} className="text-center text-[11px] font-semibold text-sub py-1">{d}</div>
+            <div key={d} className="text-center text-caption font-semibold text-sub py-1">{d}</div>
           ))}
         </div>
 
@@ -263,7 +263,7 @@ export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between px-1">
         <span className="text-xs font-bold text-sub">Focus History</span>
-        <div className="flex items-center gap-1.5 text-[10px] text-sub">
+        <div className="flex items-center gap-1.5 text-caption text-sub">
           <span>Less</span>
           {SCALE.map(c => <span key={c} className={`w-3 h-3 rounded-sm ${c}`} />)}
           <span>More</span>
@@ -282,7 +282,7 @@ export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
             </div>
           ))}
         </div>
-        <div className="flex justify-between mt-2 text-[10px] text-sub">
+        <div className="flex justify-between mt-2 text-caption text-sub">
           <span>{new Date(heatmapCells[0].date + "T00:00").toLocaleDateString([], { month: "short", year: "numeric" })}</span>
           <span>{new Date(heatmapCells[heatmapCells.length - 1].date + "T00:00").toLocaleDateString([], { month: "short", year: "numeric" })}</span>
         </div>

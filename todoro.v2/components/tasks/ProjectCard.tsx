@@ -40,14 +40,14 @@ export default function ProjectCard({ project, tasks, onClick }: ProjectCardProp
           <div className="h-full rounded-full transition-all duration-500"
             style={{ width: `${progress * 100}%`, backgroundColor: project.color }} />
         </div>
-        <span className="text-[11px] text-sub tabular-nums text-center">
+        <span className="text-caption text-sub tabular-nums text-center">
           {total === 0
             ? "No tasks yet"
             : pending === 0 ? `All ${total} done` : `${pending} left · ${done}/${total}`}
         </span>
       </div>
 
-      <span className="flex items-center gap-0.5 text-[11px] font-semibold text-sub group-hover:text-accent transition-colors">
+      <span className="flex items-center gap-0.5 text-caption font-semibold text-sub group-hover:text-accent transition-colors">
         Open <HiChevronRight size={11} />
       </span>
     </button>

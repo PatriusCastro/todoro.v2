@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { HiChevronDown, HiCheck, HiMapPin } from "react-icons/hi2"
 import { type Task } from "../tasks/TaskCard"
-import { getPriority } from "../../lib/theme"
+import PriorityChip from "../shared/PriorityChip"
 import { sortTasks } from "../../lib/taskOrder"
 import { usePinnedTasks } from "../../hooks/usePinnedTasks"
 
@@ -44,7 +44,7 @@ export default function TaskSelector({ tasks, active, onChange, quickMode = fals
               : allDone
               ? <span className="text-sm text-sub italic">All tasks completed</span>
               : <>
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(active.priority) }} />
+                  <PriorityChip priority={active.priority} />
                   <span title={active.title} className="text-sm font-semibold text-tx truncate">{active.title}</span>
                 </>
             }
@@ -67,7 +67,7 @@ export default function TaskSelector({ tasks, active, onChange, quickMode = fals
                 className={`w-full flex items-center gap-2 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface2
                   ${task.id === active.id ? "bg-accent/10" : ""}`}>
                 {pinned.has(task.id) && <HiMapPin size={11} className="text-accent shrink-0" />}
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: getPriority(task.priority) }} />
+                <PriorityChip priority={task.priority} />
                 <span className="text-sm font-medium text-tx truncate flex-1">{task.title}</span>
                 {task.id === active.id && <HiCheck size={12} className="text-accent shrink-0" />}
               </button>

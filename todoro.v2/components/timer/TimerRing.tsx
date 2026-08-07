@@ -41,7 +41,7 @@ export default function TimerRing({
           style={{ stroke, transition: "stroke-dashoffset 1s linear" }} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-        <span className="text-[11px] font-medium text-sub">
+        <span className="text-caption font-medium text-sub">
           {displayLabel}
         </span>
         <span
@@ -49,7 +49,7 @@ export default function TimerRing({
           style={{ fontSize: size < 200 ? "2.25rem" : size < 280 ? "3rem" : "3.75rem" }}>
           {minutes}:{seconds.toString().padStart(2, "0")}
         </span>
-        <span className="text-[11px] text-sub">
+        <span className="text-caption text-sub">
           {reverseMode ? "elapsed" : spentLabel}
         </span>
       </div>

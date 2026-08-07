@@ -57,7 +57,7 @@ export default function ModeSelector({
       {active === "custom" && !reverseMode && (
         <div className="flex gap-3 bg-surface2 rounded-xl p-3 border border-border">
           <div className="flex-1 flex flex-col gap-1">
-            <span className="text-[11px] font-semibold text-sub">Focus</span>
+            <span className="text-caption font-semibold text-sub">Focus</span>
             <div className="flex items-center gap-2">
               <input type="number" value={cf} min={1} max={180}
                 onChange={e => setCf(Number(e.target.value))}
@@ -68,7 +68,7 @@ export default function ModeSelector({
           </div>
           <div className="w-px bg-border" />
           <div className="flex-1 flex flex-col gap-1">
-            <span className="text-[11px] font-semibold text-sub">Break</span>
+            <span className="text-caption font-semibold text-sub">Break</span>
             <div className="flex items-center gap-2">
               <input type="number" value={cb} min={1} max={60}
                 onChange={e => setCb(Number(e.target.value))}
@@ -92,7 +92,7 @@ export default function ModeSelector({
             <HiBolt size={15} className={quickMode ? "text-accent" : "text-sub"} />
             <div className="text-left">
               <p className={`text-xs font-bold ${quickMode ? "text-accent" : "text-tx"}`}>Quick Mode</p>
-              <p className="text-[11px] text-sub">Focus without picking a task</p>
+              <p className="text-caption text-sub">Focus without picking a task</p>
             </div>
           </div>
           <div className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 ${quickMode ? "bg-accent" : "bg-ring"}`}>
@@ -113,7 +113,7 @@ export default function ModeSelector({
           <HiArrowPath size={15} className={reverseMode ? "text-accent" : "text-sub"} />
           <div className="text-left">
             <p className={`text-xs font-bold ${reverseMode ? "text-accent" : "text-tx"}`}>Reverse Mode</p>
-            <p className="text-[11px] text-sub">Count up · break = focus ÷ 5</p>
+            <p className="text-caption text-sub">Count up · break = focus ÷ 5</p>
           </div>
         </div>
         {/* Toggle pill */}

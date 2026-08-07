@@ -87,8 +87,9 @@ export default function AppShell({
       <button
         ref={el => { if (el) btnRefs.current.set(id, el); else btnRefs.current.delete(id) }}
         onClick={() => handleTabChange(id)}
-        className={`relative z-10 flex flex-col items-center justify-center gap-0.5
-          px-4 py-2 select-none transition-colors duration-300
+        aria-current={active ? "page" : undefined}
+        className={`relative z-10 flex flex-col items-center justify-center gap-1
+          min-h-14 px-4 py-2 select-none transition-colors duration-300
           ${active ? "text-accent scale-105" : "text-sub hover:text-tx"}`}>
         {isMe
           ? <span className={`w-5 h-5 rounded-lg overflow-hidden border block
@@ -102,7 +103,7 @@ export default function AppShell({
             </span>
           : <NavIcon id={id} active={active} />
         }
-        <span className="font-semibold leading-none text-[9px]">{label}</span>
+        <span className="font-semibold leading-none text-caption">{label}</span>
         {id === "timer" && running && (
           <span className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${dotColor}`} />
         )}
@@ -160,7 +161,7 @@ export default function AppShell({
                   className="flex items-center gap-2 transition-opacity hover:opacity-75">
                   <div className="hidden lg:flex flex-col items-end">
                     <span className="text-xs font-bold text-tx leading-none">{userName}</span>
-                    <span className="text-[10px] text-sub">{streak}d streak</span>
+                    <span className="text-caption text-sub">{streak}d streak</span>
                   </div>
                   <AvatarEl size={28} />
                 </button>
