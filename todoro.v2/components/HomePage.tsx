@@ -94,7 +94,7 @@ export default function HomePage({
   ].filter(Boolean).join(" · ")
   const runLabel = running
     ? "Pause"
-    : phase === "focus" ? "Start focus" : phase === "longbreak" ? "Start long break" : "Start break"
+    : phase === "focus" ? "Start focus" : phase === "longbreak" ? "Long break" : "Start break"
 
   return (
     <div className="flex flex-col gap-gutter">
@@ -138,7 +138,7 @@ export default function HomePage({
       )}
 
       {/* ── Focus poster — the only glowing thing on the page ──────────────── */}
-      <div className="rounded-panel bg-accent text-bg shadow-glow px-5 py-5 flex flex-col gap-4">
+      <div className="rounded-panel bg-accent text-bg shadow-glow px-4 xs:px-5 py-5 flex flex-col gap-4">
         <div className="flex items-center gap-2.5 text-caption font-extrabold uppercase tracking-widest">
           <span className={`w-2 h-2 rounded-pill bg-bg shrink-0 ${running ? "animate-pulse" : ""}`} />
           <span>{kicker}</span>
@@ -147,7 +147,9 @@ export default function HomePage({
           </span>
         </div>
 
-        <h2 className="text-display font-extrabold leading-none wrap-break-words line-clamp-2">
+        {/* 32px on a 300px screen is four or five characters a line — the
+            poster stops being a headline and becomes a wall. */}
+        <h2 className="text-title xs:text-display font-extrabold leading-none wrap-break-words line-clamp-2">
           {posterTitle}
         </h2>
 
@@ -158,16 +160,21 @@ export default function HomePage({
             style={{ width: `${Math.round(progress * 100)}%` }} />
         </div>
 
+        {/* Label and clock share one button, so this is the tightest row on the
+            page. Below 380px the type, padding and gaps step down rather than
+            letting "Start focus" break across two lines. */}
         <div className="flex gap-2">
           <button onClick={onTimerToggle}
-            className="flex-1 min-h-14 flex items-center gap-3 px-5 rounded-control bg-bg text-tx
-              text-heading font-extrabold hover:brightness-95 active:scale-[0.98] transition-all">
-            {running ? <HiPause size={18} /> : <HiPlay size={18} />}
-            <span>{runLabel}</span>
-            <span className="ml-auto tabular-nums tracking-tight">{timeLabel}</span>
+            className="flex-1 min-w-0 min-h-14 flex items-center gap-2 xs:gap-3 px-3.5 xs:px-5 rounded-control bg-bg text-tx
+              text-lead xs:text-heading font-extrabold whitespace-nowrap hover:brightness-95 active:scale-[0.98] transition-all">
+            {running
+              ? <HiPause size={18} className="shrink-0" />
+              : <HiPlay size={18} className="shrink-0" />}
+            <span className="truncate">{runLabel}</span>
+            <span className="ml-auto shrink-0 tabular-nums tracking-tight">{timeLabel}</span>
           </button>
           <button onClick={onNavToTimer} aria-label="Open the timer"
-            className="w-14 min-h-14 grid place-items-center rounded-control bg-bg/20 text-bg
+            className="w-12 xs:w-14 min-h-14 shrink-0 grid place-items-center rounded-control bg-bg/20 text-bg
               hover:bg-bg/30 active:scale-95 transition-all">
             <HiChevronRight size={20} />
           </button>
@@ -186,7 +193,7 @@ export default function HomePage({
             </div>
           } />
         <StatTile icon={<HiFire size={14} />} label="Streak" value={`${streak}d`}
-          footnote={streak > 0 ? "Keep it going" : "Start one today"} />
+          footnote={streak > 0 ? "Keep going" : "Start today"} />
         <StatTile icon={<HiCheckCircle size={14} />} label="Done" value={doneTasks.length}
           footnote={`${tasks.length - doneTasks.length} open`} />
       </div>

@@ -3,6 +3,7 @@
 import { HiMapPin, HiFolder } from "react-icons/hi2"
 import { type Task } from "./TaskCard"
 import { type Project } from "./TaskModal"
+import { type TaskView } from "../../lib/board"
 import Panel from "../shared/Panel"
 
 interface TaskListProps {
@@ -12,8 +13,9 @@ interface TaskListProps {
   pinnedIds: ReadonlySet<string>
   /** Non-null when a calendar day is selected; switches to the single-day view. */
   selectedDate: string | null
-  view:      "all" | "project"
-  onViewChange: (v: "all" | "project") => void
+  view:      TaskView
+  /** The view switch, rendered by the caller so the board can show the same one. */
+  action?:   React.ReactNode
   onOpenProject: (p: Project) => void
   renderTask: (t: Task) => React.ReactNode
   /** Distinguishes "no tasks at all" from "nothing matches this filter". */
@@ -37,7 +39,7 @@ function SectionLabel({ children, tone = "sub", icon }: {
  * filtering, project CRUD, modals and three list layouts in one 480-line file.
  */
 export default function TaskList({
-  pending, projects, pinnedIds, selectedDate, view, onViewChange,
+  pending, projects, pinnedIds, selectedDate, view, action,
   onOpenProject, renderTask, hasAnyPending,
 }: TaskListProps) {
 
@@ -45,7 +47,7 @@ export default function TaskList({
   if (selectedDate) {
     if (pending.length === 0) return null
     return (
-      <Panel bare className="px-3 py-2">
+      <Panel bare className="px-2 xs:px-3 py-2">
         <SectionLabel>Due this day — {pending.length}</SectionLabel>
         {pending.map(renderTask)}
       </Panel>
@@ -58,29 +60,12 @@ export default function TaskList({
   const unassigned = pending.filter(t => !t.projectId || !assigned.has(t.projectId))
 
   return (
-    <Panel bare className="px-3 py-2">
+    <Panel bare className="px-2 xs:px-3 py-2">
       <div className="flex items-center gap-3 px-1 pt-1 pb-2">
         <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
           Open — {pending.length}
         </span>
-        {/* Editing has no button of its own any more, so the header says where
-            it lives. Delete is the only action left with no visible affordance. */}
-        {projects.length === 0 && (
-          <span className="ml-auto text-caption text-sub shrink-0">Tap to edit · swipe to delete</span>
-        )}
-        {projects.length > 0 && (
-          <div className="ml-auto shrink-0 flex items-center rounded-control border border-border overflow-hidden">
-            {([["all", "All"], ["project", "By project"]] as const).map(([key, label], i) => (
-              <button key={key} onClick={() => onViewChange(key)}
-                aria-pressed={view === key}
-                className={`min-h-11 px-3 text-meta font-extrabold transition-colors
-                  ${i > 0 ? "border-l border-border" : ""}
-                  ${view === key ? "bg-accent text-white" : "text-tx hover:bg-surface2"}`}>
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
+        {action && <div className="ml-auto">{action}</div>}
       </div>
 
       {pending.length === 0 ? (

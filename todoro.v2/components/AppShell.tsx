@@ -183,7 +183,7 @@ export default function AppShell({
       {showFab && (
         <button onClick={onQuickAdd}
           className={`fixed right-4 bottom-24 z-40 flex items-center gap-2 min-h-14 px-5
-            rounded-pill bg-accent text-white text-lead font-extrabold shadow-glow
+            rounded-pill bg-accent text-white text-lead font-extrabold whitespace-nowrap shadow-glow
             hover:brightness-105 active:scale-95 transition-all duration-500
             ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
           <HiPlus size={19} />

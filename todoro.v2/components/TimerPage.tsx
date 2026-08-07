@@ -8,7 +8,7 @@ import TimerControls from "../components/timer/TimerControls"
 import TaskSelector from "../components/timer/TaskSelector"
 import Panel from "../components/shared/Panel"
 import { useTimerKeys } from "../hooks/useTimerKeys"
-import { useIsDesktop } from "../hooks/useMediaQuery"
+import { useIsDesktop, useIsNarrow } from "../hooks/useMediaQuery"
 import { usePiP } from "../hooks/usePiP"
 import { type Task } from "../components/tasks/TaskCard"
 import { type SessionRecord } from "../app/page"
@@ -53,6 +53,11 @@ export default function TimerPage({
   const [sheetOpen,  setSheetOpen]  = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const isDesktop = useIsDesktop()
+  // The ring is the one fixed-pixel element on the page. 260px sits inside a
+  // 300px screen by a single pixel and overflows anything narrower, so it gets
+  // its own rung rather than being clipped by the page inset.
+  const isNarrow  = useIsNarrow()
+  const ringSize  = isDesktop ? 300 : isNarrow ? 216 : 260
   useTimerKeys({ onToggle, onReset, onSkip })
 
   useEffect(() => { if (running) setFocused(true) }, [running])
@@ -148,7 +153,7 @@ export default function TimerPage({
       <TimerRing
         minutes={minutes} seconds={seconds} progress={progress}
         caption={reverseMode && phase === "focus" ? spentLabel : sessionCaption}
-        size={isDesktop ? 340 : 280} color={color}
+        size={isDesktop ? 340 : isNarrow ? 236 : 280} color={color}
         reverseMode={reverseMode && phase === "focus"} />
       <TimerControls minimal
         running={running} onToggle={onToggle} onReset={onReset} onSkip={onSkip}
@@ -220,7 +225,7 @@ export default function TimerPage({
           <TimerRing
             minutes={minutes} seconds={seconds} progress={progress}
             caption={reverseMode && phase === "focus" ? spentLabel : sessionCaption}
-            size={isDesktop ? 300 : 260} color={color}
+            size={ringSize} color={color}
             reverseMode={reverseMode && phase === "focus"} />
         </div>
 

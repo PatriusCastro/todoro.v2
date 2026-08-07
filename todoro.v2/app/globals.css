@@ -94,6 +94,11 @@
   --spacing-gutter: 12px;   /* gap between panels */
   --spacing-inset:  14px;   /* page edge inset */
 
+  /* Tailwind's smallest default breakpoint is 640px, which treats a 320px
+     phone and a 600px one as the same screen. They are not: two-word button
+     labels wrap below ~380px. `xs` is where type and padding step down. */
+  --breakpoint-xs: 380px;
+
   /* The single glow in the system — reserved for the Today hero. Everything
      else is flat. --accent resolves at the use site, so this tracks the theme. */
   --shadow-glow: 0 16px 38px color-mix(in srgb, var(--accent) 30%, transparent);
@@ -190,6 +195,17 @@ input, textarea { font-family: inherit; }
   background: var(--panel);
   border: var(--hairline) solid var(--border);
   border-radius: var(--radius-panel);
+}
+
+/* ── Small-screen type ────────────────────────────────────────────────────
+   Below 380px the 11px uppercase section labels spend more width on their
+   letter-spacing than on their letters — "SESSIONS" needs ~62px of a 61px
+   stat tile, which is why those labels ran edge to edge. Tightening the
+   tracking here fixes every label at once instead of at thirty call sites.
+   Unlayered, so it wins over Tailwind's utilities layer at equal specificity. */
+@media (max-width: 379px) {
+  .tracking-wider  { letter-spacing: 0.02em; }
+  .tracking-widest { letter-spacing: 0.04em; }
 }
 
 @keyframes tabenter {

@@ -539,8 +539,10 @@ export default function Home() {
       }, 300)
       return next
     })
+    // A logged session is the clearest possible signal that a task is underway,
+    // so it also moves the board — otherwise the board drifts from the work.
     setTasks(ts => ts.map(t => t.id === activeTask.id
-      ? { ...t, completedSessions: t.completedSessions + 1 }
+      ? { ...t, completedSessions: t.completedSessions + 1, stage: "doing" as const }
       : t))
     playChime(false)
     buzz(20)
@@ -621,6 +623,8 @@ export default function Home() {
   // Begin a fresh focus session on a specific task (the ▶ quick-start)
   const handleStartFocus = (task: Task) => {
     setActiveTask(task)
+    setTasks(ts => ts.map(t => t.id === task.id && !t.done
+      ? { ...t, stage: "doing" as const } : t))
     flashToast("Focusing on this task", task.title)
     setPhase("focus")
     setTime(reverseMode ? 0 : focusMins * 60)

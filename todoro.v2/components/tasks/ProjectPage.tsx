@@ -5,6 +5,9 @@ import { HiArrowLeft, HiPlus, HiChevronDown, HiFolder, HiPencil } from "react-ic
 import TaskCard, { type Task } from "./TaskCard"
 import TaskModal, { type Project } from "./TaskModal"
 import ProjectModal from "./ProjectModal"
+import TaskBoard from "./TaskBoard"
+import ViewSwitch from "./ViewSwitch"
+import { type Stage, type TaskView } from "../../lib/board"
 import Toast from "../shared/Toast"
 import { usePinnedTasks } from "../../hooks/usePinnedTasks"
 import { useSortedTasks } from "../../hooks/useTaskSort"
@@ -42,6 +45,8 @@ export default function ProjectPage({
   const [showModal,  setShowModal]  = useState(false)
   const [showDone,   setShowDone]   = useState(false)
   const [projectModal, setProjectModal] = useState(false)
+  // Only two layouts here — every task on this page is already in one project.
+  const [view,       setView]       = useState<TaskView>("all")
 
   const { toast, show: showToast, dismiss: dismissToast } = useToast()
   const { pinned, togglePin } = usePinnedTasks()
@@ -67,6 +72,16 @@ export default function ProjectPage({
   const handleTaskClick = useCallback((task: Task) => {
     setModalTask(task); setShowModal(true)
   }, [])
+
+  // Completing via the board goes through onToggle so a repeating task still
+  // spawns its next occurrence — same rule as the Tasks page.
+  const handleMoveStage = useCallback((task: Task, to: Stage) => {
+    if (to === "done") {
+      if (!task.done) onToggle(task.id)
+      return
+    }
+    onSave({ ...task, done: false, stage: to })
+  }, [onToggle, onSave])
 
   const sorted = useSortedTasks(
     pending.filter(t => t.id !== deletePending?.id),
@@ -99,9 +114,10 @@ export default function ProjectPage({
           <HiArrowLeft size={15} />
         </button>
 
-        {/* Folder icon */}
+        {/* Folder icon — the project name is already colour-coded below it, so
+            on a 320px screen this is the first thing to give up its width. */}
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+          className="w-9 h-9 rounded-xl hidden xs:flex items-center justify-center shrink-0"
           style={{ backgroundColor: `${project.color}22` }}>
           <HiFolder size={17} style={{ color: project.color }} />
         </div>
@@ -125,8 +141,10 @@ export default function ProjectPage({
         {/* New task */}
         <button
           onClick={() => { setModalTask(undefined); setShowModal(true) }}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent text-white text-xs font-semibold hover:bg-accent-hover transition-all">
-          <HiPlus size={13} /> New
+          aria-label="New task in this project"
+          className="min-h-11 shrink-0 grid xs:flex items-center justify-center gap-1.5 w-11 xs:w-auto xs:px-3.5
+            rounded-xl bg-accent text-white text-meta font-extrabold whitespace-nowrap hover:bg-accent-hover transition-all">
+          <HiPlus size={15} /> <span className="hidden xs:inline">New</span>
         </button>
       </div>
 
@@ -144,15 +162,36 @@ export default function ProjectPage({
         </div>
       )}
 
-      {/* Pending tasks */}
-      {sorted.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          {sorted.map(task => renderTask(task))}
-        </div>
+      {/* Board */}
+      {view === "board" ? (
+        <TaskBoard
+          tasks={[...sorted, ...done.filter(t => t.id !== deletePending?.id)]}
+          projects={projects}
+          activeTaskId={activeTask.id}
+          pinnedIds={pinned}
+          onMove={handleMoveStage}
+          onOpen={handleTaskClick}
+          onQuickStart={handleQuickStart}
+          action={<ViewSwitch value={view} onChange={setView} showProject={false} />} />
+      ) : (
+        <>
+          {/* Pending tasks */}
+          <div className="flex items-center gap-3">
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
+              Open — {sorted.length}
+            </span>
+            <ViewSwitch value={view} onChange={setView} showProject={false} className="ml-auto" />
+          </div>
+          {sorted.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              {sorted.map(task => renderTask(task))}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Completed */}
-      {done.length > 0 && (
+      {/* Completed — the board carries its own Done column */}
+      {view !== "board" && done.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <button
             onClick={() => setShowDone(v => !v)}

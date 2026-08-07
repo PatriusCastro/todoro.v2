@@ -10,7 +10,10 @@ import ProjectCard from "../components/tasks/ProjectCard"
 import ProjectModal from "../components/tasks/ProjectModal"
 import ProjectPage from "../components/tasks/ProjectPage"
 import TaskList from "../components/tasks/TaskList"
+import TaskBoard from "../components/tasks/TaskBoard"
+import ViewSwitch from "../components/tasks/ViewSwitch"
 import { type Project } from "../components/tasks/TaskModal"
+import { type Stage, type TaskView } from "../lib/board"
 import { type Priority } from "../lib/theme"
 import PriorityChip from "../components/shared/PriorityChip"
 import Toast from "../components/shared/Toast"
@@ -37,9 +40,11 @@ function localDate(ts: number = Date.now()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
+// "None" is the absence of a ranking, not a rank — filtering to it asked people
+// to think about a bucket they never chose to put anything in. Unranked tasks
+// still show under All.
 const PRIORITIES: { key: Priority; label: string }[] = [
-  { key: "high", label: "High" }, { key: "mid", label: "Mid" },
-  { key: "low",  label: "Low"  }, { key: "none", label: "None" },
+  { key: "high", label: "High" }, { key: "mid", label: "Mid" }, { key: "low", label: "Low" },
 ]
 
 type Filter = Priority | "all" | "done"
@@ -58,7 +63,7 @@ export default function TasksPage({
   const [showDone,  setShowDone]  = useState(false)
   // "all" is the default: a task filed under a project must still be reachable
   // from the main list, otherwise the only way to see it is to open its folder.
-  const [view,      setView]      = useState<"all" | "project">("all")
+  const [view,      setView]      = useState<TaskView>("all")
 
   // Project modal state
   const [projectModal, setProjectModal] = useState<{ open: boolean; project?: Project }>({ open: false })
@@ -100,6 +105,17 @@ export default function TasksPage({
   const handleTaskClick = useCallback((task: Task) => {
     setModalTask(task); setShowModal(true)
   }, [])
+
+  // Board moves. Dropping into Done goes through onToggle rather than writing
+  // done:true directly, so a recurring task still spawns its next occurrence —
+  // the board must not become a second, quieter way to complete something.
+  const handleMoveStage = useCallback((task: Task, to: Stage) => {
+    if (to === "done") {
+      if (!task.done) onToggle(task.id)
+      return
+    }
+    onSave({ ...task, done: false, stage: to })
+  }, [onToggle, onSave])
 
   // Project handlers
   const handleSaveProject = useCallback((p: Project) => {
@@ -150,6 +166,20 @@ export default function TasksPage({
 
   const allPending = useSortedTasks(visible.filter(t => !t.done), activeTask.id, pinned)
   const done       = visible.filter(t => t.done)
+
+  // Filtering to Done and then having to open a collapsed drawer to see the
+  // result made the filter look broken. When Done is the filter, the completed
+  // list is the page — it opens itself and drops the toggle.
+  const doneFilter = filter === "done"
+  const doneOpen   = doneFilter || showDone
+
+  // Deleting the last project must not strand the page in "By project".
+  const effView   = view === "project" && projects.length === 0 ? "all" : view
+  const showBoard = effView === "board" && !selectedDate
+  const showList  = !showBoard && (selectedDate || (visible.length > 0 && !doneFilter))
+  const viewSwitch = (
+    <ViewSwitch value={effView} onChange={setView} showProject={projects.length > 0} />
+  )
 
   const projectOf = (t: Task) => t.projectId ? projects.find(p => p.id === t.projectId) : undefined
 
@@ -237,8 +267,13 @@ export default function TasksPage({
           {daySessions > 0 && (
             <span className="text-xs text-sub shrink-0">{daySessions} session{daySessions > 1 ? "s" : ""}</span>
           )}
+          {/* An X clears a filter in every list people already use, and it holds
+              its 44px target without a two-word label crowding the date. */}
           <button onClick={() => setSelectedDate(null)}
-            className="text-xs font-semibold text-accent hover:underline shrink-0">Show all</button>
+            aria-label="Clear day filter" title="Show all tasks"
+            className="w-11 h-11 -mr-2 shrink-0 grid place-items-center text-sub hover:text-tx transition-colors">
+            <HiXMark size={16} />
+          </button>
         </div>
       ) : (
         <>
@@ -276,8 +311,8 @@ export default function TasksPage({
         <div className="flex items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-2.5">
           <HiArrowsRightLeft size={15} className="text-accent shrink-0" />
           <p className="text-xs text-tx flex-1">
-            <span className="font-bold">Tip:</span> tap a task to edit it — priority, due date, subtasks.
-            Pin 📍 to jump it to the top and make it your next focus, ▶ to start now, or swipe left to delete.
+            <span className="font-bold">Tip:</span> ✏️ or a tap on the row opens a task — priority, due date, subtasks.
+            ▶ starts a session now. Swipe right to pin it to the top as your next focus, left to delete.
           </p>
           <button onClick={dismissSwipeHint} aria-label="Dismiss tip"
             className="w-11 h-11 -my-2 -mr-2 shrink-0 grid place-items-center text-sub hover:text-tx transition-colors">
@@ -330,33 +365,56 @@ export default function TasksPage({
         </>
       )}
 
+      {/* ── Board ─────────────────────────────────────────────────────────── */}
+      {showBoard && (
+        <TaskBoard
+          tasks={[...allPending, ...done]}
+          projects={projects}
+          activeTaskId={activeTask.id}
+          pinnedIds={pinned}
+          onMove={handleMoveStage}
+          onOpen={handleTaskClick}
+          onQuickStart={handleQuickStart}
+          onOpenProject={setActiveProject}
+          action={viewSwitch} />
+      )}
+
       {/* ── Pending tasks ─────────────────────────────────────────────────── */}
-      {(selectedDate || visible.length > 0) && (
+      {showList && (
         <TaskList
           pending={allPending}
           projects={projects}
           pinnedIds={pinned}
           selectedDate={selectedDate}
-          view={view}
-          onViewChange={setView}
+          view={effView}
+          action={selectedDate ? undefined : viewSwitch}
           onOpenProject={setActiveProject}
           renderTask={renderTask}
           hasAnyPending={tasks.some(t => !t.done)} />
       )}
 
-      {/* Completed */}
-      {done.length > 0 && (
+      {/* Completed — the board already has a Done column of its own */}
+      {!showBoard && done.length > 0 && (
         <div className="flex flex-col">
-          <button onClick={() => setShowDone(v => !v)}
-            className="flex items-center justify-between py-1.5 w-full">
-            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
-              Completed — {done.length}
-            </span>
-            <HiChevronDown size={12} className="text-sub transition-transform duration-200"
-              style={{ transform: showDone ? "rotate(180deg)" : "none" }} />
-          </button>
+          {doneFilter ? (
+            <div className="flex items-center py-1.5 w-full">
+              <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
+                Completed — {done.length}
+              </span>
+            </div>
+          ) : (
+            <button onClick={() => setShowDone(v => !v)}
+              aria-expanded={showDone}
+              className="flex items-center justify-between py-1.5 w-full">
+              <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
+                Completed — {done.length}
+              </span>
+              <HiChevronDown size={12} className="text-sub transition-transform duration-200"
+                style={{ transform: showDone ? "rotate(180deg)" : "none" }} />
+            </button>
+          )}
           <div className="h-px bg-border mb-2" style={{ opacity: 0.5 }} />
-          {showDone && (
+          {doneOpen && (
             <div className="flex flex-col gap-2">
               {done.map(task => (
                 <TaskCard key={task.id} task={task}
@@ -368,8 +426,10 @@ export default function TasksPage({
         </div>
       )}
 
-      {/* Empty state */}
-      {visible.length === 0 && !deletePending && (
+      {/* Empty state — only where nothing else already explains the emptiness.
+          A filter that matches nothing is answered inside the list itself. */}
+      {visible.length === 0 && !deletePending && !showBoard
+        && (selectedDate || doneFilter || tasks.length === 0) && (
         <div className="panel px-5 py-12 text-center">
           <HiFolderOpen size={28} className="text-sub mx-auto mb-3" />
           <p className="text-sub text-sm">{selectedDate ? "No tasks due this day" : "No tasks found"}</p>

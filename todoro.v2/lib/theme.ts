@@ -8,7 +8,7 @@ export const colors = {
   priority: { high: "#FF6B6B", mid: "#FBBF24", low: "#34D399", none: "#6B7280" },
 } as const
 
-export const breakpoints = { sm: 480, md: 768, lg: 1024, xl: 1280 } as const
+export const breakpoints = { xs: 380, sm: 480, md: 768, lg: 1024, xl: 1280 } as const
 
 export type Priority = "high" | "mid" | "low" | "none"
 export const getPriority = (p: Priority) => colors.priority[p]

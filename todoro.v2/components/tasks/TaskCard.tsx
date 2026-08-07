@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { HiChevronDown, HiCheck, HiPlay, HiMapPin, HiTrash, HiArrowPath, HiFolder } from "react-icons/hi2"
+import { useState, useRef } from "react"
+import { HiChevronDown, HiCheck, HiPlay, HiMapPin, HiTrash, HiArrowPath, HiFolder, HiPencil } from "react-icons/hi2"
 import { type Priority } from "../../lib/theme"
 import { useSwipe } from "../../hooks/useSwipe"
 import PriorityChip from "../shared/PriorityChip"
@@ -15,6 +15,8 @@ export interface Task {
   estimatedSessions: number; completedSessions: number
   projectId?: string
   repeat?: Repeat
+  /** Board lane for an open task. `done` still decides completion — see lib/board. */
+  stage?: "todo" | "doing"
 }
 
 interface TaskCardProps {
@@ -58,6 +60,16 @@ export default function TaskCard({
     return matrix.m41 !== 0
   }
 
+  // The whole row opens the task, not just the title column — but the row is
+  // also the swipe surface, so a drag that ends over it must not read as a tap.
+  const downAt = useRef<{ x: number; y: number } | null>(null)
+  const openTask = (e: React.MouseEvent) => {
+    const d = downAt.current
+    if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) return
+    if (onClick) onClick(task)
+    else if (expandable) setExpanded(v => !v)
+  }
+
   return (
     // One row treatment everywhere: a divider-separated list, not a stack of
     // bordered cards. Cards inside a card was the "nothing outranks anything"
@@ -88,7 +100,14 @@ export default function TaskCard({
           ${isActive && !task.done ? "bg-accent/8" : "bg-transparent"}
           ${task.done ? "opacity-50" : ""}`}>
 
-        <div className={`flex items-center gap-3 ${compact ? "px-1 py-3.5" : "px-2 py-3.5"}`}>
+        {/* Padding and gaps step down below 380px: two 44px buttons and a 44px
+            checkbox leave the title well under 100px on a 320px phone, and the
+            title is the only part of the row that cannot be an icon. */}
+        <div
+          onPointerDown={e => { downAt.current = { x: e.clientX, y: e.clientY } }}
+          onClick={openTask}
+          className={`flex items-center gap-2 xs:gap-3 py-3.5 ${compact ? "px-1" : "px-1 xs:px-2"}
+            ${onClick || expandable ? "cursor-pointer" : ""}`}>
 
           {/* Checkbox — 22px circle inside a 44px target. Completing a task is
               the single most-tapped control here and the easiest to fat-finger. */}
@@ -106,14 +125,16 @@ export default function TaskCard({
           </button>
 
           {/* Text */}
-          <div
-            className="flex-1 min-w-0 cursor-pointer"
-            onClick={() => onClick ? onClick(task) : expandable && setExpanded(v => !v)}>
+          <div className="flex-1 min-w-0">
 
             <div className="flex items-center gap-2 min-w-0">
-              {/* Pinned state lives on the pin button; a second marker here just
-                  spent width. Kept on compact rows, which have no pin button. */}
-              {isPinned && compact && <HiMapPin size={12} className="text-accent shrink-0" />}
+              {/* Pinned state lives on the pin button — but that button is
+                  phone-hidden, and compact rows never had one, so the marker
+                  carries it wherever the button isn't. */}
+              {isPinned && (
+                <HiMapPin size={12}
+                  className={`text-accent shrink-0 ${onPin && !compact ? "sm:hidden" : ""}`} />
+              )}
               <PriorityChip priority={task.priority} />
               {/* Wraps to two lines instead of hiding behind a tap-to-expand
                   that sat pixels away from "open task" and fired by mistake. */}
@@ -164,7 +185,7 @@ export default function TaskCard({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 xs:gap-1.5 shrink-0">
             {/* A word beats a pulsing dot: "Now" says which task the timer is on
                 without the reader having to learn what the dot meant. */}
             {isActive && !task.done && (
@@ -173,23 +194,33 @@ export default function TaskCard({
                 Now
               </span>
             )}
-            {/* Two actions, both 44px. Four buttons left ~114px for the title on
-                a phone, which is why nothing could reach the touch floor — but
-                dropping to one made pinning a swipe-only gesture, which is
-                invisible on a mouse. Pin and start earn their place; edit is a
-                tap on the row and delete is the swipe. */}
+            {/* Two 44px buttons is all a phone row can spare — a third leaves
+                the title ~100px. Edit and start are the two people reach for,
+                so pin steps back to sm+ where there's room; on a phone it stays
+                the swipe-right gesture the hint teaches. Delete is swipe-left. */}
             {onPin && !task.done && (
               <button
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); onPin(task.id) }}
                 aria-pressed={isPinned}
                 aria-label={isPinned ? `Unpin "${task.title}"` : `Pin "${task.title}" to work on next`}
-                className={`w-11 h-11 shrink-0 grid place-items-center rounded-control border
+                className={`w-11 h-11 shrink-0 hidden sm:grid place-items-center rounded-control border
                   transition-colors duration-150
                   ${isPinned
                     ? "border-accent bg-accent text-white"
                     : "border-border text-tx hover:border-accent hover:text-accent"}`}>
                 <HiMapPin size={16} />
+              </button>
+            )}
+            {onClick && !task.done && (
+              <button
+                onPointerDown={e => e.stopPropagation()}
+                onClick={e => { e.stopPropagation(); onClick(task) }}
+                aria-label={`Edit "${task.title}"`}
+                title="Edit task"
+                className="w-11 h-11 shrink-0 grid place-items-center rounded-control border border-border
+                  text-tx hover:border-accent hover:text-accent transition-colors duration-150">
+                <HiPencil size={15} />
               </button>
             )}
             {onQuickStart && !task.done && (

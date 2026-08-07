@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useRef, useEffect } from "react"
 import { HiChevronLeft, HiChevronRight, HiCalendarDays } from "react-icons/hi2"
 import { type Task } from "./TaskCard"
 import { type SessionRecord } from "../../app/page"
@@ -187,19 +187,21 @@ export default function TasksCalendar({ tasks, allHistory, selected, onSelect }:
       <div className="panel overflow-hidden">
 
         {/* Header — month + week number, and the month-view escape hatch */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
-          <h3 className="text-caption font-extrabold uppercase tracking-wider text-tx">{monthLabel}</h3>
+        <div className="flex items-center gap-2 xs:gap-3 px-3 xs:px-4 py-3 border-b border-border">
+          <h3 className="text-caption font-extrabold uppercase tracking-wider text-tx truncate">{monthLabel}</h3>
           <button onClick={() => setSheetOpen(true)}
             aria-label="Open month view" aria-haspopup="dialog" aria-expanded={sheetOpen}
-            className="ml-auto flex items-center gap-1.5 min-h-9 px-2 rounded-chip text-caption text-sub
-              hover:text-accent transition-colors">
+            className="ml-auto shrink-0 flex items-center gap-1.5 min-h-9 px-2 rounded-chip text-caption text-sub
+              whitespace-nowrap hover:text-accent transition-colors">
             Week {weekNumber} <HiCalendarDays size={14} />
           </button>
         </div>
 
         {/* Current week — the day name lives inside the cell, so there is no
             separate header row to keep aligned with it. */}
-        <div className="grid grid-cols-7 gap-1.5 p-3">
+        {/* Seven cells always share the width, so below 380px the gutters give
+            way first — a 26px cell cannot hold "Wed" over a two-digit date. */}
+        <div className="grid grid-cols-7 gap-1 xs:gap-1.5 p-2 xs:p-3">
           {week.map(({ ds, dayNum, month }, i) => (
             <DayCell key={ds} ds={ds} dayNum={dayNum} dayLabel={DAYS_SHORT[i]}
               isToday={ds === todayStr} isSel={ds === selected}
@@ -218,15 +220,36 @@ export default function TasksCalendar({ tasks, allHistory, selected, onSelect }:
   )
 }
 
-const WEEKS_SHOWN = 14
+const WEEKS_SHOWN = 53
+const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+// Sunday-first rows. Labelling every row is noise at 14px; three is enough to
+// orient the reader, which is the convention every contribution graph uses.
+const WEEKDAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""]
+
+// Fixed pixels, not fractions. A fraction-sized grid fills whatever it is given,
+// which on a desktop panel meant 68px squares; a heatmap only reads as one when
+// the cell stays small and the year stays dense.
+const CELL = 14
+const GAP  = 3
+const DAY_COL = 26   // room for "Mon" at caption size
 
 /**
- * Focus-session heatmap over the last 14 weeks, ending on the week containing
- * today. It used to run a full 365 days, which needed a horizontal scroller and
- * a layout effect to keep today in view; 14 weeks fits any phone width, so both
- * are gone.
+ * Focus-session heatmap over the last 53 weeks, ending on the week containing
+ * today: fixed small cells, month labels along the top, weekday labels down the
+ * side, and a horizontal scroller parked at today. A shorter fixed-width range
+ * fit a phone without scrolling, but it could not show a year, and stretching
+ * 14 weeks across a desktop panel turned each day into a tile.
  */
 export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
+  const scroller = useRef<HTMLDivElement>(null)
+
+  // A year does not fit a phone, so the graph opens on the most recent weeks
+  // rather than on last spring.
+  useEffect(() => {
+    const el = scroller.current
+    if (el) el.scrollLeft = el.scrollWidth
+  }, [])
+
   const sessionsByDate = allHistory.reduce<Record<string, number>>((acc, s) => {
     const d = localDate(s.at); acc[d] = (acc[d] ?? 0) + 1; return acc
   }, {})
@@ -237,11 +260,11 @@ export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
   start.setHours(0, 0, 0, 0)
   start.setDate(start.getDate() - start.getDay() - (WEEKS_SHOWN - 1) * 7)
 
-  const heatmapCells: { date: string; count: number }[] = []
+  const heatmapCells: { date: string; count: number; month: number }[] = []
   for (let i = 0; i < WEEKS_SHOWN * 7; i++) {
     const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)
     const ds = localDate(d.getTime())
-    heatmapCells.push({ date: ds, count: sessionsByDate[ds] ?? 0 })
+    heatmapCells.push({ date: ds, count: sessionsByDate[ds] ?? 0, month: d.getMonth() })
   }
 
   const maxCount = Math.max(...heatmapCells.map(c => c.count), 1)
@@ -257,38 +280,83 @@ export function FocusHistory({ allHistory }: { allHistory: SessionRecord[] }) {
     return { background: `color-mix(in srgb, var(--accent) ${STEP_MIX[step]}%, transparent)` }
   }
 
-  const weeks: { date: string; count: number }[][] = []
+  const weeks: { date: string; count: number; month: number }[][] = []
   for (let i = 0; i < heatmapCells.length; i += 7) weeks.push(heatmapCells.slice(i, i + 7))
+
+  // A month is labelled above the first column that belongs to it. The opening
+  // column is skipped — it is a partial month whose label would sit over weeks
+  // that aren't there — and so are the last two, where a 3-letter label would
+  // run off the end of the graph.
+  const monthLabels = weeks.map((week, wi) => {
+    if (wi === 0 || wi >= weeks.length - 2) return null
+    return week[0].month !== weeks[wi - 1][0].month ? MONTHS_SHORT[week[0].month] : null
+  })
 
   const today = localDate()
 
   return (
-    <Panel className="flex flex-col gap-4">
-      <SectionHeader meta={`${WEEKS_SHOWN} weeks`}>Focus history</SectionHeader>
+    <Panel className="flex flex-col gap-3">
+      <SectionHeader meta="Last 12 months">Focus history</SectionHeader>
 
-      {/* 14 columns of 7 days. Sized by fraction rather than fixed pixels so the
-          grid fills the panel at any width instead of needing a scroller. */}
-      <div className="flex gap-1.5">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="flex-1 flex flex-col gap-1.5">
-            {week.map(({ date, count }) => (
-              <div key={date}
-                title={`${date} — ${count} session${count !== 1 ? "s" : ""}`}
-                style={heatStyle(count)}
-                className={`w-full aspect-square rounded-chip transition-colors duration-150
-                  ${date === today ? "ring-2 ring-accent ring-offset-2 ring-offset-panel" : ""}`} />
+      {/* 53 columns of 7 days at a fixed 14px. A year is wider than a phone by
+          design, so the graph scrolls rather than shrinking its cells to fit. */}
+      <div ref={scroller}
+        className="overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:thin]">
+        <div className="flex flex-col gap-1 w-max">
+
+          {/* Month labels — offset by the weekday column so they sit over the
+              right week. Each label overflows its own 14px column on purpose. */}
+          <div className="flex" style={{ gap: GAP, marginLeft: DAY_COL + GAP }}>
+            {weeks.map((_, wi) => (
+              <div key={wi} className="relative shrink-0" style={{ width: CELL, height: 12 }}>
+                {monthLabels[wi] && (
+                  <span className="absolute left-0 top-0 text-caption text-sub leading-none whitespace-nowrap">
+                    {monthLabels[wi]}
+                  </span>
+                )}
+              </div>
             ))}
           </div>
-        ))}
+
+          <div className="flex" style={{ gap: GAP }}>
+            <div className="flex flex-col shrink-0" style={{ gap: GAP, width: DAY_COL }}>
+              {WEEKDAY_LABELS.map((l, i) => (
+                <span key={i} className="flex items-center text-caption text-sub leading-none"
+                  style={{ height: CELL }}>
+                  {l}
+                </span>
+              ))}
+            </div>
+
+            {weeks.map((week, wi) => (
+              <div key={wi} className="flex flex-col shrink-0" style={{ gap: GAP }}>
+                {week.map(({ date, count }) => (
+                  <div key={date}
+                    title={`${date} — ${count} session${count !== 1 ? "s" : ""}`}
+                    style={{
+                      ...heatStyle(count),
+                      width: CELL, height: CELL,
+                      // Inset, so marking today never bleeds into the 3px gap
+                      // or gets clipped by the scroller at the right edge.
+                      boxShadow: date === today ? "inset 0 0 0 2px var(--accent)" : undefined,
+                    }}
+                    className="rounded-chip transition-colors duration-150" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-end gap-1.5">
         <span className="text-caption text-sub">Less</span>
         {[0, 1, 2, 3, 4].map(step => (
-          <span key={step} className="w-3.5 h-3.5 rounded-chip"
-            style={step === 0
-              ? { background: "color-mix(in srgb, var(--tx) 11%, transparent)" }
-              : { background: `color-mix(in srgb, var(--accent) ${STEP_MIX[step]}%, transparent)` }} />
+          <span key={step} className="rounded-chip" style={{
+            width: CELL, height: CELL,
+            background: step === 0
+              ? "color-mix(in srgb, var(--tx) 11%, transparent)"
+              : `color-mix(in srgb, var(--accent) ${STEP_MIX[step]}%, transparent)`,
+          }} />
         ))}
         <span className="text-caption text-sub">More</span>
       </div>

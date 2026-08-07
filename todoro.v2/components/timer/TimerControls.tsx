@@ -26,10 +26,13 @@ export default function TimerControls({
 }: TimerControlsProps) {
   const showStopAndRest = reverseMode && phase === "focus" && running && onStopAndRest
 
+  // "Start long break" is three words in a button that has two 60px neighbours
+  // — it wrapped on anything narrower than a modern phone. The phase is already
+  // named above the ring, so the button only has to say what pressing it does.
   const primaryLabel = running
     ? "Pause"
     : phase === "focus" ? (reverseMode ? "Begin focus" : "Start focus")
-    : phase === "longbreak" ? "Start long break" : "Start break"
+    : phase === "longbreak" ? "Long break" : "Start break"
 
   // Focus view strips the chrome: three quiet icon buttons, nothing filled and
   // nothing to read. A big pink "Pause" is the loudest thing on a screen whose
@@ -61,31 +64,35 @@ export default function TimerControls({
   return (
     <div className="flex items-stretch gap-2">
       <button onClick={onReset} aria-label="Reset session"
-        className="w-15 min-h-15 shrink-0 grid place-items-center rounded-control border border-border
+        className="w-13 xs:w-15 min-h-14 xs:min-h-15 shrink-0 grid place-items-center rounded-control border border-border
           text-tx hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150">
         <HiArrowPath size={19} />
       </button>
 
+      {/* nowrap over shrink: the label is the button. Below 380px the type and
+          the two square neighbours step down so it still fits on one line. */}
       {showStopAndRest ? (
         <button onClick={onStopAndRest}
-          className="flex-1 min-h-15 flex items-center justify-center gap-2.5 rounded-control
-            bg-priority-low text-white text-heading font-extrabold
+          className="flex-1 min-w-0 min-h-14 xs:min-h-15 flex items-center justify-center gap-2 xs:gap-2.5 px-2 rounded-control
+            bg-priority-low text-white text-lead xs:text-heading font-extrabold whitespace-nowrap
             hover:brightness-105 active:scale-[0.98] transition-all duration-150">
-          <HiStop size={18} /> Stop &amp; rest
+          <HiStop size={18} className="shrink-0" /> Stop &amp; rest
         </button>
       ) : (
         <button onClick={onToggle}
-          className="flex-1 min-h-15 flex items-center justify-center gap-2.5 rounded-control
-            bg-accent text-white text-heading font-extrabold
+          className="flex-1 min-w-0 min-h-14 xs:min-h-15 flex items-center justify-center gap-2 xs:gap-2.5 px-2 rounded-control
+            bg-accent text-white text-lead xs:text-heading font-extrabold whitespace-nowrap
             hover:bg-accent-hover active:scale-[0.98] transition-all duration-150">
-          {running ? <HiPause size={18} /> : <HiPlay size={18} />}
+          {running
+            ? <HiPause size={18} className="shrink-0" />
+            : <HiPlay size={18} className="shrink-0" />}
           {primaryLabel}
         </button>
       )}
 
       <button onClick={onSkip}
         aria-label={phase === "focus" ? "Skip to break" : "Skip to focus"}
-        className="w-15 min-h-15 shrink-0 grid place-items-center rounded-control border border-border
+        className="w-13 xs:w-15 min-h-14 xs:min-h-15 shrink-0 grid place-items-center rounded-control border border-border
           text-tx hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150">
         <HiForward size={19} />
       </button>
