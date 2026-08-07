@@ -7,6 +7,7 @@ import { type Mode } from "../components/timer/ModeSelector"
 import { getPriority } from "../lib/theme"
 import { sortTasks } from "../lib/taskOrder"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
+import StatTile from "./shared/StatTile"
 
 type Phase = "focus" | "break" | "longbreak"
 
@@ -119,22 +120,6 @@ function MiniCalendar({
       <button onClick={() => onNavToCalendar()} className="mt-auto flex items-center justify-center gap-2 text-xs text-sub hover:text-accent transition-colors self-center">
         View Calendar <HiChevronRight size={11} />
       </button>
-    </div>
-  )
-}
-
-function StatTile({ icon, label, value, sub, accent }: {
-  icon: React.ReactNode; label: string; value: string | number; sub?: string; accent?: string
-}) {
-  return (
-    <div className="glass rounded-2xl px-5 py-4 flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <span className="text-sub">{icon}</span>
-        <span className="text-xs font-bold text-sub">{label}</span>
-      </div>
-      <span className="text-3xl font-semibold leading-none" style={accent ? { color: accent } : undefined}>
-        {value} {sub && <span className="font-semibold text-xs text-sub">{sub}</span>}
-      </span>
     </div>
   )
 }
@@ -332,7 +317,7 @@ export default function HomePage({
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
             <StatTile icon={<HiFire size={14} />}        label="Streak" value={`${streak}d`} />
-            <StatTile icon={<HiCheckCircle size={14} />} label="Done"   value={doneTasks.length}  sub={`of ${tasks.length} tasks`} />
+            <StatTile icon={<HiCheckCircle size={14} />} label="Done"   value={doneTasks.length} suffix={`of ${tasks.length} tasks`} />
           </div>
 
           {/* Up Next and Calendar */}

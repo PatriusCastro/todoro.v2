@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { createPortal } from "react-dom"
+import { useLayoutEffect, useMemo, useRef, useState } from "react"
 import { HiChevronLeft, HiChevronRight, HiCalendarDays } from "react-icons/hi2"
 import { type Task } from "./TaskCard"
 import { type SessionRecord } from "../../app/page"
 import { getPriority } from "../../lib/theme"
+import Sheet from "../shared/Sheet"
 
 function localDate(ts: number = Date.now()) {
   const d = new Date(ts)
@@ -82,29 +82,19 @@ function DayCell({ ds, dayNum, isToday, isSel, dayTasks, sessions, ariaLabel, on
 }
 
 // Full-month calendar in a bottom sheet. Picking a day selects it and closes.
-function MonthSheet({ anchor, maps, todayStr, selected, dark, onSelect, onClose }: {
+function MonthSheet({ anchor, maps, todayStr, selected, onSelect, onClose }: {
   anchor:   Date
   maps:     DayMaps
   todayStr: string
   selected: string | null
-  dark:     boolean
   onSelect: (d: string | null) => void
   onClose:  () => void
 }) {
   const [year,  setYear]  = useState(anchor.getFullYear())
   const [month, setMonth] = useState(anchor.getMonth())
-  const panelRef = useRef<HTMLDivElement>(null)
 
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1) }
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1) }
-
-  // Close on Escape; move focus into the dialog on open
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose() }
-    document.addEventListener("keydown", onKey)
-    panelRef.current?.focus()
-    return () => document.removeEventListener("keydown", onKey)
-  }, [onClose])
 
   const firstDay  = new Date(year, month, 1).getDay()
   const daysCount = new Date(year, month + 1, 0).getDate()
@@ -112,67 +102,54 @@ function MonthSheet({ anchor, maps, todayStr, selected, dark, onSelect, onClose 
     i < firstDay ? null : i - firstDay + 1
   )
 
-  return createPortal(
-    <div className={dark ? "dark" : ""}>
-      <div className="fixed inset-0 z-9999 flex items-end justify-center bg-black/70"
-        onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-        <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Month calendar" tabIndex={-1}
-          className="w-full max-w-md glass-strong rounded-t-3xl flex flex-col px-3 pb-7 pt-2 outline-none
-            max-h-[85dvh] overflow-y-auto motion-safe:animate-[sheetup_0.28s_ease-out]">
-
-          {/* Grab handle */}
-          <div className="mx-auto mt-1 mb-2 h-1.5 w-10 rounded-full bg-tx/20" />
-
-          {/* Month nav */}
-          <div className="flex items-center justify-between px-2 py-1">
-            <button onClick={prevMonth} aria-label="Previous month"
-              className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
-              <HiChevronLeft size={18} />
-            </button>
-            <span className="text-sm font-semibold text-tx">{MONTHS[month]} {year}</span>
-            <button onClick={nextMonth} aria-label="Next month"
-              className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
-              <HiChevronRight size={18} />
-            </button>
-          </div>
-
-          {/* Day headers */}
-          <div className="grid grid-cols-7 pt-2 pb-1">
-            {DAYS.map(d => (
-              <div key={d} className="text-center text-[11px] font-semibold text-sub py-1">{d}</div>
-            ))}
-          </div>
-
-          {/* Month grid */}
-          <div className="grid grid-cols-7 gap-1 pb-2">
-            {cells.map((day, i) => {
-              if (!day) return <div key={i} />
-              const ds = isoDate(year, month, day)
-              return (
-                <DayCell key={i} ds={ds} dayNum={day}
-                  isToday={ds === todayStr} isSel={ds === selected}
-                  dayTasks={maps.tasksByDate[ds] ?? []} sessions={maps.sessionsByDate[ds] ?? 0}
-                  ariaLabel={`${MONTHS[month]} ${day}, ${year}`}
-                  onSelect={d => { onSelect(d); onClose() }} />
-              )
-            })}
-          </div>
-        </div>
+  return (
+    <Sheet label="Month calendar" onClose={onClose} className="px-3 pb-7">
+      {/* Month nav */}
+      <div className="flex items-center justify-between px-2 py-1">
+        <button onClick={prevMonth} aria-label="Previous month"
+          className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
+          <HiChevronLeft size={18} />
+        </button>
+        <span className="text-sm font-semibold text-tx">{MONTHS[month]} {year}</span>
+        <button onClick={nextMonth} aria-label="Next month"
+          className="p-1.5 rounded-lg text-sub hover:text-tx hover:bg-surface2 transition-colors">
+          <HiChevronRight size={18} />
+        </button>
       </div>
-    </div>,
-    document.body
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7 pt-2 pb-1">
+        {DAYS.map(d => (
+          <div key={d} className="text-center text-[11px] font-semibold text-sub py-1">{d}</div>
+        ))}
+      </div>
+
+      {/* Month grid */}
+      <div className="grid grid-cols-7 gap-1 pb-2">
+        {cells.map((day, i) => {
+          if (!day) return <div key={i} />
+          const ds = isoDate(year, month, day)
+          return (
+            <DayCell key={i} ds={ds} dayNum={day}
+              isToday={ds === todayStr} isSel={ds === selected}
+              dayTasks={maps.tasksByDate[ds] ?? []} sessions={maps.sessionsByDate[ds] ?? 0}
+              ariaLabel={`${MONTHS[month]} ${day}, ${year}`}
+              onSelect={d => { onSelect(d); onClose() }} />
+          )
+        })}
+      </div>
+    </Sheet>
   )
 }
 
 // On-page calendar: shows only the current week (or the selected day's week);
 // the "Month" button opens the full month in a bottom sheet. Selection is
 // controlled by the parent so it can filter the task list below.
-export default function TasksCalendar({ tasks, allHistory, selected, onSelect, dark }: {
+export default function TasksCalendar({ tasks, allHistory, selected, onSelect }: {
   tasks:      Task[]
   allHistory: SessionRecord[]
   selected:   string | null
   onSelect:   (d: string | null) => void
-  dark:       boolean
 }) {
   const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -233,7 +210,7 @@ export default function TasksCalendar({ tasks, allHistory, selected, onSelect, d
 
       {sheetOpen && (
         <MonthSheet anchor={anchor} maps={maps} todayStr={todayStr} selected={selected}
-          dark={dark} onSelect={onSelect} onClose={() => setSheetOpen(false)} />
+          onSelect={onSelect} onClose={() => setSheetOpen(false)} />
       )}
     </>
   )

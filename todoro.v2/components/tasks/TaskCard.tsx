@@ -4,6 +4,7 @@ import { useState } from "react"
 import { HiPencil, HiChevronDown, HiCheck, HiPlay, HiMapPin, HiTrash, HiArrowPath, HiFolder } from "react-icons/hi2"
 import { getPriority, type Priority } from "../../lib/theme"
 import { useSwipe } from "../../hooks/useSwipe"
+import PriorityChip from "../shared/PriorityChip"
 
 export type Repeat = "none" | "daily" | "weekly"
 export interface Subtask { id: string; title: string; done: boolean }
@@ -107,9 +108,7 @@ export default function TaskCard({
             <div className="flex items-center gap-2 min-w-0">
               {isPinned && <HiMapPin size={10} className="text-accent shrink-0" />}
               {isActive  && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 animate-pulse" />}
-              {task.priority !== "none" && (
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: dot }} />
-              )}
+              <PriorityChip priority={task.priority} />
               {/* Wraps to two lines instead of hiding behind a tap-to-expand
                   that sat pixels away from "open task" and fired by mistake. */}
               <span

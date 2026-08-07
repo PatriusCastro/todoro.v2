@@ -4,6 +4,10 @@ import { useRef } from "react"
 import { HiUser, HiMoon, HiSun, HiComputerDesktop, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward, HiTrash } from "react-icons/hi2"
 import { MdColorLens } from "react-icons/md";
 import { FaBullseye } from "react-icons/fa"
+import Panel from "./shared/Panel"
+import Toggle from "./shared/Toggle"
+import Stepper from "./shared/Stepper"
+import Segmented, { type SegmentedOption } from "./shared/Segmented"
 
 type Theme = "system" | "light" | "dark"
 
@@ -18,10 +22,10 @@ interface SettingsPageProps {
   autoStart: boolean; onAutoStart: (v: boolean) => void
 }
 
-const THEMES: { id: Theme; label: string; icon: React.ReactNode }[] = [
-  { id: "system", label: "System", icon: <HiComputerDesktop size={15} /> },
-  { id: "light",  label: "Light",  icon: <HiSun size={15} /> },
-  { id: "dark",   label: "Dark",   icon: <HiMoon size={15} /> },
+const THEMES: SegmentedOption<Theme>[] = [
+  { value: "system", label: <><HiComputerDesktop size={15} /> System</> },
+  { value: "light",  label: <><HiSun size={15} /> Light</> },
+  { value: "dark",   label: <><HiMoon size={15} /> Dark</> },
 ]
 
 export default function SettingsPage({
@@ -178,16 +182,7 @@ export default function SettingsPage({
             <HiSun size={18} className="text-sub shrink-0" />
             <span className="flex-1 text-sm font-medium text-tx">Theme</span>
           </div>
-          <div className="flex items-center gap-1 bg-surface2 rounded-xl p-1">
-            {THEMES.map(({ id, label, icon }) => (
-              <button key={id} onClick={() => onTheme(id)}
-                aria-pressed={theme === id}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-colors
-                  ${theme === id ? "bg-surface text-tx shadow-sm" : "text-sub hover:text-tx"}`}>
-                {icon} {label}
-              </button>
-            ))}
-          </div>
+          <Segmented options={THEMES} value={theme} onChange={onTheme} label="Theme" />
         </div>
         <div className="flex flex-col gap-3 px-4 py-4">
           <div className="flex items-center gap-3">
@@ -218,14 +213,11 @@ export default function SettingsPage({
         <ToggleRow label="Auto-start breaks & focus" icon={<HiForward size={18} className="text-sub shrink-0" />} value={autoStart} onChange={onAutoStart} />
         <div className="flex items-center gap-3 px-4 py-4">
           <FaBullseye size={18} className="text-sub shrink-0" />
-          <span className="flex-1 text-sm font-medium text-tx">Daily Session Goal</span>
-          <div className="flex items-center gap-2">
-            <StepBtn onClick={() => onDailyGoal(Math.max(1, dailyGoal - 1))} disabled={dailyGoal <= 1}>−</StepBtn>
-            <span className="text-sm font-semibold text-tx w-20 text-center tabular-nums">
-              {dailyGoal} <span className="text-xs font-normal text-sub">sessions</span>
-            </span>
-            <StepBtn onClick={() => onDailyGoal(Math.min(12, dailyGoal + 1))} disabled={dailyGoal >= 12}>+</StepBtn>
+          <div className="flex-1">
+            <span className="text-sm font-medium text-tx">Daily Session Goal</span>
+            <p className="text-xs text-sub">Sessions you aim for each day</p>
           </div>
+          <Stepper value={dailyGoal} onChange={onDailyGoal} min={1} max={12} unit="sessions" />
         </div>
       </Section>
 
@@ -259,7 +251,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.4.0" />
+        <InfoRow label="Version" value="2.5.0" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
     </div>
@@ -270,9 +262,9 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   return (
     <div className="flex flex-col gap-2">
       <span className="text-xs font-bold text-sub px-1">{label}</span>
-      <div className="glass rounded-2xl overflow-hidden divide-y divide-border">
+      <Panel bare className="overflow-hidden divide-y divide-border">
         {children}
-      </div>
+      </Panel>
     </div>
   )
 }
@@ -284,21 +276,8 @@ function ToggleRow({ label, icon, value, onChange }: {
     <div className="flex items-center gap-3 px-4 py-4">
       {icon}
       <span className="flex-1 text-sm font-medium text-tx">{label}</span>
-      <button onClick={() => onChange(!value)}
-        className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${value ? "bg-accent" : "bg-border"}`}>
-        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all duration-300 ${value ? "left-6" : "left-0.5"}`} />
-      </button>
+      <Toggle checked={value} onChange={onChange} label={label} />
     </div>
-  )
-}
-
-function StepBtn({ onClick, disabled, children }: { onClick: () => void; disabled: boolean; children: React.ReactNode }) {
-  return (
-    <button onClick={onClick} disabled={disabled}
-      className="w-7 h-7 rounded-xl border border-border text-sub flex items-center justify-center font-bold
-        hover:border-accent/40 hover:text-tx disabled:opacity-30 transition-all">
-      {children}
-    </button>
   )
 }
 

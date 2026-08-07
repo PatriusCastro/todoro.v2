@@ -233,7 +233,7 @@ export default function TasksPage({
       </div>
 
       {/* Calendar — tap a day to filter the list below */}
-      <TasksCalendar tasks={tasks} allHistory={allHistory} selected={selectedDate} onSelect={setSelectedDate} dark={dark} />
+      <TasksCalendar tasks={tasks} allHistory={allHistory} selected={selectedDate} onSelect={setSelectedDate} />
 
       {selectedDate ? (
         <div className="flex items-center gap-3 glass rounded-xl px-4 py-2.5">
