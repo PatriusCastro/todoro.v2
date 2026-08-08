@@ -21,6 +21,7 @@ import { computeStreak, findStreakRestore } from "../lib/streak"
 import { computePoints, levelFromPoints, FREEZE_COST } from "../lib/points"
 import { nextOccurrence } from "../lib/recurrence"
 import { type SessionRecord } from "../lib/types"
+import { markDirty } from "../lib/sync/dirty"
 import { applyAccentSet, buildAccentSet, type AccentSet } from "../lib/accent"
 import { playAlert, type AlertSound } from "../lib/sound"
 import { useWakeLock } from "../hooks/useWakeLock"
@@ -95,6 +96,10 @@ function load<T>(key: string, fallback: T): T {
 function save(key: string, value: unknown): boolean {
   try {
     localStorage.setItem(key, JSON.stringify(value))
+    // The whole sync integration into this file: a signal that something
+    // changed. Signed out it sets a boolean nobody reads. The engine re-reads
+    // localStorage itself rather than being handed the value.
+    markDirty(key)
     return true
   } catch {
     return false

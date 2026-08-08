@@ -1,4 +1,5 @@
 import { useCallback, useSyncExternalStore } from "react"
+import { markDirty } from "../lib/sync/dirty"
 
 const KEY = "todoro:pinned"
 
@@ -23,7 +24,14 @@ function read(): Set<string> {
 function commit(next: Set<string>) {
   snapshot = next
   try { localStorage.setItem(KEY, JSON.stringify([...next])) } catch {}
+  // The only synced writer outside page.tsx's save(), so it signals for itself.
+  markDirty(KEY)
   listeners.forEach(l => l())
+}
+
+/** Applies pins pulled from the account. Reuses commit, so subscribers update. */
+export function hydratePins(ids: string[]) {
+  commit(new Set(ids))
 }
 
 function subscribe(listener: () => void) {

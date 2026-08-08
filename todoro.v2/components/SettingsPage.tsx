@@ -11,8 +11,17 @@ import Segmented, { type SegmentedOption } from "./shared/Segmented"
 import { adjustmentNote, parseHex, type AccentSet } from "../lib/accent"
 import { applyPayload, clearAll, downloadBackup, exportPayload, readPayload } from "../lib/backup"
 import { useAuth } from "../lib/sync/auth"
+import { useSyncPush } from "../lib/sync/engine"
 import AccountSheet from "./AccountSheet"
 import ConfirmModal from "./shared/ConfirmModal"
+
+function relativeTime(at: number) {
+  const secs = Math.max(0, Math.round((Date.now() - at) / 1000))
+  if (secs < 10)   return "just now"
+  if (secs < 60)   return `${secs}s ago`
+  if (secs < 3600) return `${Math.round(secs / 60)}m ago`
+  return `${Math.round(secs / 3600)}h ago`
+}
 import { ALERT_SOUNDS, MAX_CUSTOM_BYTES, playAlert, readAudioFile, stopAlert, type AlertSound } from "../lib/sound"
 
 type Theme = "system" | "light" | "dark"
@@ -51,6 +60,7 @@ export default function SettingsPage({
   const [accountOpen, setAccountOpen] = useState(false)
   const [confirmSignOut, setConfirmSignOut] = useState(false)
   const auth = useAuth()
+  const sync = useSyncPush(auth.status === "signed-in")
 
   const preview = () => playAlert({ sound: alertSound, custom: alertCustom, volume: alertVolume })
 
@@ -213,6 +223,24 @@ export default function SettingsPage({
         ) : auth.status === "signed-in" ? (
           <>
             <InfoRow label="Signed in" value={auth.user?.email ?? "—"} />
+            <div className="flex items-center gap-3 px-4 py-4">
+              <HiCloudArrowUp size={18} className="text-sub shrink-0" />
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-medium text-tx">Sync</span>
+                <span className={`block text-xs ${sync.state === "error" ? "text-priority-high" : "text-sub"}`}>
+                  {sync.state === "syncing" ? "Syncing…"
+                    : sync.state === "error" ? (sync.error ?? "Sync failed")
+                    : sync.lastSyncedAt ? `Backed up ${relativeTime(sync.lastSyncedAt)}`
+                    : "Waiting to back up"}
+                </span>
+              </span>
+              <button onClick={() => void sync.syncNow()}
+                disabled={sync.state === "syncing"}
+                className="shrink-0 min-h-11 px-3.5 rounded-control border border-border text-meta font-extrabold
+                  text-tx hover:border-accent/40 disabled:opacity-40 transition-colors">
+                Sync now
+              </button>
+            </div>
             <button onClick={() => setConfirmSignOut(true)}
               className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-surface2 transition-colors">
               <HiArrowRightOnRectangle size={18} className="text-sub shrink-0" />
@@ -418,7 +446,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.20.2" />
+        <InfoRow label="Version" value="2.21.0" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
 
