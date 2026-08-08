@@ -35,7 +35,8 @@ export const SYNC_KEYS: Readonly<Record<string, KeySpec & { readonly kind: SyncC
   // ── Counters ──────────────────────────────────────────────────────────────
   // Last-write-wins on a counter destroys increments: +80 earned offline on one
   // device and +50 on another becomes 80, not 130. These travel as deltas.
-  "todoro:points":         { kind: "counter", column: "points_delta" },
+  "todoro:spent":          { kind: "counter", column: "points_delta",
+    why: "Spend ledger. Earnings are derived from sessions, so nothing credits points" },
   "todoro:freezes":        { kind: "counter", column: "freeze_delta" },
   "todoro:protectedDates": { kind: "counter", column: "protected_add",
     why: "Grow-only set, carried on the same op as the freeze spend that earned it" },

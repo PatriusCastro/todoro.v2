@@ -72,9 +72,15 @@ describe("classification", () => {
     expect(SETTING_COLUMNS["todoro:avatarUrl"]).toBeUndefined()
   })
 
-  it("treats points and freezes as counters, not values", () => {
-    expect(classOf("todoro:points")).toBe("counter")
+  it("treats spending and freezes as counters, not values", () => {
+    expect(classOf("todoro:spent")).toBe("counter")
     expect(classOf("todoro:freezes")).toBe("counter")
+  })
+
+  it("has no stored points total — the balance is derived from sessions", () => {
+    // A stored total is a number DevTools can set to anything. Earnings come
+    // from the session log, which is append-only and immutable server-side.
+    expect(classOf("todoro:points")).toBeNull()
   })
 
   it("gives every non-device key a destination", () => {

@@ -18,7 +18,7 @@ import { pickNextTask, sortTasks } from "../lib/taskOrder"
 import { localDate } from "../lib/date"
 import { uid, QUICK_MODE_ID } from "../lib/id"
 import { computeStreak, findStreakRestore } from "../lib/streak"
-import { computePoints, levelFromPoints, FREEZE_COST } from "../lib/points"
+import { computePoints, earnedFromHistory, levelFromPoints, FREEZE_COST } from "../lib/points"
 import { nextOccurrence } from "../lib/recurrence"
 import { type SessionRecord } from "../lib/types"
 import { markDirty } from "../lib/sync/dirty"
@@ -193,7 +193,12 @@ export default function Home() {
   const [running, setRunning] = useState(false)
 
   const [cycleCount,  setCycleCount]  = useState(0)
-  const [totalPoints, setTotalPoints] = useState(() => load("todoro:points", 0))
+  // Points are derived from the session log, never stored. A stored total is a
+  // number DevTools can set to anything; sessions are append-only and immutable
+  // server-side, so the only way to move the balance is to do the work.
+  // `todoro:spent` is the counterpart ledger and is capped at the earned total,
+  // so editing it downward cannot mint points either.
+  const [pointsSpent, setPointsSpent] = useState(() => load("todoro:spent", 0))
   const [streakFreezes,  setStreakFreezes]  = useState<number>(()   => load("todoro:freezes", 0))
   const [protectedDates, setProtectedDates] = useState<string[]>(() => load("todoro:protectedDates", []))
   const [showShop,    setShowShop]    = useState(false)
@@ -226,6 +231,12 @@ export default function Home() {
   const sessions = todayHistory.length
   const streak   = computeStreak(allHistory, protectedDates)
   const restoreGap = findStreakRestore(allHistory, protectedDates)
+
+  // Clamped both ways: never negative, and spending is capped at what was
+  // earned, so a hand-edited `todoro:spent` can only ever cost the user points,
+  // never create them.
+  const pointsEarned = earnedFromHistory(allHistory, protectedDates)
+  const totalPoints  = Math.max(0, pointsEarned - Math.max(0, pointsSpent))
   const lvl = levelFromPoints(totalPoints)
 
   const [tasks,      setTasks]      = useState<Task[]>(() => load("todoro:tasks", INITIAL_TASKS))
@@ -372,7 +383,7 @@ export default function Home() {
   useEffect(() => { save("todoro:focusMins",   focusMins)   }, [focusMins])
   useEffect(() => { save("todoro:breakMins",   breakMins)   }, [breakMins])
   useEffect(() => { saveGuarded("todoro:tasks",   tasks)      }, [tasks, saveGuarded])
-  useEffect(() => { save("todoro:points",      totalPoints) }, [totalPoints])
+  useEffect(() => { save("todoro:spent",       pointsSpent) }, [pointsSpent])
   useEffect(() => { save("todoro:freezes",        streakFreezes)  }, [streakFreezes])
   useEffect(() => { save("todoro:protectedDates", protectedDates) }, [protectedDates])
   useEffect(() => { saveGuarded("todoro:history", allHistory) }, [allHistory, saveGuarded])
@@ -463,9 +474,13 @@ export default function Home() {
         setAllHistory(h => {
           const next = [...h, { taskId: activeTask.id, taskTitle: activeTask.title, focusMins, at: Date.now() }]
           const newStreak = computeStreak(next, protectedDates)
-          const earned    = computePoints(focusMins, newStreak)
+          // Appending the session *is* the award — the balance is derived from
+          // the log, so there is no separate number to increment. This also
+          // fixes a pre-existing under-award: the points used to be granted
+          // inside a 300ms timeout, and closing the tab in that window lost
+          // them while the session record had already been committed.
+          const earned = computePoints(focusMins, newStreak)
           setTimeout(() => {
-            setTotalPoints(p => p + earned)
             flashToast("Session complete", `+${earned} pts · ${newStreak} day streak`)
           }, 300)
           return next
@@ -568,7 +583,6 @@ export default function Home() {
       const newStreak = computeStreak(next, protectedDates)
       const earned    = computePoints(earnedFocusMins, newStreak)
       setTimeout(() => {
-        setTotalPoints(p => p + earned)
         flashToast("Session complete", `+${earned} pts · ${newStreak} day streak`)
       }, 300)
       return next
@@ -688,7 +702,7 @@ export default function Home() {
 
   const handleBuyFreeze = () => {
     if (totalPoints < FREEZE_COST) return
-    setTotalPoints(p => p - FREEZE_COST)
+    setPointsSpent(p => p + FREEZE_COST)
     setStreakFreezes(f => f + 1)
   }
   const handleRestoreStreak = () => {
