@@ -101,12 +101,33 @@ export async function pushProjects(sb: SupabaseClient, projects: Project[]): Pro
  */
 export async function pushSessions(sb: SupabaseClient, history: SessionRecord[]): Promise<PushResult> {
   const errors: string[] = []
+  let pushed = 0
+
   for (const batch of chunk(history)) {
     const e = await run("sessions", () =>
       sb.from("sessions").upsert(batch.map(sessionRow), { onConflict: "user_id,key", ignoreDuplicates: true }))
-    if (e) errors.push(e)
+    if (!e) { pushed += batch.length; continue }
+
+    // Postgres fails the whole statement on one bad row, and the daily bounds
+    // in 0003 can reject one. Without this fallback a single unacceptable
+    // session would block every other session in the batch from ever syncing,
+    // and the shadow would never advance — a permanent stall. Retrying row by
+    // row isolates the offender.
+    let rejected = 0
+    for (const s of batch) {
+      const one = await run("session", () =>
+        sb.from("sessions").upsert([sessionRow(s)], { onConflict: "user_id,key", ignoreDuplicates: true }))
+      if (one) rejected++
+      else pushed++
+    }
+    if (rejected > 0) {
+      errors.push(rejected === batch.length
+        ? `sessions: ${e}`
+        : `sessions: ${rejected} of ${batch.length} rejected by the server`)
+    }
   }
-  return { pushed: errors.length ? 0 : history.length, errors }
+
+  return { pushed, errors }
 }
 
 export async function pushSettings(
