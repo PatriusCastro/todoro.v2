@@ -104,9 +104,10 @@ export default function AccountSheet({ onClose, sendCode, verifyCode }: AccountS
   }
 
   return (
-    <Sheet label="Sign in" onClose={onClose} className="px-4 xs:px-5 pb-7">
+    <Sheet label="Sign in" onClose={onClose} align="center"
+      className="px-4 xs:px-5 pb-7 md:pb-5">
       <div className="flex items-center gap-3 py-3">
-        <h2 className="flex-1 text-title font-extrabold text-tx">
+        <h2 className="flex-1 min-w-0 text-heading xs:text-title font-extrabold text-tx">
           {step === "email" ? "Sync across devices"
             : step === "code" ? "Check your email"
             : "You're signed in"}
@@ -151,13 +152,17 @@ export default function AccountSheet({ onClose, sendCode, verifyCode }: AccountS
           </button>
         </div>
       ) : step === "done" ? (
-        <div className="flex flex-col items-center gap-4 pt-2 pb-2 text-center">
-          <span className="w-16 h-16 grid place-items-center rounded-pill bg-accent/15 text-accent">
-            <HiCheck size={30} />
+        <div className="flex flex-col items-center gap-3 xs:gap-4 pt-1 pb-2 text-center">
+          <span className="w-14 h-14 xs:w-16 xs:h-16 shrink-0 grid place-items-center
+            rounded-pill bg-accent/15 text-accent">
+            <HiCheck size={28} />
           </span>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5 w-full min-w-0">
             <p className="text-body text-tx">
-              Signed in as <span className="font-extrabold">{email}</span>
+              {/* An address is one long unbreakable token; without this it
+                  forces the sheet wider than the viewport on a narrow phone. */}
+              Signed in as{" "}
+              <span className="font-extrabold wrap-break-words">{email}</span>
             </p>
             {/* Says what actually changed. "Success" alone leaves the user
                 guessing whether their existing tasks were affected. */}
