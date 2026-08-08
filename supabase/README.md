@@ -38,13 +38,41 @@ it for this schema. Point at the hosted project.
 
 ## Verifying RLS
 
-The anon key is public — it ships inside the JS bundle. RLS is the only thing
-protecting the data, so check it directly rather than assuming:
+The anon key is public — it ships inside the JS bundle. Authorization is the
+only thing protecting the data, so check it directly rather than assuming.
+
+Fetch the keys (never paste the `service_role` or `sb_secret_` ones anywhere):
 
 ```bash
-curl "https://<ref>.supabase.co/rest/v1/tasks?select=*" \
-  -H "apikey: <anon-key>"
+npx supabase projects api-keys --project-ref <ref>
 ```
 
-An empty array or a 401 is correct. Rows coming back means a policy is missing.
+Then probe every table anonymously:
+
+```bash
+ANON="<anon or sb_publishable_ key>"
+URL="https://<ref>.supabase.co/rest/v1"
+for t in tasks projects sessions point_ops settings user_assets; do
+  curl -s -o /dev/null -w "$t -> %{http_code}\n" \
+    "$URL/$t?select=*" -H "apikey: $ANON" -H "Authorization: Bearer $ANON"
+done
+```
+
+**Expected: `401` on all six**, with body code `42501`. Rows coming back means
+authorization is broken — stop and fix it before shipping any client code.
+
+Two things make that 401 meaningful rather than incidental:
+
+- Confirm an unknown table returns **404**, not 401. If everything 401s the API
+  might simply be unreachable and the check proves nothing.
+- Try a write too (`-X POST .../tasks -d '{"id":"probe","title":"x"}'`). It must
+  also be 401.
+
+There are two independent layers here, and `42501` is the outer one: the
+`revoke all ... from anon` in `0001_init.sql` denies the grant before any policy
+is evaluated. The RLS policies are the inner layer — they are scoped
+`to authenticated`, so they take over once a real user signs in and confine each
+one to `auth.uid() = user_id`. Verifying the inner layer needs two signed-in
+accounts and is worth doing once sync is live.
+
 Also confirm no table carries the dashboard's "Unrestricted" badge.
