@@ -79,8 +79,17 @@ export default function RootLayout({
             Service-Worker-Allowed, so it still claims scope "/".
             reloadOnOnline is off deliberately: it defaults to true, and
             reloading the page the moment a phone regains signal would drop
-            `running` and stop a focus session mid-flight. */}
-        <SerwistProvider swUrl="/serwist/sw.js" reloadOnOnline={false}>
+            `running` and stop a focus session mid-flight.
+
+            Disabled in dev, as next-pwa was and as the README documents.
+            Serwist skips the precache manifest in development, so a registered
+            worker there precaches nothing — including /offline.html — leaving
+            an offline navigation with no fallback and a hard ERR_FAILED. Test
+            offline against `npm run build && npm start`. */}
+        <SerwistProvider
+          swUrl="/serwist/sw.js"
+          reloadOnOnline={false}
+          disable={process.env.NODE_ENV === "development"}>
           {children}
         </SerwistProvider>
       </body>
