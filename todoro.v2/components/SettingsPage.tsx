@@ -12,6 +12,7 @@ import { adjustmentNote, parseHex, type AccentSet } from "../lib/accent"
 import { applyPayload, clearAll, downloadBackup, exportPayload, readPayload } from "../lib/backup"
 import { useAuth } from "../lib/sync/auth"
 import AccountSheet from "./AccountSheet"
+import ConfirmModal from "./shared/ConfirmModal"
 import { ALERT_SOUNDS, MAX_CUSTOM_BYTES, playAlert, readAudioFile, stopAlert, type AlertSound } from "../lib/sound"
 
 type Theme = "system" | "light" | "dark"
@@ -212,38 +213,12 @@ export default function SettingsPage({
         ) : auth.status === "signed-in" ? (
           <>
             <InfoRow label="Signed in" value={auth.user?.email ?? "—"} />
-            {confirmSignOut ? (
-              // Inline rather than a native confirm(): the question needs to
-              // say that nothing is deleted, which a browser dialog can't do
-              // convincingly, and this is the one moment someone would fear it.
-              <div className="flex flex-col gap-3 px-4 py-4">
-                <div>
-                  <p className="text-sm font-medium text-tx">Sign out of Todoro?</p>
-                  <p className="text-xs text-sub mt-0.5">
-                    Your tasks stay on this device. Sign back in any time to keep syncing.
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setConfirmSignOut(false)}
-                    className="flex-1 min-h-11 rounded-control border border-border text-sm font-semibold text-tx
-                      hover:border-accent/40 transition-colors">
-                    Cancel
-                  </button>
-                  <button onClick={() => { setConfirmSignOut(false); void auth.signOut() }}
-                    className="flex-1 min-h-11 rounded-control bg-priority-high text-white text-sm font-bold
-                      hover:brightness-110 transition-all">
-                    Sign out
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button onClick={() => setConfirmSignOut(true)}
-                className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-surface2 transition-colors">
-                <HiArrowRightOnRectangle size={18} className="text-sub shrink-0" />
-                <span className="flex-1 text-sm font-medium text-tx">Sign out</span>
-                <span className="text-xs text-sub">Keeps this device&rsquo;s data</span>
-              </button>
-            )}
+            <button onClick={() => setConfirmSignOut(true)}
+              className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-surface2 transition-colors">
+              <HiArrowRightOnRectangle size={18} className="text-sub shrink-0" />
+              <span className="flex-1 text-sm font-medium text-tx">Sign out</span>
+              <span className="text-xs text-sub">Keeps this device&rsquo;s data</span>
+            </button>
           </>
         ) : (
           <button onClick={() => setAccountOpen(true)}
@@ -443,7 +418,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.20.1" />
+        <InfoRow label="Version" value="2.20.2" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
 
@@ -452,6 +427,23 @@ export default function SettingsPage({
           onClose={() => setAccountOpen(false)}
           sendCode={auth.sendCode}
           verifyCode={auth.verifyCode} />
+      )}
+
+      {confirmSignOut && (
+        <ConfirmModal
+          title="Sign out of Todoro?"
+          body={
+            <>
+              Your tasks, history and settings stay on this device &mdash; signing out
+              never deletes anything. Sign back in with{" "}
+              <span className="font-bold text-tx">{auth.user?.email ?? "the same email"}</span>{" "}
+              any time to keep syncing.
+            </>
+          }
+          confirmLabel="Sign out"
+          destructive
+          onConfirm={() => { setConfirmSignOut(false); void auth.signOut() }}
+          onClose={() => setConfirmSignOut(false)} />
       )}
     </div>
   )
