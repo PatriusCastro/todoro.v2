@@ -65,9 +65,14 @@ export function mergeById<T extends { id: string }>(
     }
 
     if (!theirs) {
+      const mineHash = hash(mine)
       next.push(mine)
-      nextShadow[id] = hash(mine)
-      push.push(mine)
+      nextShadow[id] = mineHash
+      // Absent from the delta means unchanged on the server, not missing — so
+      // only send it if THIS device changed it. Pushing unconditionally would
+      // re-upload every row on every sync, and would clobber a concurrent
+      // remote edit that landed between the pull and the push.
+      if (base === undefined || mineHash !== base) push.push(mine)
       continue
     }
 

@@ -98,6 +98,17 @@ describe("mergeById", () => {
     expect(r.push).toEqual([row("9", "new")])
   })
 
+  it("does not re-push an unchanged row that the delta simply omitted", () => {
+    // A row unchanged server-side is absent from a delta pull. Treating that as
+    // "needs sending" would re-upload the whole table on every sync, and would
+    // clobber a concurrent remote edit that landed between pull and push.
+    const base = row("1", "same")
+    const r = mergeById([base], shadowOf(base), [], FIELDS)
+    expect(r.next).toEqual([base])
+    expect(r.push).toEqual([])
+    expect(r.tombstone).toEqual([])
+  })
+
   it("tombstones a row this device deleted", () => {
     const base = row("1", "gone")
     const r = mergeById([], shadowOf(base), [remoteOf(base)], FIELDS)
