@@ -23,7 +23,9 @@ import { nextOccurrence } from "../lib/recurrence"
 import { type SessionRecord } from "../lib/types"
 import { markDirty } from "../lib/sync/dirty"
 import { useAuth } from "../lib/sync/auth"
-import { useSyncPush } from "../lib/sync/engine"
+import { useSync } from "../lib/sync/engine"
+import { hydratePins } from "../hooks/usePinnedTasks"
+import SyncChoice from "../components/SyncChoice"
 import { applyAccentSet, buildAccentSet, type AccentSet } from "../lib/accent"
 import { playAlert, type AlertSound } from "../lib/sound"
 import { useWakeLock } from "../hooks/useWakeLock"
@@ -142,7 +144,7 @@ export default function Home() {
   // anywhere else in the app. Passed down as props so there is exactly one
   // auth subscription and one sync engine for the whole session.
   const auth = useAuth()
-  const sync = useSyncPush(auth.status === "signed-in")
+  const sync = useSync(auth.status === "signed-in")
 
   // Survives a reload: a refresh on Tasks used to land back on Today.
   const [tab,       setTab]       = useState<Tab>(() => {
@@ -310,6 +312,51 @@ export default function Home() {
     setPhase("focus")
     setTime(reverseMode ? 0 : focusMins * 60)
   }, [reverseMode])
+
+  // ── Applying a sync patch ────────────────────────────────────────────────
+  // The engine never writes localStorage for synced keys. It hands React a
+  // patch, React sets state, and the existing save() effects below are the
+  // write path — so there is no dual write and no race between the two.
+  const running_ = running
+  useEffect(() => {
+    if (!sync.patch) return
+    const p = sync.patch.data
+
+    if (p.tasks)    setTasks(p.tasks)
+    if (p.projects) setProjects(p.projects)
+    if (p.history)  setAllHistory(p.history)
+    if (p.pinned)   hydratePins(p.pinned)
+    if (p.assets) {
+      if (p.assets.avatar      !== undefined) setAvatarUrl(p.assets.avatar ?? "")
+      if (p.assets.alert_sound !== undefined) setAlertCustom(p.assets.alert_sound)
+    }
+
+    if (p.settings) {
+      const s = p.settings
+      if (typeof s.user_name    === "string")  setUserName(s.user_name)
+      if (typeof s.daily_goal   === "number")  setDailyGoal(s.daily_goal)
+      if (typeof s.theme        === "string")  setTheme(s.theme as Theme)
+      if (typeof s.accent_theme === "string")  setAccentTheme(s.accent_theme)
+      if (s.accent_custom !== undefined)       setAccentCustom(s.accent_custom as AccentSet | null)
+      if (typeof s.sound        === "boolean") setSound(s.sound)
+      if (typeof s.alert_sound  === "string")  setAlertSound(s.alert_sound as AlertSound)
+      if (typeof s.alert_volume === "number")  setAlertVolume(s.alert_volume)
+      if (typeof s.auto_start   === "boolean") setAutoStart(s.auto_start)
+
+      // These five reset the running timer through effects above, so applying a
+      // remote change mid-session would wipe a focus run on this device. They
+      // wait; the next sync after the session ends picks them up.
+      if (!running_) {
+        if (typeof s.mode         === "string")  setMode(s.mode as Mode)
+        if (typeof s.focus_mins   === "number")  setFocusMins(s.focus_mins)
+        if (typeof s.break_mins   === "number")  setBreakMins(s.break_mins)
+        if (typeof s.quick_mode   === "boolean") setQuickMode(s.quick_mode)
+        if (typeof s.reverse_mode === "boolean") setReverseMode(s.reverse_mode)
+      }
+    }
+
+    sync.ackPatch(sync.patch.id)
+  }, [sync, running_])
 
   useEffect(() => { save("todoro:userName",    userName)    }, [userName])
   useEffect(() => { save("todoro:theme",       theme)       }, [theme])
@@ -821,6 +868,13 @@ export default function Home() {
           onBuyFreeze={handleBuyFreeze}
           onRestore={handleRestoreStreak}
           onClose={() => setShowShop(false)} />
+      )}
+
+      {/* Blocks everything: this device and the account both hold real work, and
+          only the user can say which survives. Rendered here rather than in
+          Settings because the question outlives that tab. */}
+      {sync.linkChoice && (
+        <SyncChoice choice={sync.linkChoice} onResolve={sync.resolveLink} />
       )}
 
     </AppShell>
