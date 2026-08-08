@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { type Task } from "../../components/tasks/TaskCard"
 import { type Project } from "../../components/tasks/TaskModal"
 import { type SessionRecord } from "../types"
+import { type PointOp } from "../ops"
 import { type RemoteRow } from "./types"
 
 /**
@@ -17,6 +18,7 @@ export interface RemoteChanges {
   projects: RemoteRow<Project>[]
   history:  SessionRecord[]
   settings: Record<string, unknown> | null
+  ops:      PointOp[]
   pinned:   string[] | null
   assets:   { avatar: string | null; alert_sound: string | null }
   /** Newest server timestamp seen, for the next watermark. */
@@ -90,6 +92,19 @@ const toSession = (r: SessionRow): SessionRecord => ({
   at: typeof r.at === "string" ? Number(r.at) : r.at,
 })
 
+interface OpRow {
+  id: string; points_delta: number; freeze_delta: number
+  protected_add: string[] | null; created_at: string
+}
+
+const toOp = (r: OpRow): PointOp => ({
+  id: r.id,
+  pointsDelta: r.points_delta,
+  freezeDelta: r.freeze_delta,
+  protectedAdd: r.protected_add ?? [],
+  at: Date.parse(r.created_at),
+})
+
 const newest = (...stamps: (string | null | undefined)[]) =>
   stamps.filter(Boolean).sort().pop() ?? null
 
@@ -108,13 +123,14 @@ export async function pullSince(
     void sessQ.gt("created_at", from)
   }
 
-  const [tasks, projects, sessions, settings, assets] = await Promise.all([
+  const [tasks, projects, sessions, settings, assets, ops] = await Promise.all([
     taskQ, projQ, sessQ,
     sb.from("settings").select("*").maybeSingle(),
     sb.from("user_assets").select("kind,data_url"),
+    sb.from("point_ops").select("id,points_delta,freeze_delta,protected_add,created_at"),
   ])
 
-  const firstError = [tasks, projects, sessions, settings, assets]
+  const firstError = [tasks, projects, sessions, settings, assets, ops]
     .map(r => r.error).find(Boolean)
   if (firstError) throw new Error(firstError.message)
 
@@ -138,6 +154,7 @@ export async function pullSince(
     tasks:    taskRows.map(toTask),
     projects: projRows.map(toProject),
     history:  ((sessions.data ?? []) as SessionRow[]).map(toSession),
+    ops: ((ops.data ?? []) as OpRow[]).map(toOp),
     settings: settingsRow ? settingCols : null,
     pinned:   Array.isArray(pinnedCol) ? (pinnedCol as string[]) : null,
     assets: {

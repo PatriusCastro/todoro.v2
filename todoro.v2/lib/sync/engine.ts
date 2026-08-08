@@ -6,9 +6,10 @@ import { getSupabase } from "./client"
 import { clearDirty, isDirty, subscribeDirty } from "./dirty"
 import { decideFirstLink, summarize, type SideSummary } from "./migrate"
 import { mergeHistory } from "./merge"
+import { mergeOps } from "../ops"
 import { pullSince, type RemoteChanges } from "./pull"
 import {
-  pushAll, pushProjects, pushSessions, pushSettings, pushTasks, pushTombstones,
+  pushAll, pushOps, pushProjects, pushSessions, pushSettings, pushTasks, pushTombstones,
 } from "./push"
 import { reconcile, shadowFromLocal, type SyncPatch } from "./reconcile"
 import { readLocalState, type SyncedState } from "./snapshot"
@@ -73,6 +74,9 @@ export function useSync(signedIn: boolean) {
     // sessions are immutable timestamped facts that cannot conflict, and losing
     // a streak is the most expensive loss in the app.
     const history = mergeHistory(local.history, remote.history)
+    // The spend ledger is append-only and id'd, so it unions either way — no
+    // purchase is lost by whichever side wins the task question.
+    const ops = mergeOps(local.ops, remote.ops)
 
     if (choice === "remote") {
       // Local work is about to be replaced, so put it in a real file first.
@@ -82,7 +86,7 @@ export function useSync(signedIn: boolean) {
       const tasks = liveRows(remote.tasks)
       const projects = liveRows(remote.projects)
       const applied: SyncedState = {
-        tasks, projects, history,
+        tasks, projects, history, ops,
         settings: remote.settings ?? local.settings,
         pinned: remote.pinned ?? [],
         assets: {
@@ -91,12 +95,13 @@ export function useSync(signedIn: boolean) {
         },
       }
       emit({
-        tasks, projects, history,
+        tasks, projects, history, ops,
         settings: applied.settings, pinned: applied.pinned, assets: applied.assets,
       })
       // Sessions this device knew about and the account did not still belong in
       // the account, whichever side won.
       await pushSessions(sb, history)
+      await pushOps(sb, ops)
       saveMeta({ ...meta, everPulled: true, pulledAt: remote.pulledAt, shadow: shadowFromLocal(applied) })
       return
     }
@@ -107,16 +112,16 @@ export function useSync(signedIn: boolean) {
     const staleTasks = liveRows(remote.tasks).map(t => t.id).filter(id => !localIds.has(id))
     const staleProjects = liveRows(remote.projects).map(p => p.id).filter(id => !localProjectIds.has(id))
 
-    await pushAll(sb, { ...local, history })
+    await pushAll(sb, { ...local, history, ops })
     // Soft deletes, so the account's previous rows remain in the database and
     // are recoverable rather than destroyed.
     await pushTombstones(sb, "tasks", staleTasks)
     await pushTombstones(sb, "projects", staleProjects)
 
-    emit({ history })
+    emit({ history, ops })
     saveMeta({
       ...meta, everPulled: true, pulledAt: remote.pulledAt,
-      shadow: shadowFromLocal({ ...local, history }),
+      shadow: shadowFromLocal({ ...local, history, ops }),
     })
   }, [emit])
 
@@ -194,6 +199,7 @@ export function useSync(signedIn: boolean) {
       if (result.push.tasks.length)    errors.push(...(await pushTasks(sb, result.push.tasks)).errors)
       if (result.push.projects.length) errors.push(...(await pushProjects(sb, result.push.projects)).errors)
       if (result.push.history.length)  errors.push(...(await pushSessions(sb, result.push.history)).errors)
+      if (result.push.ops.length)      errors.push(...(await pushOps(sb, result.push.ops)).errors)
       if (Object.keys(result.push.settings).length || result.push.pinned) {
         errors.push(...(await pushSettings(sb, result.push.settings, result.push.pinned ?? local.pinned)).errors)
       }

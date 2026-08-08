@@ -20,12 +20,12 @@ const session = (at: number, taskId = "a"): SessionRecord =>
   ({ taskId, taskTitle: "T", focusMins: 25, at })
 
 const localState = (over: Partial<SyncedState> = {}): SyncedState => ({
-  tasks: [], projects: [], history: [], settings: {}, pinned: [],
+  tasks: [], projects: [], history: [], ops: [], settings: {}, pinned: [],
   assets: { avatar: null, alert_sound: null }, ...over,
 })
 
 const remoteChanges = (over: Partial<RemoteChanges> = {}): RemoteChanges => ({
-  tasks: [], projects: [], history: [], settings: null, pinned: null,
+  tasks: [], projects: [], history: [], ops: [], settings: null, pinned: null,
   assets: { avatar: null, alert_sound: null }, pulledAt: "2026-01-02T00:00:00Z", ...over,
 })
 

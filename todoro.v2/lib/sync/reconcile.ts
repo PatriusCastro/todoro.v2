@@ -1,9 +1,11 @@
 import { type Task } from "../../components/tasks/TaskCard"
 import { type Project } from "../../components/tasks/TaskModal"
 import { type SessionRecord } from "../types"
+import { type PointOp } from "../ops"
 import { fnv1a, hashRow, PROJECT_FIELDS, stableStringify } from "./hash"
 import { guardDeletions } from "./diff"
 import { mergeById, mergeHistory, mergeSet, mergeSettings, mergeTasks } from "./merge"
+import { mergeOps } from "../ops"
 import { type RemoteChanges } from "./pull"
 import { type SyncedState } from "./snapshot"
 import { type SyncMeta } from "./state"
@@ -20,6 +22,7 @@ export interface SyncPatch {
   tasks?:    Task[]
   projects?: Project[]
   history?:  SessionRecord[]
+  ops?:      PointOp[]
   /** Keyed by settings-row column. */
   settings?: Record<string, unknown>
   pinned?:   string[]
@@ -33,6 +36,7 @@ export interface Reconciled {
     tasks:    Task[]
     projects: Project[]
     history:  SessionRecord[]
+    ops:      PointOp[]
     settings: Record<string, unknown>
     pinned:   string[] | null
   }
@@ -57,6 +61,9 @@ export function reconcile(
   // History first: task counts are derived from it, so it has to settle before
   // tasks are reconciled.
   const history = mergeHistory(local.history, remote.history)
+  // Union by id: two devices that each spent offline keep both entries, where a
+  // last-write-wins total would throw one away.
+  const ops = mergeOps(local.ops, remote.ops)
 
   const tasks = mergeTasks(local.tasks, meta.shadow.tasks, remote.tasks, history)
   const projects = mergeById(local.projects, meta.shadow.projects, remote.projects, projectFields)
@@ -95,6 +102,7 @@ export function reconcile(
   if (!same(tasks.next, local.tasks))       patch.tasks = tasks.next
   if (!same(projects.next, local.projects)) patch.projects = projects.next
   if (!same(history, local.history))        patch.history = history
+  if (!same(ops, local.ops))                patch.ops = ops
   if (!same(settings.value, local.settings)) patch.settings = settings.value
   if (!same(pinned.value, local.pinned))    patch.pinned = pinned.value
   if (!same(assets, local.assets))          patch.assets = assets
@@ -107,6 +115,7 @@ export function reconcile(
       // Sessions upsert with ignoreDuplicates, so sending the union is cheap
       // and guarantees the account holds every session either side knows about.
       history,
+      ops,
       settings: settings.patch,
       pinned: pinned.added.length || pinned.removed.length ? pinned.value : null,
     },

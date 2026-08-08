@@ -19,6 +19,9 @@ import { localDate } from "../lib/date"
 import { uid, QUICK_MODE_ID } from "../lib/id"
 import { computeStreak, findStreakRestore } from "../lib/streak"
 import { computePoints, earnedFromHistory, levelFromPoints, FREEZE_COST } from "../lib/points"
+import {
+  freezesFrom, protectedFrom, purchaseFreeze, spendFreeze, spentFrom, type PointOp,
+} from "../lib/ops"
 import { nextOccurrence } from "../lib/recurrence"
 import { type SessionRecord } from "../lib/types"
 import { markDirty } from "../lib/sync/dirty"
@@ -198,9 +201,18 @@ export default function Home() {
   // server-side, so the only way to move the balance is to do the work.
   // `todoro:spent` is the counterpart ledger and is capped at the earned total,
   // so editing it downward cannot mint points either.
-  const [pointsSpent, setPointsSpent] = useState(() => load("todoro:spent", 0))
-  const [streakFreezes,  setStreakFreezes]  = useState<number>(()   => load("todoro:freezes", 0))
-  const [protectedDates, setProtectedDates] = useState<string[]>(() => load("todoro:protectedDates", []))
+  const [pointOps, setPointOps] = useState<PointOp[]>(() => load("todoro:ops", []))
+  // Read once, never written again: whatever a device held before the ledger
+  // existed. Without these, upgrading would silently confiscate freezes already
+  // bought and drop days a freeze had already bridged.
+  const [legacy] = useState(() => ({
+    freezes: load("todoro:freezes", 0),
+    protectedDates: load<string[]>("todoro:protectedDates", []),
+  }))
+  // All three derived from the ledger, so none of them is a number DevTools can
+  // simply set.
+  const protectedDates = protectedFrom(pointOps, legacy.protectedDates)
+  const streakFreezes  = freezesFrom(pointOps, legacy.freezes)
   const [showShop,    setShowShop]    = useState(false)
   // One toast channel for the whole app shell: session complete, focus started.
   const [toast, setToast] = useState<{ title: string; sub?: string } | null>(null)
@@ -236,7 +248,7 @@ export default function Home() {
   // earned, so a hand-edited `todoro:spent` can only ever cost the user points,
   // never create them.
   const pointsEarned = earnedFromHistory(allHistory, protectedDates)
-  const totalPoints  = Math.max(0, pointsEarned - Math.max(0, pointsSpent))
+  const totalPoints  = Math.max(0, pointsEarned - spentFrom(pointOps))
   const lvl = levelFromPoints(totalPoints)
 
   const [tasks,      setTasks]      = useState<Task[]>(() => load("todoro:tasks", INITIAL_TASKS))
@@ -336,6 +348,7 @@ export default function Home() {
     if (p.tasks)    setTasks(p.tasks)
     if (p.projects) setProjects(p.projects)
     if (p.history)  setAllHistory(p.history)
+    if (p.ops)      setPointOps(p.ops)
     if (p.pinned)   hydratePins(p.pinned)
     if (p.assets) {
       if (p.assets.avatar      !== undefined) setAvatarUrl(p.assets.avatar ?? "")
@@ -383,9 +396,7 @@ export default function Home() {
   useEffect(() => { save("todoro:focusMins",   focusMins)   }, [focusMins])
   useEffect(() => { save("todoro:breakMins",   breakMins)   }, [breakMins])
   useEffect(() => { saveGuarded("todoro:tasks",   tasks)      }, [tasks, saveGuarded])
-  useEffect(() => { save("todoro:spent",       pointsSpent) }, [pointsSpent])
-  useEffect(() => { save("todoro:freezes",        streakFreezes)  }, [streakFreezes])
-  useEffect(() => { save("todoro:protectedDates", protectedDates) }, [protectedDates])
+  useEffect(() => { save("todoro:ops",         pointOps)    }, [pointOps])
   useEffect(() => { saveGuarded("todoro:history", allHistory) }, [allHistory, saveGuarded])
   useEffect(() => { save("todoro:accentTheme", accentTheme) }, [accentTheme])
   useEffect(() => { save("todoro:accentCustom", accentCustom) }, [accentCustom])
@@ -700,15 +711,16 @@ export default function Home() {
   }
   // Deep-link into the merged Tasks page focused on a day (Home mini-calendar)
 
+  // Both append to the ledger rather than moving counters. The op carries its
+  // own id, so a retried push can't grant a second freeze, and two devices that
+  // each spent offline keep both entries instead of one overwriting the other.
   const handleBuyFreeze = () => {
     if (totalPoints < FREEZE_COST) return
-    setPointsSpent(p => p + FREEZE_COST)
-    setStreakFreezes(f => f + 1)
+    setPointOps(ops => [...ops, purchaseFreeze(FREEZE_COST)])
   }
   const handleRestoreStreak = () => {
     if (streakFreezes < 1 || !restoreGap) return
-    setProtectedDates(p => [...p, ...restoreGap])
-    setStreakFreezes(f => f - 1)
+    setPointOps(ops => [...ops, spendFreeze(restoreGap)])
   }
 
   const timerProps = {

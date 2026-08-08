@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { type Task } from "../../components/tasks/TaskCard"
 import { type Project } from "../../components/tasks/TaskModal"
 import { type SessionRecord } from "../types"
+import { type PointOp } from "../ops"
 import { sessionKey } from "./merge"
 import { type SyncedState } from "./snapshot"
 
@@ -128,6 +129,28 @@ export async function pushAssets(
   return { pushed: e ? 0 : rows.length, errors: e ? [e] : [] }
 }
 
+/**
+ * The spend ledger. Immutable and id'd client-side, so `ignoreDuplicates` makes
+ * a retry a no-op — which is the whole reason the id is minted before the
+ * request goes out. Without it, a push that succeeded but whose response was
+ * lost would grant a second freeze.
+ */
+export async function pushOps(sb: SupabaseClient, ops: PointOp[]): Promise<PushResult> {
+  if (ops.length === 0) return { pushed: 0, errors: [] }
+  const errors: string[] = []
+  for (const batch of chunk(ops)) {
+    const e = await run("point_ops", () =>
+      sb.from("point_ops").upsert(batch.map(o => ({
+        id: o.id,
+        points_delta: o.pointsDelta,
+        freeze_delta: o.freezeDelta,
+        protected_add: o.protectedAdd,
+      })), { onConflict: "id", ignoreDuplicates: true }))
+    if (e) errors.push(e)
+  }
+  return { pushed: errors.length ? 0 : ops.length, errors }
+}
+
 /** Soft-delete. Rows are never removed, so other devices can learn of the delete. */
 export async function pushTombstones(
   sb: SupabaseClient, table: "tasks" | "projects", ids: string[],
@@ -150,6 +173,7 @@ export async function pushAll(sb: SupabaseClient, state: SyncedState): Promise<P
     pushSessions(sb, state.history),
     pushSettings(sb, state.settings, state.pinned),
     pushAssets(sb, state.assets),
+    pushOps(sb, state.ops),
   ])
   return {
     pushed: results.reduce((n, r) => n + r.pushed, 0),

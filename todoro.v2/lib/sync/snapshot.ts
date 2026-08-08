@@ -2,6 +2,7 @@ import { type Task } from "../../components/tasks/TaskCard"
 import { type Project } from "../../components/tasks/TaskModal"
 import { type SessionRecord } from "../types"
 import { isReservedId } from "../id"
+import { type PointOp } from "../ops"
 import { keysOfClass, SETTING_COLUMNS } from "./keys"
 
 /**
@@ -22,6 +23,7 @@ export interface SyncedState {
   settings: Record<string, unknown>
   assets:   { avatar: string | null; alert_sound: string | null }
   pinned:   string[]
+  ops:      PointOp[]
 }
 
 function read<T>(key: string, fallback: T): T {
@@ -61,6 +63,7 @@ export function readLocalState(): SyncedState {
       alert_sound: read<string | null>("todoro:alertCustom", null),
     },
     pinned: readArray<string>("todoro:pinned"),
+    ops: readArray<PointOp>("todoro:ops").filter(o => o?.id),
   }
 }
 

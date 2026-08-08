@@ -72,15 +72,19 @@ describe("classification", () => {
     expect(SETTING_COLUMNS["todoro:avatarUrl"]).toBeUndefined()
   })
 
-  it("treats spending and freezes as counters, not values", () => {
-    expect(classOf("todoro:spent")).toBe("counter")
-    expect(classOf("todoro:freezes")).toBe("counter")
+  it("keeps the spend ledger as one append-only collection", () => {
+    // Three mutable numbers became one log: points spent, freezes held and
+    // protected dates are all derived from it, so none of them is a value a
+    // client can simply assert.
+    expect(classOf("todoro:ops")).toBe("collection")
   })
 
-  it("has no stored points total — the balance is derived from sessions", () => {
-    // A stored total is a number DevTools can set to anything. Earnings come
-    // from the session log, which is append-only and immutable server-side.
-    expect(classOf("todoro:points")).toBeNull()
+  it("retires the numbers the ledger replaced", () => {
+    // Read once on upgrade so nothing already bought is confiscated, then never
+    // written or synced again.
+    for (const k of ["todoro:points", "todoro:spent", "todoro:freezes", "todoro:protectedDates"]) {
+      expect(classOf(k), k).toBe("legacy")
+    }
   })
 
   it("gives every non-device key a destination", () => {

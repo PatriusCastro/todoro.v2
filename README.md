@@ -13,7 +13,7 @@ A **Pomodoro timer + task manager** built as a Progressive Web App (PWA). Stay f
 - **Install as an App** — Add Todoro to your home screen or desktop for a native app feel
 - **Use Offline** — Once loaded, the app works without internet (see guide below)
 - **Dark Theme** — Easy on the eyes during long focus sessions
-- **Local Data** — Everything is saved on your device, no account needed
+- **Local First** — Everything is saved on your device and works with no account. Sign in with an emailed code only if you want your tasks on more than one device
 
 ---
 
@@ -63,6 +63,31 @@ After the initial load, you can:
 - If you close the app while offline and reopen it, it should still load from cache — but opening it while connected is always safer
 - If you see a blank page or error offline, you likely need to reconnect and reload the app once to re-cache it
 - Installed PWA users (home screen / desktop) have more reliable offline access than browser tab users
+
+---
+
+## 🔐 Accounts & Sync (optional)
+
+Todoro works completely without an account — that hasn't changed. Nothing leaves
+your device unless you sign in.
+
+If you want the same tasks on your phone and your laptop, **Settings → Account**
+signs you in with a 6-digit code sent to your email. There's no password. After
+that:
+
+- **Your device stays the source of truth.** Todoro reads and writes local
+  storage first, so it stays instant and keeps working with no signal. The cloud
+  is a copy that catches up in the background.
+- **Signing out never deletes anything on your device.**
+- **The first time you sign in on a device that already has tasks**, Todoro asks
+  which set to keep and downloads the other as a backup file first. Your focus
+  history and streak are always kept from both sides, whichever you choose.
+- **Points can't be edited.** Your balance is recomputed from your session
+  history rather than stored, so it reflects work you actually did.
+
+**Not syncing?** Sync runs while the app is open and online. Open
+**Settings → Account** and tap **Sync now** on both devices. If a device has
+been offline a long time, give it a moment after reconnecting.
 
 ---
 

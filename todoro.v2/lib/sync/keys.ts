@@ -35,11 +35,19 @@ export const SYNC_KEYS: Readonly<Record<string, KeySpec & { readonly kind: SyncC
   // ── Counters ──────────────────────────────────────────────────────────────
   // Last-write-wins on a counter destroys increments: +80 earned offline on one
   // device and +50 on another becomes 80, not 130. These travel as deltas.
-  "todoro:spent":          { kind: "counter", column: "points_delta",
-    why: "Spend ledger. Earnings are derived from sessions, so nothing credits points" },
-  "todoro:freezes":        { kind: "counter", column: "freeze_delta" },
-  "todoro:protectedDates": { kind: "counter", column: "protected_add",
-    why: "Grow-only set, carried on the same op as the freeze spend that earned it" },
+  // ── Spend ledger ──────────────────────────────────────────────────────────
+  // One append-only log rather than three mutable numbers. Points spent,
+  // freezes held and protected dates are all derived from it, and earnings come
+  // solely from `sessions` — so none of them is a value a client can assert.
+  "todoro:ops": { kind: "collection", column: "point_ops",
+    why: "Append-only and id'd, so a retried push can't double-count a purchase" },
+
+  // Read once on upgrade for whatever a device held before the ledger existed,
+  // then never written again. Not synced: the ops they seeded are.
+  "todoro:freezes":        { kind: "legacy", why: "Superseded by todoro:ops" },
+  "todoro:protectedDates": { kind: "legacy", why: "Superseded by todoro:ops" },
+  "todoro:points":         { kind: "legacy", why: "Superseded by earnings derived from sessions" },
+  "todoro:spent":          { kind: "legacy", why: "Superseded by todoro:ops" },
 
   // ── Settings ──────────────────────────────────────────────────────────────
   "todoro:userName":     { kind: "setting", column: "user_name" },
