@@ -31,6 +31,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# supabase — migrations ARE committed (they contain the RLS policies, which is
+# a security control and belongs in review). Only local CLI scratch is ignored.
+supabase/.temp
+supabase/.branches
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
