@@ -9,6 +9,7 @@ import Toggle from "./shared/Toggle"
 import Stepper from "./shared/Stepper"
 import Segmented, { type SegmentedOption } from "./shared/Segmented"
 import { adjustmentNote, parseHex, type AccentSet } from "../lib/accent"
+import { applyPayload, clearAll, downloadBackup, exportPayload, readPayload } from "../lib/backup"
 import { ALERT_SOUNDS, MAX_CUSTOM_BYTES, playAlert, readAudioFile, stopAlert, type AlertSound } from "../lib/sound"
 
 type Theme = "system" | "light" | "dark"
@@ -120,30 +121,12 @@ export default function SettingsPage({
   }
 
   const handleExport = () => {
-    const data: Record<string, string> = {}
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key && key.startsWith("todoro:")) data[key] = localStorage.getItem(key) ?? ""
-    }
-    const payload = JSON.stringify({ app: "todoro", version: 1, exportedAt: Date.now(), data }, null, 2)
-    const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }))
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `todoro-backup-${new Date().toISOString().slice(0, 10)}.json`
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadBackup(exportPayload())
   }
 
   const handleResetData = () => {
     if (!confirm("This erases ALL Todoro data on this device — tasks, history, settings, everything. This can't be undone. Continue?")) return
-    try {
-      const keys: string[] = []
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i)
-        if (k && k.startsWith("todoro:")) keys.push(k)
-      }
-      keys.forEach(k => localStorage.removeItem(k))
-    } catch {}
+    clearAll()
     location.reload()
   }
 
@@ -152,18 +135,19 @@ export default function SettingsPage({
     if (!file) return
     const reader = new FileReader()
     reader.onload = ev => {
+      let data: Record<string, string> | null = null
       try {
-        const parsed = JSON.parse(ev.target?.result as string)
-        const data   = parsed?.data ?? parsed
-        const keys   = data && typeof data === "object"
-          ? Object.keys(data).filter(k => k.startsWith("todoro:")) : []
-        if (!keys.length) throw new Error("invalid")
-        if (!confirm("Importing will replace all current Todoro data on this device. Continue?")) return
-        keys.forEach(k => localStorage.setItem(k, typeof data[k] === "string" ? data[k] : JSON.stringify(data[k])))
-        location.reload()
+        data = readPayload(JSON.parse(ev.target?.result as string))
       } catch {
-        alert("That doesn't look like a valid Todoro backup file.")
+        data = null
       }
+      if (!data) {
+        alert("That doesn't look like a valid Todoro backup file.")
+        return
+      }
+      if (!confirm("Importing will replace all current Todoro data on this device. Continue?")) return
+      applyPayload(data)
+      location.reload()
     }
     reader.readAsText(file)
   }
@@ -396,7 +380,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.18.0" />
+        <InfoRow label="Version" value="2.19.0" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
     </div>

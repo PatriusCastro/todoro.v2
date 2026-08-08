@@ -8,6 +8,8 @@ import {
 } from "react-icons/hi2"
 import { type Task, type Subtask, type Repeat } from "../tasks/TaskCard"
 import { type Priority } from "../../lib/theme"
+import { formatDueLabel } from "../../lib/dueDate"
+import { uid } from "../../lib/id"
 import Segmented from "../shared/Segmented"
 import Stepper from "../shared/Stepper"
 
@@ -37,7 +39,6 @@ const PROJECT_COLORS = [
   "#10b981", "#3b82f6", "#f97316", "#14b8a6",
 ]
 
-function uid() { return Math.random().toString(36).slice(2) }
 
 function dayStr(offset: number) {
   const d = new Date()
@@ -98,20 +99,9 @@ function MiniCalendar({ selected, onSelect }: { selected: string; onSelect: (d: 
   )
 }
 
-export function formatDueLabel(date: string, time: string) {
-  if (!date) return "No due date"
-  const d        = new Date(date + (time ? `T${time}` : "T00:00"))
-  const midnight = new Date()
-  midnight.setHours(0, 0, 0, 0)
-  const diff    = Math.floor((d.getTime() - midnight.getTime()) / 86400000)
-  const timeStr = time ? ` at ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : ""
-  if (diff === 0)  return `Due today${timeStr}`
-  if (diff === 1)  return `Due tomorrow${timeStr}`
-  if (diff === -1) return `Due yesterday${timeStr}`
-  if (diff < 0)    return `Overdue ${Math.abs(diff)}d${timeStr}`
-  if (diff < 7)    return `Due in ${diff} days${timeStr}`
-  return `Due ${d.toLocaleDateString([], { month: "short", day: "numeric" })}${timeStr}`
-}
+// Lives in lib/dueDate now so lib/recurrence can use it without importing a
+// component. Re-exported because several modules import it from here.
+export { formatDueLabel }
 
 /** One row of the "Project, repeat & subtasks" drawer: label, current value, chevron. */
 function DetailRow({ label, value, open, onToggle, children }: {

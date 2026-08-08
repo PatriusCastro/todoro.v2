@@ -12,9 +12,15 @@ import ShopModal    from "../components/ShopModal"
 import Toast        from "../components/shared/Toast"
 import { type Mode } from "../components/timer/SessionSheet"
 import { type Task } from "../components/tasks/TaskCard"
-import TaskModal, { type Project, formatDueLabel } from "../components/tasks/TaskModal"
+import TaskModal, { type Project } from "../components/tasks/TaskModal"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
 import { pickNextTask, sortTasks } from "../lib/taskOrder"
+import { localDate } from "../lib/date"
+import { uid, QUICK_MODE_ID } from "../lib/id"
+import { computeStreak, findStreakRestore } from "../lib/streak"
+import { computePoints, levelFromPoints, FREEZE_COST } from "../lib/points"
+import { nextOccurrence } from "../lib/recurrence"
+import { type SessionRecord } from "../lib/types"
 import { applyAccentSet, buildAccentSet, type AccentSet } from "../lib/accent"
 import { playAlert, type AlertSound } from "../lib/sound"
 import { useWakeLock } from "../hooks/useWakeLock"
@@ -25,19 +31,12 @@ type Tab   = "home" | "tasks" | "timer" | "settings"
 type Phase = "focus" | "break" | "longbreak"
 type Theme = "system" | "light" | "dark"
 
-export interface SessionRecord {
-  taskId:    string
-  taskTitle: string
-  focusMins: number
-  at:        number
-}
-
-function uid() { return Math.random().toString(36).slice(2) }
+// Lives in lib/types now so lib/streak can use it without importing this file.
+// Re-exported because several components import it from here.
+export type { SessionRecord }
 
 const LONG_BREAK_INTERVAL = 4
 const LONG_BREAK_MINS     = 15
-const FREEZE_COST         = 250   // points for one Streak Freeze (~1.5 days of focus — generous safety net)
-const POINTS_STREAK_CAP   = 14    // streak days at which the points bonus maxes out
 
 const INITIAL_TASKS: Task[] = [
   {
@@ -72,14 +71,9 @@ function getGreeting() {
 
 function createQuickModeTask(): Task {
   return {
-    id: "quick-mode", title: "", priority: "none", dueDate: "", dueTime: "", dueLabel: "",
+    id: QUICK_MODE_ID, title: "", priority: "none", dueDate: "", dueTime: "", dueLabel: "",
     done: false, estimatedSessions: 0, completedSessions: 0, subtasks: [],
   }
-}
-
-function localDate(ts: number = Date.now()) {
-  const d = new Date(ts)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 }
 
 const todayKey = () => localDate()
@@ -91,8 +85,20 @@ function load<T>(key: string, fallback: T): T {
   } catch { return fallback }
 }
 
-function save(key: string, value: unknown) {
-  try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
+/**
+ * Returns false when the write was dropped — almost always a quota error, since
+ * an avatar and a custom alert sound are both data-URLs sharing the ~5MB origin
+ * budget with an ever-growing history. This used to swallow the failure whole,
+ * so the UI would happily show state that had never been persisted and was gone
+ * on the next reload. Callers holding irreplaceable data check the result.
+ */
+function save(key: string, value: unknown): boolean {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+    return true
+  } catch {
+    return false
+  }
 }
 
 // Tri-state theme with one-time migration from the old boolean `todoro:dark`.
@@ -118,75 +124,6 @@ function systemPrefersDark(): boolean {
 // Subtle haptic tap (mobile) — no-op where unsupported
 function buzz(ms: number) {
   try { navigator.vibrate?.(ms) } catch {}
-}
-
-function computeStreak(history: SessionRecord[], protectedDates: string[] = []): number {
-  const dates = new Set([...history.map(s => localDate(s.at)), ...protectedDates])
-  if (!dates.size) return 0
-  const days  = [...dates].sort().reverse()
-  const ms    = 864e5
-  const midnight = new Date(); midnight.setHours(0, 0, 0, 0)
-  const key   = (offset: number) => localDate(midnight.getTime() - offset * ms)
-  const start = days[0] === key(0) ? 0 : days[0] === key(1) ? 1 : null
-  if (start === null) return 0
-  let count = 0
-  for (const day of days) {
-    if (day !== key(start + count)) break
-    count++
-  }
-  return count
-}
-
-// Points for a completed focus session: 1 per focused minute + a streak bonus
-// that scales to +70% at POINTS_STREAK_CAP days.
-function computePoints(focusMins: number, streak: number): number {
-  const base = Math.max(1, Math.round(focusMins))
-  const mult = 1 + Math.min(streak, POINTS_STREAK_CAP) * 0.05
-  return Math.round(base * mult)
-}
-
-// If the streak just broke (last active day is 2–4 days ago, i.e. a 1–3 day gap
-// before today), return the missed days a Streak Freeze would bridge; else null.
-function findStreakRestore(history: SessionRecord[], protectedDates: string[]): string[] | null {
-  const active = new Set([...history.map(s => localDate(s.at)), ...protectedDates])
-  if (!active.size) return null
-  const ms = 864e5
-  const midnight = new Date(); midnight.setHours(0, 0, 0, 0)
-  const today = localDate(midnight.getTime())
-  const yest  = localDate(midnight.getTime() - ms)
-  if (active.has(today) || active.has(yest)) return null   // streak isn't broken
-  const last = [...active].sort().reverse()[0]
-  const gap: string[] = []
-  let cur = new Date(last + "T00:00").getTime() + ms
-  const yestTime = midnight.getTime() - ms
-  while (cur <= yestTime) { gap.push(localDate(cur)); cur += ms }
-  if (gap.length === 0 || gap.length > 3) return null      // nothing to bridge, or too stale
-  return gap
-}
-
-// Spawn the next instance of a recurring task, advancing its due date
-function nextOccurrence(task: Task): Task {
-  const base = task.dueDate ? new Date(task.dueDate + "T00:00") : new Date()
-  base.setDate(base.getDate() + (task.repeat === "weekly" ? 7 : 1))
-  const dueDate = localDate(base.getTime())
-  return {
-    ...task,
-    id: uid(),
-    done: false,
-    completedSessions: 0,
-    dueDate,
-    dueLabel: formatDueLabel(dueDate, task.dueTime ?? ""),
-    subtasks: task.subtasks.map(s => ({ ...s, id: uid(), done: false })),
-  }
-}
-
-// Level from total points — each level costs a little more than the last
-function levelFromPoints(points: number): { level: number; into: number; span: number } {
-  let level = 1
-  while (50 * level * (level + 1) <= points) level++
-  const base = 50 * (level - 1) * level
-  const next = 50 * level * (level + 1)
-  return { level, into: points - base, span: next - base }
 }
 
 export default function Home() {
@@ -253,6 +190,16 @@ export default function Home() {
     toastTimer.current = setTimeout(() => setToast(null), 2600)
   }, [])
 
+  // For the collections that can't be reconstructed if a write is dropped.
+  // Warns once per session: a full quota fails every subsequent write too, and
+  // three stacked toasts say nothing the first one didn't.
+  const storageWarned = useRef(false)
+  const saveGuarded = useCallback((key: string, value: unknown) => {
+    if (save(key, value) || storageWarned.current) return
+    storageWarned.current = true
+    flashToast("Couldn't save to this device", "Storage is full — export a backup from Settings")
+  }, [flashToast])
+
   const [allHistory, setAllHistory] = useState<SessionRecord[]>(
     () => load("todoro:history", [])
   )
@@ -282,7 +229,7 @@ export default function Home() {
     setProjects(ps => ps.some(x => x.id === p.id) ? ps.map(x => x.id === p.id ? p : x) : [...ps, p])
   }, [])
 
-  useEffect(() => { save("todoro:projects", projects) }, [projects])
+  useEffect(() => { saveGuarded("todoro:projects", projects) }, [projects, saveGuarded])
   // ─────────────────────────────────────────────────────────────────
 
 
@@ -363,11 +310,11 @@ export default function Home() {
   useEffect(() => { save("todoro:mode",        mode)        }, [mode])
   useEffect(() => { save("todoro:focusMins",   focusMins)   }, [focusMins])
   useEffect(() => { save("todoro:breakMins",   breakMins)   }, [breakMins])
-  useEffect(() => { save("todoro:tasks",       tasks)       }, [tasks])
+  useEffect(() => { saveGuarded("todoro:tasks",   tasks)      }, [tasks, saveGuarded])
   useEffect(() => { save("todoro:points",      totalPoints) }, [totalPoints])
   useEffect(() => { save("todoro:freezes",        streakFreezes)  }, [streakFreezes])
   useEffect(() => { save("todoro:protectedDates", protectedDates) }, [protectedDates])
-  useEffect(() => { save("todoro:history",     allHistory)  }, [allHistory])
+  useEffect(() => { saveGuarded("todoro:history", allHistory) }, [allHistory, saveGuarded])
   useEffect(() => { save("todoro:accentTheme", accentTheme) }, [accentTheme])
   useEffect(() => { save("todoro:accentCustom", accentCustom) }, [accentCustom])
   useEffect(() => { save("todoro:notifications", notifications) }, [notifications])
@@ -375,8 +322,29 @@ export default function Home() {
   useEffect(() => { save("todoro:onboarded",     onboarded)     }, [onboarded])
   useEffect(() => { save("todoro:tab",           tab)           }, [tab])
 
-  // Snapshot the timer so a reload restores the remaining time (paused)
-  useEffect(() => { save("todoro:timer", { phase, time }) }, [phase, time])
+  // Snapshot the timer so a reload restores the remaining time (paused).
+  // `time` ticks once a second, so writing on every change meant a JSON
+  // serialize + localStorage write per second for the whole session. The
+  // snapshot only has to be current when the page actually goes away, so it
+  // writes on pause, on a phase change, and on the way out.
+  const timerSnapshot = useRef({ phase, time })
+  useEffect(() => { timerSnapshot.current = { phase, time } }, [phase, time])
+
+  // The transitions worth recording: the phase changed, or the clock stopped.
+  useEffect(() => { save("todoro:timer", timerSnapshot.current) }, [phase, running])
+
+  // ...and whenever the page is about to go away mid-session, which is the
+  // case the per-second write was really there to cover.
+  useEffect(() => {
+    const flush = () => save("todoro:timer", timerSnapshot.current)
+    window.addEventListener("pagehide", flush)
+    document.addEventListener("visibilitychange", flush)
+    return () => {
+      flush()
+      window.removeEventListener("pagehide", flush)
+      document.removeEventListener("visibilitychange", flush)
+    }
+  }, [])
 
   // After the first completed focus session, offer to enable notifications (once)
   useEffect(() => {
