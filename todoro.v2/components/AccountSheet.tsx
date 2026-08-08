@@ -10,6 +10,12 @@ interface AccountSheetProps {
   verifyCode: (email: string, token: string) => Promise<string | null>
 }
 
+// Supabase's OTP length is a project setting, not a constant — anywhere from 6
+// to 10 digits. Hardcoding 6 here meant a project configured for 8 produced a
+// code that physically could not be typed into the field.
+const MIN_CODE = 6
+const MAX_CODE = 10
+
 /**
  * Sign-in is a 6-digit code, in two steps, in a sheet. Nothing navigates — a
  * redirect would unmount the page and drop a running timer.
@@ -31,7 +37,7 @@ export default function AccountSheet({ onClose, sendCode, verifyCode }: AccountS
   }
 
   const submitCode = async () => {
-    if (code.trim().length < 6 || busy) return
+    if (code.trim().length < MIN_CODE || busy) return
     setBusy(true); setError(null)
     const err = await verifyCode(email, code)
     setBusy(false)
@@ -87,26 +93,27 @@ export default function AccountSheet({ onClose, sendCode, verifyCode }: AccountS
       ) : (
         <div className="flex flex-col gap-4 pt-1">
           <p className="text-body text-sub">
-            We sent a 6-digit code to <span className="font-extrabold text-tx">{email}</span>.
+            We sent a code to <span className="font-extrabold text-tx">{email}</span>.
             Enter it below.
           </p>
 
           <label className="flex flex-col gap-2">
             <span className="text-caption font-extrabold uppercase tracking-wider text-sub">Code</span>
             <input
-              inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={6}
+              inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={MAX_CODE}
               value={code}
-              onChange={e => setCode(e.target.value.replace(/\D/g, ""))}
+              onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, MAX_CODE))}
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); void submitCode() } }}
-              placeholder="000000"
+              placeholder="Paste or type your code"
               className="focus-no-ring min-h-13 px-4 rounded-control border border-border bg-surface2
-                text-title font-extrabold tracking-[0.3em] text-tx placeholder:text-sub
-                placeholder:tracking-[0.3em] outline-none focus:border-accent transition-colors" />
+                text-title font-extrabold tracking-[0.2em] text-tx
+                placeholder:text-body placeholder:font-semibold placeholder:tracking-normal placeholder:text-sub
+                outline-none focus:border-accent transition-colors" />
           </label>
 
           {error && <p className="text-meta text-priority-high">{error}</p>}
 
-          <button onClick={submitCode} disabled={code.length < 6 || busy}
+          <button onClick={submitCode} disabled={code.length < MIN_CODE || busy}
             className="min-h-13 flex items-center justify-center gap-2 rounded-control bg-accent text-bg
               text-body font-extrabold disabled:opacity-40 hover:bg-accent-hover transition-all">
             {busy ? "Verifying…" : "Verify"}
