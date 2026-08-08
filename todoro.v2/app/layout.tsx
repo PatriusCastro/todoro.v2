@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next"
+import { SerwistProvider } from "@serwist/turbopack/react"
 import "./globals.css"
 
 // Archivo is self-hosted from /public/fonts (see the @font-face block in
@@ -72,7 +73,16 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="antialiased">
-        {children}
+        {/* Nothing registered a worker before this: next-pwa's `register: true`
+            never ran, so the committed public/sw.js was served but inert. The
+            worker lives at /serwist/sw.js and the route serving it sends
+            Service-Worker-Allowed, so it still claims scope "/".
+            reloadOnOnline is off deliberately: it defaults to true, and
+            reloading the page the moment a phone regains signal would drop
+            `running` and stop a focus session mid-flight. */}
+        <SerwistProvider swUrl="/serwist/sw.js" reloadOnOnline={false}>
+          {children}
+        </SerwistProvider>
       </body>
     </html>
   )

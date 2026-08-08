@@ -88,7 +88,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ### Tech Stack
 - **Next.js 16** + **React 19** + **TypeScript**
 - **Tailwind CSS v4**
-- **next-pwa** for service worker & offline caching
+- **Serwist** for the service worker & offline caching
 
 ### Deploying to Vercel
 1. Push to GitHub

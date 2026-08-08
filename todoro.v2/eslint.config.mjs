@@ -12,7 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Generated service worker / workbox runtime — not source
+    // Static assets only now — the service worker moved to app/sw.ts and is
+    // built into .next, so nothing generated lands in public/ any more.
     "public/**",
   ]),
   {

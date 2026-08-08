@@ -17,6 +17,14 @@
 /.next/
 /out/
 
+# serwist — the worker is built into .next by app/serwist/[path]/route.ts.
+# public/sw.js used to be committed build output from next-pwa, which is how a
+# stale dev-mode worker ended up being served in production.
+/public/sw.js
+/public/sw.js.map
+/public/swe-worker*.js
+/public/workbox-*.js
+
 # production
 /build
 
