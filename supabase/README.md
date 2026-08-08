@@ -27,11 +27,25 @@ it for this schema. Point at the hosted project.
 
 ## Dashboard settings this schema assumes
 
-- **Auth → Email templates → Magic Link**: include `{{ .Token }}` in the body.
-  The app signs in with a 6-digit code rather than a clickable link, because
-  PKCE binds the link to the browser that requested it (request on a laptop,
-  open on a phone, and it fails) and because on iOS an installed PWA has storage
-  separate from Safari, so a tapped link signs in the wrong browser.
+- **Auth → Email templates**: include `{{ .Token }}` in the body of **both**
+  "Magic Link" *and* "Confirm signup". `signInWithOtp` sends the Magic Link
+  template to an existing user but the Confirm signup template to a brand new
+  one — so covering only the first means your very first sign-in receives an
+  email with no code in it and cannot complete.
+
+  The default templates contain only `{{ .ConfirmationURL }}`, so this edit is
+  required, not optional. Something like:
+
+  ```html
+  <h2>Your Todoro code</h2>
+  <p>Enter this code in Todoro:</p>
+  <p style="font-size:28px;letter-spacing:6px"><strong>{{ .Token }}</strong></p>
+  ```
+
+  The app signs in with a 6-digit code rather than a clickable link because PKCE
+  binds the link to the browser that requested it (request on a laptop, open on
+  a phone, and it fails), and because on iOS an installed PWA has storage
+  separate from Safari, so a tapped link signs in a browser the PWA cannot see.
 - **Auth → Providers → Email**: turn *off* "Allow new users to sign up" once
   your own account exists. RLS means a stranger could only ever see their own
   empty account, but there is no reason to let anyone create one.
