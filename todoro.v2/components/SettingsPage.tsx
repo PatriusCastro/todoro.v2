@@ -10,8 +10,8 @@ import Stepper from "./shared/Stepper"
 import Segmented, { type SegmentedOption } from "./shared/Segmented"
 import { adjustmentNote, parseHex, type AccentSet } from "../lib/accent"
 import { applyPayload, clearAll, downloadBackup, exportPayload, readPayload } from "../lib/backup"
-import { useAuth } from "../lib/sync/auth"
-import { useSyncPush } from "../lib/sync/engine"
+import { type AuthApi } from "../lib/sync/auth"
+import { type SyncApi } from "../lib/sync/engine"
 import AccountSheet from "./AccountSheet"
 import ConfirmModal from "./shared/ConfirmModal"
 
@@ -39,6 +39,9 @@ interface SettingsPageProps {
   accentCustom: AccentSet | null; onAccentCustom: (rawHex: string) => void
   notifications: boolean; onNotifications: (v: boolean) => void
   autoStart: boolean; onAutoStart: (v: boolean) => void
+  /** Owned by app/page.tsx — the engine has to outlive this tab. */
+  auth: AuthApi
+  sync: SyncApi
 }
 
 const THEMES: SegmentedOption<Theme>[] = [
@@ -51,7 +54,8 @@ export default function SettingsPage({
   userName, onUserName, theme, onTheme, sound, onSound, dailyGoal, onDailyGoal,
   alertSound, onAlertSound, alertVolume, onAlertVolume, alertCustom, onAlertCustom,
   avatarUrl, onAvatarUrl, accentTheme, onAccentTheme, accentCustom, onAccentCustom,
-  notifications, onNotifications, autoStart, onAutoStart
+  notifications, onNotifications, autoStart, onAutoStart,
+  auth, sync
 }: SettingsPageProps) {
   const fileRef   = useRef<HTMLInputElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
@@ -59,8 +63,6 @@ export default function SettingsPage({
   const [soundError, setSoundError] = useState<string | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
   const [confirmSignOut, setConfirmSignOut] = useState(false)
-  const auth = useAuth()
-  const sync = useSyncPush(auth.status === "signed-in")
 
   const preview = () => playAlert({ sound: alertSound, custom: alertCustom, volume: alertVolume })
 
@@ -446,7 +448,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.21.0" />
+        <InfoRow label="Version" value="2.21.1" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
 

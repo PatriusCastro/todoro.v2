@@ -22,6 +22,8 @@ import { computePoints, levelFromPoints, FREEZE_COST } from "../lib/points"
 import { nextOccurrence } from "../lib/recurrence"
 import { type SessionRecord } from "../lib/types"
 import { markDirty } from "../lib/sync/dirty"
+import { useAuth } from "../lib/sync/auth"
+import { useSyncPush } from "../lib/sync/engine"
 import { applyAccentSet, buildAccentSet, type AccentSet } from "../lib/accent"
 import { playAlert, type AlertSound } from "../lib/sound"
 import { useWakeLock } from "../hooks/useWakeLock"
@@ -134,6 +136,13 @@ function buzz(ms: number) {
 export default function Home() {
   const [hydrated, setHydrated] = useState(false)
   useEffect(() => { setHydrated(true) }, [])
+
+  // Both live here rather than in SettingsPage: that component only mounts
+  // while its tab is open, so an engine inside it would miss every edit made
+  // anywhere else in the app. Passed down as props so there is exactly one
+  // auth subscription and one sync engine for the whole session.
+  const auth = useAuth()
+  const sync = useSyncPush(auth.status === "signed-in")
 
   // Survives a reload: a refresh on Tasks used to land back on Today.
   const [tab,       setTab]       = useState<Tab>(() => {
@@ -758,7 +767,8 @@ export default function Home() {
             setAccentTheme("custom")
           }}
           notifications={notifications} onNotifications={setNotifications}
-          autoStart={autoStart} onAutoStart={setAutoStart} />
+          autoStart={autoStart} onAutoStart={setAutoStart}
+          auth={auth} sync={sync} />
       )}
 
       {/* Global quick-add task modal (mobile FAB + Home) */}

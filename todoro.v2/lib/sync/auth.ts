@@ -7,6 +7,9 @@ export interface AuthUser { id: string; email: string | null }
 
 export type AuthStatus = "unconfigured" | "loading" | "signed-out" | "signed-in"
 
+/** Owned by app/page.tsx and passed down — see the note on useAuth. */
+export type AuthApi = ReturnType<typeof useAuth>
+
 /**
  * Email one-time code, not a clickable magic link.
  *

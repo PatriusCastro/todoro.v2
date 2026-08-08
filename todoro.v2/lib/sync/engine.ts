@@ -8,6 +8,9 @@ import { readLocalState } from "./snapshot"
 
 export type SyncState = "off" | "idle" | "syncing" | "synced" | "error"
 
+/** Owned by app/page.tsx and passed down — see the note on useSyncPush. */
+export type SyncApi = ReturnType<typeof useSyncPush>
+
 const DEBOUNCE_MS = 2000
 
 /**
@@ -20,6 +23,12 @@ const DEBOUNCE_MS = 2000
  *
  * Signed out this hook subscribes to nothing, registers no listeners and never
  * touches the network.
+ *
+ * MUST be mounted at the app root, not inside a tab. It first lived in
+ * SettingsPage, which only renders while that tab is open — so editing a task
+ * notified no subscriber, and the pagehide/visibilitychange flushes did not
+ * exist during ordinary use. Nothing synced until you happened to open
+ * Settings.
  */
 export function useSyncPush(signedIn: boolean) {
   const [state, setState] = useState<SyncState>("off")
