@@ -20,7 +20,7 @@ import { uid, QUICK_MODE_ID } from "../lib/id"
 import { computeStreak, findStreakRestore } from "../lib/streak"
 import { computePoints, earnedFromHistory, levelFromPoints, FREEZE_COST } from "../lib/points"
 import {
-  freezesFrom, protectedFrom, purchaseFreeze, spendFreeze, spentFrom, type PointOp,
+  freezesFrom, migrateLegacy, protectedFrom, purchaseFreeze, spendFreeze, spentFrom, type PointOp,
 } from "../lib/ops"
 import { nextOccurrence } from "../lib/recurrence"
 import { type SessionRecord } from "../lib/types"
@@ -201,18 +201,25 @@ export default function Home() {
   // server-side, so the only way to move the balance is to do the work.
   // `todoro:spent` is the counterpart ledger and is capped at the earned total,
   // so editing it downward cannot mint points either.
-  const [pointOps, setPointOps] = useState<PointOp[]>(() => load("todoro:ops", []))
-  // Read once, never written again: whatever a device held before the ledger
-  // existed. Without these, upgrading would silently confiscate freezes already
-  // bought and drop days a freeze had already bridged.
-  const [legacy] = useState(() => ({
-    freezes: load("todoro:freezes", 0),
-    protectedDates: load<string[]>("todoro:protectedDates", []),
-  }))
+  const [pointOps, setPointOps] = useState<PointOp[]>(() => {
+    const existing = load<PointOp[] | null>("todoro:ops", null)
+    if (existing) return existing
+    // One-time reconstruction from the counters the ledger replaced, so
+    // upgrading doesn't confiscate freezes already bought or drop days one had
+    // already bridged. It runs only while `todoro:ops` is absent — after the
+    // first save the legacy keys are never read again, which is the point:
+    // treating them as a live baseline left `todoro:freezes` exactly as
+    // editable as the counter it was meant to retire.
+    return migrateLegacy(
+      load("todoro:freezes", 0),
+      load<string[]>("todoro:protectedDates", []),
+      FREEZE_COST,
+    )
+  })
   // All three derived from the ledger, so none of them is a number DevTools can
   // simply set.
-  const protectedDates = protectedFrom(pointOps, legacy.protectedDates)
-  const streakFreezes  = freezesFrom(pointOps, legacy.freezes)
+  const protectedDates = protectedFrom(pointOps)
+  const streakFreezes  = freezesFrom(pointOps)
   const [showShop,    setShowShop]    = useState(false)
   // One toast channel for the whole app shell: session complete, focus started.
   const [toast, setToast] = useState<{ title: string; sub?: string } | null>(null)

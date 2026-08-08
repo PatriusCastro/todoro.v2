@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
-  freezesFrom, mergeOps, protectedFrom, purchaseFreeze, spendFreeze, spentFrom,
+  freezesFrom, mergeOps, migrateLegacy, protectedFrom, purchaseFreeze, spendFreeze, spentFrom,
 } from "./ops"
 
 describe("purchaseFreeze", () => {
@@ -79,6 +79,49 @@ describe("protectedFrom", () => {
   it("does not double a day claimed twice", () => {
     expect(protectedFrom([spendFreeze(["2026-01-14"], 1)], ["2026-01-14"]))
       .toEqual(["2026-01-14"])
+  })
+})
+
+describe("migrateLegacy", () => {
+  it("is empty when there was nothing to carry over", () => {
+    expect(migrateLegacy(0, [], 250, 1)).toEqual([])
+  })
+
+  it("restores freezes that were already held", () => {
+    const ops = migrateLegacy(2, [], 250, 1)
+    expect(freezesFrom(ops)).toBe(2)
+    expect(spentFrom(ops)).toBe(500)
+  })
+
+  it("restores protected dates as a freeze bought and spent", () => {
+    // Faithful: the user did buy a freeze to get those days.
+    const ops = migrateLegacy(0, ["2026-01-14"], 250, 1)
+    expect(freezesFrom(ops)).toBe(0)
+    expect(protectedFrom(ops)).toEqual(["2026-01-14"])
+    expect(spentFrom(ops)).toBe(250)
+  })
+
+  it("carries both at once without losing either", () => {
+    const ops = migrateLegacy(2, ["2026-01-14", "2026-01-15"], 250, 1)
+    expect(freezesFrom(ops)).toBe(2)
+    expect(protectedFrom(ops).sort()).toEqual(["2026-01-14", "2026-01-15"])
+    expect(spentFrom(ops)).toBe(750)
+  })
+
+  it("ignores a hand-edited negative or fractional count", () => {
+    expect(freezesFrom(migrateLegacy(-5, [], 250, 1))).toBe(0)
+    expect(freezesFrom(migrateLegacy(2.9, [], 250, 1))).toBe(2)
+  })
+
+  it("produces ops that satisfy the server's constraints", () => {
+    // 0002 enforces: never a credit, freeze_delta within +/-1, a grant must be
+    // paid for, and protected dates only ride a spend.
+    for (const op of migrateLegacy(3, ["2026-01-14"], 250, 1)) {
+      expect(op.pointsDelta).toBeLessThanOrEqual(0)
+      expect(Math.abs(op.freezeDelta)).toBeLessThanOrEqual(1)
+      if (op.freezeDelta === 1) expect(op.pointsDelta).toBeLessThan(0)
+      if (op.protectedAdd.length > 0) expect(op.freezeDelta).toBe(-1)
+    }
   })
 })
 

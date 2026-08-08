@@ -50,6 +50,35 @@ export function protectedFrom(ops: PointOp[], baseline: string[] = []): string[]
   return [...out]
 }
 
+/**
+ * One-time reconstruction of the ledger from the counters it replaced.
+ *
+ * Runs only when `todoro:ops` is absent, i.e. exactly once per device. After
+ * that the legacy keys are never read again, so re-creating them in DevTools
+ * does nothing — which is the point. Reading them as a live baseline, as this
+ * first did, left `todoro:freezes` every bit as editable as the counter it was
+ * meant to retire.
+ *
+ * The reconstruction is faithful rather than approximate: freezes still held
+ * were each bought, and any protected dates were bought *and* spent, so both
+ * halves of that transaction are recorded. The resulting spend total is what
+ * the user actually paid.
+ */
+export function migrateLegacy(
+  freezes: number,
+  protectedDates: string[],
+  cost: number,
+  now: number = Date.now(),
+): PointOp[] {
+  const held = Math.max(0, Math.floor(freezes))
+  const spentOne = protectedDates.length > 0 ? 1 : 0
+  const ops: PointOp[] = []
+  // Timestamps are spaced so the ledger keeps a stable order.
+  for (let i = 0; i < held + spentOne; i++) ops.push(purchaseFreeze(cost, now + i))
+  if (spentOne) ops.push(spendFreeze(protectedDates, now + held + spentOne))
+  return ops
+}
+
 /** Union by id — the same op arriving twice is the same op. */
 export function mergeOps(local: PointOp[], remote: PointOp[]): PointOp[] {
   const byId = new Map<string, PointOp>()
