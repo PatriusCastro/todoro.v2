@@ -1,0 +1,91 @@
+<!--
+  Todoro sign-in code.
+
+  Paste into BOTH Supabase → Authentication → Emails → "Magic Link" and
+  "Confirm signup". signInWithOtp sends the first to an existing user and the
+  second to a brand new one, so a template edited in only one place means the
+  very first sign-in ever arrives with no code in it.
+
+  Written for email clients, not browsers: tables for layout, inline styles
+  only, no flexbox/grid, no external CSS, no web fonts. Light background on
+  purpose — dark-mode email rendering is inconsistent across clients and a
+  washed-out code is worse than an off-brand one.
+-->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
+       style="background-color:#f4f4f6;margin:0;padding:32px 12px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
+             style="max-width:440px;background-color:#ffffff;border-radius:20px;
+                    border:1px solid #e6e6ec;overflow:hidden;">
+
+        <!-- Wordmark -->
+        <tr>
+          <td style="padding:28px 32px 0 32px;">
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                      font-size:15px;font-weight:800;letter-spacing:-0.01em;color:#0c0c0f;">
+              Todoro
+            </p>
+            <p style="margin:2px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                      font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a8a99;">
+              Focus &amp; tasks
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:22px 32px 0 32px;">
+            <h1 style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                       font-size:24px;line-height:1.2;font-weight:800;letter-spacing:-0.02em;color:#0c0c0f;">
+              Your sign-in code
+            </h1>
+            <p style="margin:10px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                      font-size:15px;line-height:1.55;color:#55555f;">
+              Enter this in Todoro to sync your tasks across devices.
+            </p>
+          </td>
+        </tr>
+
+        <!-- The code -->
+        <tr>
+          <td style="padding:22px 32px 0 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
+                   style="background-color:#f4f4f6;border:1px solid #e6e6ec;border-radius:13px;">
+              <tr>
+                <td align="center" style="padding:20px 12px;">
+                  <span style="font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace;
+                               font-size:30px;font-weight:700;letter-spacing:0.16em;color:#0c0c0f;">
+                    {{ .Token }}
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:16px 32px 0 32px;">
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                      font-size:13px;line-height:1.5;color:#55555f;">
+              This code expires in <strong style="color:#0c0c0f;">2 minutes</strong>.
+              You can request a new one from the app.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:20px 32px 28px 32px;">
+            <div style="height:1px;background-color:#e6e6ec;margin-bottom:16px;"></div>
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                      font-size:12px;line-height:1.55;color:#8a8a99;">
+              Didn&rsquo;t ask for this? You can ignore this email &mdash; nobody can sign in
+              without the code above. Todoro works without an account, and your tasks stay
+              on your device unless you choose to sync.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>

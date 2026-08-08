@@ -42,10 +42,22 @@ it for this schema. Point at the hosted project.
   <p style="font-size:28px;letter-spacing:6px"><strong>{{ .Token }}</strong></p>
   ```
 
-  The app signs in with a 6-digit code rather than a clickable link because PKCE
-  binds the link to the browser that requested it (request on a laptop, open on
-  a phone, and it fails), and because on iOS an installed PWA has storage
-  separate from Safari, so a tapped link signs in a browser the PWA cannot see.
+  A ready-made template lives at `supabase/templates/otp-email.html` — paste it
+  into both.
+
+  The app signs in with an emailed code rather than a clickable link because
+  PKCE binds the link to the browser that requested it (request on a laptop,
+  open on a phone, and it fails), and because on iOS an installed PWA has
+  storage separate from Safari, so a tapped link signs in a browser the PWA
+  cannot see.
+
+- **Auth → Providers → Email → Email OTP Expiration**: set to `120` (seconds).
+  The sheet counts down from two minutes and the email says two minutes, so a
+  mismatch here makes one of them lie. `CODE_TTL_SECONDS` in
+  `components/AccountSheet.tsx` is the other half of the pair.
+
+- **Auth → Providers → Email → Email OTP Length**: whatever you like, 6–10. The
+  input accepts the full range rather than assuming the default.
 - **Auth → Providers → Email**: turn *off* "Allow new users to sign up" once
   your own account exists. RLS means a stranger could only ever see their own
   empty account, but there is no reason to let anyone create one.

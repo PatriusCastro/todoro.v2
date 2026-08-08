@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { HiArrowRight, HiEnvelope, HiXMark } from "react-icons/hi2"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { HiArrowPath, HiArrowRight, HiEnvelope, HiXMark } from "react-icons/hi2"
 import Sheet from "./shared/Sheet"
 
 interface AccountSheetProps {
@@ -17,7 +17,20 @@ const MIN_CODE = 6
 const MAX_CODE = 10
 
 /**
- * Sign-in is a 6-digit code, in two steps, in a sheet. Nothing navigates — a
+ * How long a code is good for. Must match Supabase → Authentication → Providers
+ * → Email → "Email OTP Expiration" (120), or the countdown lies in one
+ * direction or the other. The email template states the same number.
+ */
+const CODE_TTL_SECONDS = 120
+
+/** Gap before another code can be requested — Supabase rate-limits sends. */
+const RESEND_COOLDOWN_SECONDS = 30
+
+const mmss = (total: number) =>
+  `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`
+
+/**
+ * Sign-in is an emailed code, in two steps, in a sheet. Nothing navigates — a
  * redirect would unmount the page and drop a running timer.
  */
 export default function AccountSheet({ onClose, sendCode, verifyCode }: AccountSheetProps) {
@@ -27,17 +40,59 @@ export default function AccountSheet({ onClose, sendCode, verifyCode }: AccountS
   const [busy, setBusy]   = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [expiresIn, setExpiresIn] = useState(0)
+  const [cooldown,  setCooldown]  = useState(0)
+
+  // Anchored to wall-clock deadlines rather than counting ticks. setInterval is
+  // throttled or suspended in a backgrounded tab, so a phone that locks for a
+  // minute would otherwise come back showing a timer that never moved — and
+  // claim a dead code is still good.
+  const expiryAt   = useRef(0)
+  const cooldownAt = useRef(0)
+
+  useEffect(() => {
+    if (step !== "code") return
+    const tick = () => {
+      const now = Date.now()
+      setExpiresIn(Math.max(0, Math.ceil((expiryAt.current - now) / 1000)))
+      setCooldown(Math.max(0, Math.ceil((cooldownAt.current - now) / 1000)))
+    }
+    tick()
+    const id = setInterval(tick, 500)
+    return () => clearInterval(id)
+  }, [step])
+
+  const startTimers = useCallback(() => {
+    const now = Date.now()
+    expiryAt.current   = now + CODE_TTL_SECONDS * 1000
+    cooldownAt.current = now + RESEND_COOLDOWN_SECONDS * 1000
+    setExpiresIn(CODE_TTL_SECONDS)
+    setCooldown(RESEND_COOLDOWN_SECONDS)
+  }, [])
+
   const submitEmail = async () => {
     if (!email.trim() || busy) return
     setBusy(true); setError(null)
     const err = await sendCode(email)
     setBusy(false)
     if (err) { setError(err); return }
+    startTimers()
     setStep("code")
   }
 
+  const resend = async () => {
+    if (cooldown > 0 || busy) return
+    setBusy(true); setError(null); setCode("")
+    const err = await sendCode(email)
+    setBusy(false)
+    if (err) { setError(err); return }
+    startTimers()
+  }
+
+  const expired = step === "code" && expiresIn === 0
+
   const submitCode = async () => {
-    if (code.trim().length < MIN_CODE || busy) return
+    if (code.trim().length < MIN_CODE || busy || expired) return
     setBusy(true); setError(null)
     const err = await verifyCode(email, code)
     setBusy(false)
@@ -98,26 +153,48 @@ export default function AccountSheet({ onClose, sendCode, verifyCode }: AccountS
           </p>
 
           <label className="flex flex-col gap-2">
-            <span className="text-caption font-extrabold uppercase tracking-wider text-sub">Code</span>
+            <span className="flex items-center gap-2">
+              <span className="flex-1 text-caption font-extrabold uppercase tracking-wider text-sub">Code</span>
+              <span className={`text-caption font-extrabold tabular-nums
+                ${expired ? "text-priority-high" : expiresIn <= 30 ? "text-priority-mid" : "text-sub"}`}>
+                {expired ? "Expired" : `Expires in ${mmss(expiresIn)}`}
+              </span>
+            </span>
             <input
               inputMode="numeric" autoComplete="one-time-code" autoFocus maxLength={MAX_CODE}
-              value={code}
+              value={code} disabled={expired}
               onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, MAX_CODE))}
               onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); void submitCode() } }}
-              placeholder="Paste or type your code"
-              className="focus-no-ring min-h-13 px-4 rounded-control border border-border bg-surface2
+              placeholder={expired ? "Request a new code" : "Paste or type your code"}
+              className={`focus-no-ring min-h-13 px-4 rounded-control border bg-surface2
                 text-title font-extrabold tracking-[0.2em] text-tx
                 placeholder:text-body placeholder:font-semibold placeholder:tracking-normal placeholder:text-sub
-                outline-none focus:border-accent transition-colors" />
+                outline-none transition-colors disabled:opacity-50
+                ${expired ? "border-priority-high/40" : "border-border focus:border-accent"}`} />
           </label>
 
           {error && <p className="text-meta text-priority-high">{error}</p>}
+          {expired && !error && (
+            <p className="text-meta text-sub">
+              That code has expired. Send a new one — it only takes a moment.
+            </p>
+          )}
 
-          <button onClick={submitCode} disabled={code.length < MIN_CODE || busy}
+          <button onClick={submitCode} disabled={code.length < MIN_CODE || busy || expired}
             className="min-h-13 flex items-center justify-center gap-2 rounded-control bg-accent text-bg
               text-body font-extrabold disabled:opacity-40 hover:bg-accent-hover transition-all">
             {busy ? "Verifying…" : "Verify"}
             {!busy && <HiArrowRight size={16} />}
+          </button>
+
+          {/* Cooldown is on the resend, not the expiry: Supabase rate-limits
+              sends, and letting someone hammer this would lock them out of the
+              provider rather than help. */}
+          <button onClick={resend} disabled={cooldown > 0 || busy}
+            className="min-h-11 flex items-center justify-center gap-2 rounded-control border border-border
+              text-meta font-extrabold text-tx disabled:opacity-40 hover:border-accent/40 transition-colors">
+            <HiArrowPath size={14} />
+            {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
           </button>
 
           <button onClick={() => { setStep("email"); setCode(""); setError(null) }}
