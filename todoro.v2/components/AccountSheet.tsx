@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { HiArrowPath, HiArrowRight, HiEnvelope, HiXMark } from "react-icons/hi2"
+import { HiArrowPath, HiArrowRight, HiCheck, HiEnvelope, HiXMark } from "react-icons/hi2"
 import Sheet from "./shared/Sheet"
 
 interface AccountSheetProps {
@@ -34,7 +34,7 @@ const mmss = (total: number) =>
  * redirect would unmount the page and drop a running timer.
  */
 export default function AccountSheet({ onClose, sendCode, verifyCode }: AccountSheetProps) {
-  const [step, setStep]   = useState<"email" | "code">("email")
+  const [step, setStep]   = useState<"email" | "code" | "done">("email")
   const [email, setEmail] = useState("")
   const [code, setCode]   = useState("")
   const [busy, setBusy]   = useState(false)
@@ -97,14 +97,19 @@ export default function AccountSheet({ onClose, sendCode, verifyCode }: AccountS
     const err = await verifyCode(email, code)
     setBusy(false)
     if (err) { setError(err); return }
-    onClose()
+    // Confirm rather than vanish. Closing on success looks identical to the
+    // sheet being dismissed, and leaves the one question that matters — which
+    // account am I now on — unanswered.
+    setStep("done")
   }
 
   return (
     <Sheet label="Sign in" onClose={onClose} className="px-4 xs:px-5 pb-7">
       <div className="flex items-center gap-3 py-3">
         <h2 className="flex-1 text-title font-extrabold text-tx">
-          {step === "email" ? "Sync across devices" : "Check your email"}
+          {step === "email" ? "Sync across devices"
+            : step === "code" ? "Check your email"
+            : "You're signed in"}
         </h2>
         <button onClick={onClose} aria-label="Close"
           className="w-11 h-11 shrink-0 grid place-items-center rounded-control border border-border
@@ -143,6 +148,28 @@ export default function AccountSheet({ onClose, sendCode, verifyCode }: AccountS
               text-body font-extrabold disabled:opacity-40 hover:bg-accent-hover transition-all">
             {busy ? "Sending…" : "Send code"}
             {!busy && <HiArrowRight size={16} />}
+          </button>
+        </div>
+      ) : step === "done" ? (
+        <div className="flex flex-col items-center gap-4 pt-2 pb-2 text-center">
+          <span className="w-16 h-16 grid place-items-center rounded-pill bg-accent/15 text-accent">
+            <HiCheck size={30} />
+          </span>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-body text-tx">
+              Signed in as <span className="font-extrabold">{email}</span>
+            </p>
+            {/* Says what actually changed. "Success" alone leaves the user
+                guessing whether their existing tasks were affected. */}
+            <p className="text-meta text-sub">
+              Your tasks stay on this device and are backed up to your account.
+              Sign in with this same email on another device to see them there.
+            </p>
+          </div>
+          <button onClick={onClose}
+            className="w-full min-h-13 flex items-center justify-center gap-2 rounded-control bg-accent text-bg
+              text-body font-extrabold hover:bg-accent-hover transition-all">
+            Done
           </button>
         </div>
       ) : (

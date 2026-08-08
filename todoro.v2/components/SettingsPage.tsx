@@ -48,6 +48,7 @@ export default function SettingsPage({
   const soundRef  = useRef<HTMLInputElement>(null)
   const [soundError, setSoundError] = useState<string | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [confirmSignOut, setConfirmSignOut] = useState(false)
   const auth = useAuth()
 
   const preview = () => playAlert({ sound: alertSound, custom: alertCustom, volume: alertVolume })
@@ -211,12 +212,38 @@ export default function SettingsPage({
         ) : auth.status === "signed-in" ? (
           <>
             <InfoRow label="Signed in" value={auth.user?.email ?? "—"} />
-            <button onClick={() => void auth.signOut()}
-              className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-surface2 transition-colors">
-              <HiArrowRightOnRectangle size={18} className="text-sub shrink-0" />
-              <span className="flex-1 text-sm font-medium text-tx">Sign out</span>
-              <span className="text-xs text-sub">Keeps this device&rsquo;s data</span>
-            </button>
+            {confirmSignOut ? (
+              // Inline rather than a native confirm(): the question needs to
+              // say that nothing is deleted, which a browser dialog can't do
+              // convincingly, and this is the one moment someone would fear it.
+              <div className="flex flex-col gap-3 px-4 py-4">
+                <div>
+                  <p className="text-sm font-medium text-tx">Sign out of Todoro?</p>
+                  <p className="text-xs text-sub mt-0.5">
+                    Your tasks stay on this device. Sign back in any time to keep syncing.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setConfirmSignOut(false)}
+                    className="flex-1 min-h-11 rounded-control border border-border text-sm font-semibold text-tx
+                      hover:border-accent/40 transition-colors">
+                    Cancel
+                  </button>
+                  <button onClick={() => { setConfirmSignOut(false); void auth.signOut() }}
+                    className="flex-1 min-h-11 rounded-control bg-priority-high text-white text-sm font-bold
+                      hover:brightness-110 transition-all">
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmSignOut(true)}
+                className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-surface2 transition-colors">
+                <HiArrowRightOnRectangle size={18} className="text-sub shrink-0" />
+                <span className="flex-1 text-sm font-medium text-tx">Sign out</span>
+                <span className="text-xs text-sub">Keeps this device&rsquo;s data</span>
+              </button>
+            )}
           </>
         ) : (
           <button onClick={() => setAccountOpen(true)}
@@ -416,7 +443,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.20.0" />
+        <InfoRow label="Version" value="2.20.1" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
 

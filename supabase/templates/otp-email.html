@@ -3,59 +3,45 @@
 
   Paste into BOTH Supabase → Authentication → Emails → "Magic Link" and
   "Confirm signup". signInWithOtp sends the first to an existing user and the
-  second to a brand new one, so a template edited in only one place means the
-  very first sign-in ever arrives with no code in it.
+  second to a brand new one, so editing only one means the very first sign-in
+  ever arrives with no code in it.
 
-  Written for email clients, not browsers: tables for layout, inline styles
-  only, no flexbox/grid, no external CSS, no web fonts. Light background on
-  purpose — dark-mode email rendering is inconsistent across clients and a
-  washed-out code is worse than an off-brand one.
+  Design follows the app: --bg #0C0C0F, --panel #17171D, --surface2 #27272A,
+  --tx #F4F4F5, --sub #9B9BA1, accent #5B8CFF, 20px panel / 13px control radii.
+
+  Written for mail clients, not browsers:
+  - Tables with bgcolor attributes, because Outlook drops background-color on divs.
+  - Inline styles only. No <style> block, no classes, no flexbox or grid.
+  - Every cell that sits on dark states its own bgcolor, so a client that
+    ignores the outer table doesn't paint dark text onto a white default.
+  - Archivo isn't loaded — web fonts are unreliable in mail — so the stack
+    falls through to the system UI face, which is what the app uses anyway.
+  - The code is a table cell rather than a styled span so Outlook renders the
+    border and padding.
 -->
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
-       style="background-color:#f4f4f6;margin:0;padding:32px 12px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#0C0C0F"
+       style="background-color:#0C0C0F;margin:0;padding:32px 12px;width:100%;">
   <tr>
-    <td align="center">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
-             style="max-width:440px;background-color:#ffffff;border-radius:20px;
-                    border:1px solid #e6e6ec;overflow:hidden;">
+    <td align="center" style="padding:0;">
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="440" bgcolor="#17171D"
+             style="width:100%;max-width:440px;background-color:#17171D;border-radius:20px;
+                    border:1px solid #2E2E36;">
 
         <!-- Wordmark -->
         <tr>
-          <td style="padding:28px 32px 0 32px;">
-            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-                      font-size:15px;font-weight:800;letter-spacing:-0.01em;color:#0c0c0f;">
-              Todoro
-            </p>
-            <p style="margin:2px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-                      font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#8a8a99;">
-              Focus &amp; tasks
-            </p>
-          </td>
-        </tr>
-
-        <tr>
-          <td style="padding:22px 32px 0 32px;">
-            <h1 style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-                       font-size:24px;line-height:1.2;font-weight:800;letter-spacing:-0.02em;color:#0c0c0f;">
-              Your sign-in code
-            </h1>
-            <p style="margin:10px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-                      font-size:15px;line-height:1.55;color:#55555f;">
-              Enter this in Todoro to sync your tasks across devices.
-            </p>
-          </td>
-        </tr>
-
-        <!-- The code -->
-        <tr>
-          <td style="padding:22px 32px 0 32px;">
-            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
-                   style="background-color:#f4f4f6;border:1px solid #e6e6ec;border-radius:13px;">
+          <td bgcolor="#17171D" style="background-color:#17171D;padding:28px 32px 0 32px;border-radius:20px 20px 0 0;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td align="center" style="padding:20px 12px;">
-                  <span style="font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace;
-                               font-size:30px;font-weight:700;letter-spacing:0.16em;color:#0c0c0f;">
-                    {{ .Token }}
+                <td style="padding:0;">
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                               font-size:17px;font-weight:800;letter-spacing:-0.015em;color:#F4F4F5;">Todoro</span>
+                </td>
+                <td style="padding:0 0 0 10px;">
+                  <span style="display:inline-block;background-color:#5B8CFF;border-radius:999px;
+                               padding:3px 9px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                               font-size:10px;font-weight:800;letter-spacing:0.09em;text-transform:uppercase;color:#0C0C0F;">
+                    Sign in
                   </span>
                 </td>
               </tr>
@@ -64,28 +50,74 @@
         </tr>
 
         <tr>
-          <td style="padding:16px 32px 0 32px;">
-            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-                      font-size:13px;line-height:1.5;color:#55555f;">
-              This code expires in <strong style="color:#0c0c0f;">2 minutes</strong>.
-              You can request a new one from the app.
+          <td bgcolor="#17171D" style="background-color:#17171D;padding:20px 32px 0 32px;">
+            <h1 style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                       font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-0.025em;color:#F4F4F5;">
+              Your sign-in code
+            </h1>
+            <p style="margin:10px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                      font-size:15px;line-height:1.55;color:#9B9BA1;">
+              Enter this in Todoro to sync your tasks across devices.
             </p>
           </td>
         </tr>
 
+        <!-- The code -->
         <tr>
-          <td style="padding:20px 32px 28px 32px;">
-            <div style="height:1px;background-color:#e6e6ec;margin-bottom:16px;"></div>
+          <td bgcolor="#17171D" style="background-color:#17171D;padding:22px 32px 0 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#27272A"
+                   style="width:100%;background-color:#27272A;border:1px solid #3A3A42;border-radius:13px;">
+              <tr>
+                <td align="center" bgcolor="#27272A"
+                    style="background-color:#27272A;padding:22px 12px;border-radius:13px;">
+                  <span style="font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Courier New',monospace;
+                               font-size:34px;font-weight:700;letter-spacing:0.22em;color:#F4F4F5;
+                               /* letter-spacing pads the right edge; nudge it back to centre */
+                               text-indent:0.22em;">
+                    {{ .Token }}
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Expiry -->
+        <tr>
+          <td bgcolor="#17171D" style="background-color:#17171D;padding:14px 32px 0 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
+                   style="width:100%;background-color:rgba(91,140,255,0.10);border:1px solid rgba(91,140,255,0.30);
+                          border-radius:13px;">
+              <tr>
+                <td style="padding:11px 14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                           font-size:13px;line-height:1.5;color:#B8C9FF;">
+                  Expires in <strong style="color:#5B8CFF;">2 minutes</strong>. You can send a
+                  new one from the app.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td bgcolor="#17171D" style="background-color:#17171D;padding:20px 32px 28px 32px;border-radius:0 0 20px 20px;">
+            <div style="height:1px;background-color:#2E2E36;line-height:1px;font-size:0;margin-bottom:16px;">&nbsp;</div>
             <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-                      font-size:12px;line-height:1.55;color:#8a8a99;">
-              Didn&rsquo;t ask for this? You can ignore this email &mdash; nobody can sign in
-              without the code above. Todoro works without an account, and your tasks stay
-              on your device unless you choose to sync.
+                      font-size:12px;line-height:1.6;color:#7A7A82;">
+              Didn&rsquo;t ask for this? Ignore this email &mdash; nobody can sign in without the
+              code above. Todoro works without an account, and your tasks stay on your device
+              unless you choose to sync.
             </p>
           </td>
         </tr>
 
       </table>
+
+      <p style="margin:16px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                font-size:11px;line-height:1.5;color:#5A5A62;">
+        Todoro &middot; Focus &amp; tasks
+      </p>
+
     </td>
   </tr>
 </table>
