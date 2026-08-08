@@ -10,6 +10,7 @@ import Stepper from "./shared/Stepper"
 import Segmented, { type SegmentedOption } from "./shared/Segmented"
 import { adjustmentNote, parseHex, type AccentSet } from "../lib/accent"
 import { applyPayload, clearAll, downloadBackup, exportPayload, readPayload } from "../lib/backup"
+import { clearMeta } from "../lib/sync/state"
 import { type AuthApi } from "../lib/sync/auth"
 import { type SyncApi } from "../lib/sync/engine"
 import AccountSheet from "./AccountSheet"
@@ -63,6 +64,8 @@ export default function SettingsPage({
   const [soundError, setSoundError] = useState<string | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
   const [confirmSignOut, setConfirmSignOut] = useState(false)
+  const [confirmReset,   setConfirmReset]   = useState(false)
+  const [pendingImport,  setPendingImport]  = useState<Record<string, string> | null>(null)
 
   const preview = () => playAlert({ sound: alertSound, custom: alertCustom, volume: alertVolume })
 
@@ -142,14 +145,25 @@ export default function SettingsPage({
     downloadBackup(exportPayload())
   }
 
-  const handleResetData = () => {
-    if (!confirm("This erases ALL Todoro data on this device — tasks, history, settings, everything. This can't be undone. Continue?")) return
+  /**
+   * Resetting has to sign out too. The Supabase session is stored under
+   * `todoro-auth` — dashed, deliberately outside the `todoro:` namespace so it
+   * can never land in an exported backup — which means clearAll() leaves it
+   * untouched. Without the sign-out, the next sync would pull the whole account
+   * straight back down and "this can't be undone" would be a lie.
+   */
+  const doReset = async () => {
+    setConfirmReset(false)
     clearAll()
+    clearMeta()
+    if (auth.status === "signed-in") await auth.signOut()
     location.reload()
   }
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    // Reset the input, or picking the same file twice does nothing.
+    e.target.value = ""
     if (!file) return
     const reader = new FileReader()
     reader.onload = ev => {
@@ -163,11 +177,23 @@ export default function SettingsPage({
         alert("That doesn't look like a valid Todoro backup file.")
         return
       }
-      if (!confirm("Importing will replace all current Todoro data on this device. Continue?")) return
-      applyPayload(data)
-      location.reload()
+      setPendingImport(data)
     }
     reader.readAsText(file)
+  }
+
+  /**
+   * The shadow describes the state *before* the import, so leaving it in place
+   * would make the next sync diff the imported data against something unrelated
+   * — either pushing a huge spurious mutation or tripping the mass-delete
+   * guard. Clearing it forces a clean re-derive against a fresh pull.
+   */
+  const applyImport = () => {
+    if (!pendingImport) return
+    applyPayload(pendingImport)
+    clearMeta()
+    setPendingImport(null)
+    location.reload()
   }
 
   const initials = userName ? userName.slice(0, 2).toUpperCase() : "–"
@@ -436,7 +462,7 @@ export default function SettingsPage({
           </div>
         </button>
         <input ref={importRef} type="file" accept="application/json,.json" className="hidden" onChange={handleImport} />
-        <button onClick={handleResetData}
+        <button onClick={() => setConfirmReset(true)}
           className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-priority-high/5 transition-colors">
           <HiTrash size={18} className="text-priority-high shrink-0" />
           <div className="flex-1">
@@ -448,7 +474,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.21.1" />
+        <InfoRow label="Version" value="2.21.2" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
 
@@ -457,6 +483,47 @@ export default function SettingsPage({
           onClose={() => setAccountOpen(false)}
           sendCode={auth.sendCode}
           verifyCode={auth.verifyCode} />
+      )}
+
+      {confirmReset && (
+        <ConfirmModal
+          title="Erase everything on this device?"
+          body={
+            <>
+              Every task, project, focus session and setting stored here is deleted.
+              {auth.status === "signed-in" ? (
+                <>
+                  {" "}You&rsquo;ll also be signed out &mdash; otherwise the next sync would
+                  simply download it all again.{" "}
+                  <span className="font-bold text-tx">
+                    Your account still has a copy
+                  </span>
+                  , so signing back in restores it.
+                </>
+              ) : (
+                <> This device is the only copy. Export a backup first if you might want it.</>
+              )}
+            </>
+          }
+          confirmLabel="Erase"
+          destructive
+          onConfirm={() => { void doReset() }}
+          onClose={() => setConfirmReset(false)} />
+      )}
+
+      {pendingImport && (
+        <ConfirmModal
+          title="Import this backup?"
+          body={
+            <>
+              This replaces what&rsquo;s on this device with the{" "}
+              <span className="font-bold text-tx">{Object.keys(pendingImport).length} items</span>{" "}
+              in the file. Anything here that isn&rsquo;t in the backup is left alone.
+            </>
+          }
+          confirmLabel="Import"
+          onConfirm={applyImport}
+          onClose={() => setPendingImport(null)} />
       )}
 
       {confirmSignOut && (
