@@ -49,6 +49,15 @@ describe("exportPayload", () => {
     localStorage.setItem("sb-abc-auth-token", "secret")
     expect(Object.keys(exportPayload().data)).toEqual(["todoro:points"])
   })
+
+  it("never captures the session token, which would put a credential in a shared file", () => {
+    localStorage.setItem("todoro:points", "5")
+    // Supabase's storageKey is dashed precisely so it falls outside this scan.
+    localStorage.setItem("todoro-auth", "refresh-token")
+    const keys = Object.keys(exportPayload().data)
+    expect(keys).toEqual(["todoro:points"])
+    expect(keys.some(k => k.includes("auth"))).toBe(false)
+  })
 })
 
 describe("readPayload", () => {

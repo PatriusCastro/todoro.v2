@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { HiUser, HiMoon, HiSun, HiComputerDesktop, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward, HiTrash, HiPlay } from "react-icons/hi2"
+import { HiUser, HiMoon, HiSun, HiComputerDesktop, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward, HiTrash, HiPlay, HiCloudArrowUp, HiArrowRightOnRectangle } from "react-icons/hi2"
 import { MdColorLens } from "react-icons/md";
 import { FaBullseye } from "react-icons/fa"
 import Panel from "./shared/Panel"
@@ -10,6 +10,8 @@ import Stepper from "./shared/Stepper"
 import Segmented, { type SegmentedOption } from "./shared/Segmented"
 import { adjustmentNote, parseHex, type AccentSet } from "../lib/accent"
 import { applyPayload, clearAll, downloadBackup, exportPayload, readPayload } from "../lib/backup"
+import { useAuth } from "../lib/sync/auth"
+import AccountSheet from "./AccountSheet"
 import { ALERT_SOUNDS, MAX_CUSTOM_BYTES, playAlert, readAudioFile, stopAlert, type AlertSound } from "../lib/sound"
 
 type Theme = "system" | "light" | "dark"
@@ -45,6 +47,8 @@ export default function SettingsPage({
   const importRef = useRef<HTMLInputElement>(null)
   const soundRef  = useRef<HTMLInputElement>(null)
   const [soundError, setSoundError] = useState<string | null>(null)
+  const [accountOpen, setAccountOpen] = useState(false)
+  const auth = useAuth()
 
   const preview = () => playAlert({ sound: alertSound, custom: alertCustom, volume: alertVolume })
 
@@ -196,6 +200,38 @@ export default function SettingsPage({
             className="w-36 bg-surface2 border border-border rounded-xl px-3 py-1.5 text-sm text-tx text-right
               outline-none focus:border-accent transition-colors" />
         </div>
+      </Section>
+
+      {/* Sign-in lives here and nowhere else. Putting it in Onboarding would ask
+          for an email before the user has seen a task, which contradicts the
+          whole "no account needed" premise. */}
+      <Section label="Account">
+        {auth.status === "unconfigured" ? (
+          <InfoRow label="Sync" value="Unavailable on this build" />
+        ) : auth.status === "signed-in" ? (
+          <>
+            <InfoRow label="Signed in" value={auth.user?.email ?? "—"} />
+            <button onClick={() => void auth.signOut()}
+              className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-surface2 transition-colors">
+              <HiArrowRightOnRectangle size={18} className="text-sub shrink-0" />
+              <span className="flex-1 text-sm font-medium text-tx">Sign out</span>
+              <span className="text-xs text-sub">Keeps this device&rsquo;s data</span>
+            </button>
+          </>
+        ) : (
+          <button onClick={() => setAccountOpen(true)}
+            disabled={auth.status === "loading"}
+            className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-surface2 transition-colors disabled:opacity-50">
+            <HiCloudArrowUp size={18} className="text-sub shrink-0" />
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-medium text-tx">Sync across devices</span>
+              <span className="block text-xs text-sub">
+                Off — everything stays on this device
+              </span>
+            </span>
+            <span className="text-sm font-semibold text-accent shrink-0">Sign in</span>
+          </button>
+        )}
       </Section>
 
       <Section label="Appearance">
@@ -380,9 +416,16 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.19.1" />
+        <InfoRow label="Version" value="2.20.0" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
+
+      {accountOpen && (
+        <AccountSheet
+          onClose={() => setAccountOpen(false)}
+          sendCode={auth.sendCode}
+          verifyCode={auth.verifyCode} />
+      )}
     </div>
   )
 }
