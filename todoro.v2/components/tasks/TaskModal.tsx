@@ -22,6 +22,12 @@ interface TaskModalProps {
   onDelete?: (id: string) => void
   onClose: () => void
   onCreateProject: (p: Project) => void
+  /**
+   * Pre-selects a project for a *new* task. Opening "New" from inside a project
+   * already implies the answer, so asking again is a question with one obvious
+   * response. Ignored when editing, where the task's own project wins.
+   */
+  defaultProjectId?: string
   /** Session length, so the estimate can be stated in minutes rather than units. */
   focusMins?: number
   dark?: boolean
@@ -123,7 +129,8 @@ function DetailRow({ label, value, open, onToggle, children }: {
 }
 
 export default function TaskModal({
-  task, projects, onSave, onDelete, onClose, onCreateProject, focusMins = 25, dark,
+  task, projects, onSave, onDelete, onClose, onCreateProject, defaultProjectId,
+  focusMins = 25, dark,
 }: TaskModalProps) {
   const [title,             setTitle]             = useState(task?.title    ?? "")
   const [priority,          setPriority]          = useState<Priority>(task?.priority ?? "none")
@@ -133,7 +140,9 @@ export default function TaskModal({
   const [subInput,          setSubInput]          = useState("")
   const [showCal,           setShowCal]           = useState(false)
   const [estimatedSessions, setEstimatedSessions] = useState(task?.estimatedSessions ?? 0)
-  const [projectId,         setProjectId]         = useState<string | undefined>(task?.projectId)
+  // A new task inside a project starts filed there; an existing task keeps its own.
+  const [projectId,         setProjectId]         = useState<string | undefined>(
+    task ? task.projectId : defaultProjectId)
   const [repeat,            setRepeat]            = useState<Repeat>(task?.repeat ?? "none")
 
   const [newProjectName,  setNewProjectName]  = useState("")
@@ -144,8 +153,11 @@ export default function TaskModal({
   const [{ today, tomorrow }] = useState(() => ({ today: dayStr(0), tomorrow: dayStr(1) }))
 
   // The drawer opens itself when a task already has something inside it.
+  // Also opens for a pre-filled project, so the choice made on your behalf is
+  // visible rather than hidden behind a collapsed row.
   const [detailsOpen, setDetailsOpen] = useState(() =>
-    !!task?.projectId || (!!task?.repeat && task.repeat !== "none") || (task?.subtasks.length ?? 0) > 0)
+    !!task?.projectId || !!(!task && defaultProjectId)
+    || (!!task?.repeat && task.repeat !== "none") || (task?.subtasks.length ?? 0) > 0)
   const [openRow, setOpenRow] = useState<"project" | "repeat" | "subtasks" | null>(null)
 
   useEffect(() => {

@@ -61,10 +61,14 @@ export default function ProjectPage({
 
   const handleSave = useCallback((task: Task) => {
     const isNew = !allTasks.find(t => t.id === task.id)
-    onSave({ ...task, projectId: project.id })
+    // Take the modal's answer as final. This used to force projectId to this
+    // folder, which meant moving a task to another project — or out of one —
+    // silently snapped back the moment you saved. New tasks arrive already
+    // filed here via defaultProjectId, so the override bought nothing.
+    onSave(task)
     showToast(isNew ? "created" : "saved", isNew ? "Task created" : "Changes saved", task.title)
     setShowModal(false)
-  }, [allTasks, onSave, showToast, project.id])
+  }, [allTasks, onSave, showToast])
 
   const handleQuickStart = useCallback((task: Task) => {
     onStartFocus(task)
@@ -236,6 +240,8 @@ export default function ProjectPage({
           onDelete={id => { const t = allTasks.find(x => x.id === id); if (t) handleDelete(t) }}
           onClose={() => setShowModal(false)}
           onCreateProject={onSaveProject}
+          // Creating from inside a folder already answered "which project".
+          defaultProjectId={project.id}
           focusMins={focusMins}
           dark={dark} />
       )}

@@ -77,6 +77,19 @@ function getGreeting() {
   return "Good evening"
 }
 
+/**
+ * Stand-in for "no task at all", so the poster can say "Nothing queued yet".
+ *
+ * The fallback used to be INITIAL_TASKS[0], which put a seed task on the Home
+ * poster that wasn't in anyone's list and couldn't be opened or completed. The
+ * empty id is deliberate: it matches nothing, so the reconciling effect below
+ * replaces it the moment a real task exists.
+ */
+const NO_TASK: Task = {
+  id: "", title: "", priority: "none", dueDate: "", dueTime: "", dueLabel: "",
+  done: false, estimatedSessions: 0, completedSessions: 0, subtasks: [],
+}
+
 function createQuickModeTask(): Task {
   return {
     id: QUICK_MODE_ID, title: "", priority: "none", dueDate: "", dueTime: "", dueLabel: "",
@@ -314,22 +327,32 @@ export default function Home() {
   }, [pinned, tasks, quickMode, running, activeTask.id])
   // ─────────────────────────────────────────────────────────────────
 
+  // Keeps activeTask honest against the task list.
+  //
+  // This used to handle only "still there and open" and "still there and done",
+  // so a *deleted* active task fell through both branches and stayed on the
+  // Home poster until a reload. handleDeleteTask reassigns it for a local
+  // delete, but it can't for the two cases that matter most now: a sync patch
+  // that removes a task another device deleted, and an import or first-link
+  // that replaces the whole collection. This effect is the only thing that sees
+  // those, so it has to own the deleted case too.
   useEffect(() => {
+    if (quickMode) return
     const updated = tasks.find(t => t.id === activeTask.id)
-    if (updated && !updated.done) setActiveTask(updated)
-    else if (updated?.done) {
-      const nextPending = pickNextTask(tasks, pinned, activeTask.id)
-      if (nextPending) setActiveTask(nextPending)
-    }
+    if (updated && !updated.done) { setActiveTask(updated); return }
+    const nextPending = pickNextTask(tasks, pinned, activeTask.id)
+    if (nextPending) { setActiveTask(nextPending); return }
+    // Nothing open is left. Only move off a task that is genuinely gone —
+    // finishing the last one should leave it on screen to be celebrated.
+    if (!updated) setActiveTask(tasks[0] ?? NO_TASK)
   }, [tasks])
 
   useEffect(() => {
     if (quickMode && activeTask.title !== "") {
       setActiveTask(createQuickModeTask())
-    } else if (!quickMode && activeTask.id === "quick-mode") {
+    } else if (!quickMode && activeTask.id === QUICK_MODE_ID) {
       const nextPending = pickNextTask(tasks, pinned)
-      if (nextPending) setActiveTask(nextPending)
-      else setActiveTask(tasks[0] ?? INITIAL_TASKS[0])
+      setActiveTask(nextPending ?? tasks[0] ?? NO_TASK)
     }
   }, [quickMode, tasks])
 
@@ -682,7 +705,7 @@ export default function Home() {
     if (activeTask.id === id) {
       const remaining   = tasks.filter(t => t.id !== id)
       const nextPending = pickNextTask(remaining, pinned)
-      setActiveTask(nextPending ?? remaining[0] ?? INITIAL_TASKS[0])
+      setActiveTask(nextPending ?? remaining[0] ?? NO_TASK)
     }
   }
 
