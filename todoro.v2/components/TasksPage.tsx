@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiArrowsRightLeft, HiCalendarDays } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
 import TasksCalendar, { FocusHistory } from "../components/tasks/TasksCalendar"
@@ -32,6 +32,8 @@ interface TasksPageProps {
   onDeleteProject: (id: string) => void
   onRestoreProject: (p: Project, taskIds: string[]) => void
   allHistory: SessionRecord[]
+  /** True while a project detail page is open — the shell hides its FAB. */
+  onProjectOpen?: (open: boolean) => void
   /** Session length, so a task's estimate can be shown in minutes. */
   focusMins: number
   dark: boolean
@@ -55,7 +57,7 @@ export default function TasksPage({
   tasks, activeTask, projects,
   onSave, onDelete, onToggle, onToggleSub,
   onStartFocus, onSaveProject, onDeleteProject, onRestoreProject,
-  allHistory, focusMins, dark,
+  allHistory, focusMins, onProjectOpen, dark,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Filter>("all")
@@ -74,6 +76,12 @@ export default function TasksPage({
   const { pinned, togglePin } = usePinnedTasks()
   const { pending: deletePending, stage: stageDelete, undo } = useUndo(onDelete)
   const [activeProject, setActiveProject] = useState<Project | null>(null)
+
+  // The shell's FAB opens the *global* new-task modal, which files nothing into
+  // this project — so inside a folder it would quietly create unfiled tasks
+  // right next to a button that does the right thing. Tell the shell to hide it
+  // and let the header's New own the action here.
+  useEffect(() => { onProjectOpen?.(activeProject !== null) }, [activeProject, onProjectOpen])
 
   // One-time coaching for the swipe gestures (pin / delete) — read once on mount
   const [showSwipeHint, setShowSwipeHint] = useState(() => {

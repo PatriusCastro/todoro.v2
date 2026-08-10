@@ -258,6 +258,8 @@ export default function Home() {
   )
 
   const [focusedView, setFocusedView] = useState(false)
+  // The FAB creates an unfiled task, which is the wrong action inside a folder.
+  const [projectOpen, setProjectOpen] = useState(false)
 
   const todayHistory = allHistory.filter(s => localDate(s.at) === todayKey())
   const sessions = todayHistory.length
@@ -776,7 +778,7 @@ export default function Home() {
     headerTitle:    HEADERS[tab][0],
     headerSubtitle: HEADERS[tab][1],
     // Anything that owns the screen hides the FAB, so it can't sit on top of a sheet.
-    overlayOpen: showAdd || showShop || notifPrompt || !onboarded,
+    overlayOpen: showAdd || showShop || notifPrompt || !onboarded || projectOpen,
   }
 
   if (!hydrated) {
@@ -848,7 +850,8 @@ export default function Home() {
           onToggle={handleToggleTask} onToggleSub={handleToggleSub}
           onStartFocus={handleStartFocus}
           onSaveProject={handleSaveProject} onRestoreProject={handleRestoreProject}
-          allHistory={allHistory} focusMins={focusMins} />
+          allHistory={allHistory} focusMins={focusMins}
+          onProjectOpen={setProjectOpen} />
       )}
 
       {tab === "settings" && (
