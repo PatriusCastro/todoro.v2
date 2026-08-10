@@ -341,9 +341,11 @@ export default function TasksPage({
 
         {/* Project cards */}
         {projects.length > 0 ? (
-          <div className="flex gap-4 pb-1 -mx-1 px-1 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          // snap-proximity, not mandatory: with cards this narrow, mandatory
+          // snapping fights a flick meant to travel several projects at once.
+          <div className="flex gap-2 pb-1 -mx-1 px-1 overflow-x-auto snap-x snap-proximity [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {projects.map(proj => (
-              <div key={proj.id} className="relative group/proj shrink-0 snap-start">
+              <div key={proj.id} className="shrink-0 snap-start">
                 <ProjectCard
                   project={proj}
                   tasks={tasks.filter(t => t.projectId === proj.id)}

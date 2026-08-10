@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { HiArrowLeft, HiPlus, HiChevronDown, HiFolder, HiPencil } from "react-icons/hi2"
+import { HiArrowLeft, HiChevronDown, HiFolder, HiPencil } from "react-icons/hi2"
 import TaskCard, { type Task } from "./TaskCard"
 import TaskModal, { type Project } from "./TaskModal"
 import ProjectModal from "./ProjectModal"
@@ -139,15 +139,6 @@ export default function ProjectPage({
             hover:text-accent hover:border-accent/40 transition-colors"
           title="Edit project">
           <HiPencil size={14} />
-        </button>
-
-        {/* New task */}
-        <button
-          onClick={() => { setModalTask(undefined); setShowModal(true) }}
-          aria-label="New task in this project"
-          className="min-h-11 shrink-0 grid xs:flex items-center justify-center gap-1.5 w-11 xs:w-auto xs:px-3.5
-            rounded-xl bg-accent text-white text-meta font-extrabold whitespace-nowrap hover:bg-accent-hover transition-all">
-          <HiPlus size={15} /> <span className="hidden xs:inline">New</span>
         </button>
       </div>
 
