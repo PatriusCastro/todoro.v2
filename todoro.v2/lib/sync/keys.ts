@@ -79,6 +79,8 @@ export const SYNC_KEYS: Readonly<Record<string, KeySpec & { readonly kind: SyncC
     why: "Mirrors a per-device OS permission; syncing it enables a toggle the device never granted" },
   "todoro:notifPrompted":  { kind: "device", why: "One-time nudge, per device" },
   "todoro:swipeHintSeen":  { kind: "device", why: "One-time coaching, per device. Stored raw, not JSON" },
+  "todoro:railCollapsed":  { kind: "device",
+    why: "A rail width belongs to a screen, not an account — the phone has no rail. Stored raw, not JSON" },
   "todoro:onboarded":      { kind: "device",
     why: "Already derived from userName, which does sync — syncing this would skip a new device's welcome" },
   "todoro:deviceId": { kind: "device", why: "Identifies this device to the outbox" },
