@@ -138,9 +138,9 @@ export default function Leaderboard({ signedIn, optedIn, onOptIn }: LeaderboardP
               row={row}
               top={top}
               first={i === 0}
-              // The RPC always returns you, however far down. A jump in places
-              // is real distance, and saying so beats an adjacent pair of rows
-              // that silently misrepresent the gap.
+              // The board is a podium; the caller comes back regardless of
+              // where they placed. Below it, their row is announced rather
+              // than left adjacent to fifth, which would read as sixth.
               gapBefore={i > 0 && row.place > rows[i - 1].place + 1} />
           ))}
         </div>
@@ -176,7 +176,12 @@ function Row({ row, top, first, gapBefore }: {
   return (
     <>
       {gapBefore && (
-        <span aria-hidden="true" className="py-1 text-center text-caption text-sub tracking-widest">···</span>
+        <span className="flex items-center gap-2 pt-2.5 pb-1 border-t border-border">
+          <span aria-hidden="true" className="text-caption text-sub tracking-widest">···</span>
+          <span className="text-caption font-extrabold uppercase tracking-wider text-sub">
+            {row.isMe ? "Your position" : "Further down"}
+          </span>
+        </span>
       )}
       <div
         className={`flex items-center gap-2.5 py-2.5 ${first || gapBefore ? "" : "border-t border-border"}
