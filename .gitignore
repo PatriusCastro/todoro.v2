@@ -39,3 +39,7 @@ supabase/.branches
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Supabase CLI state — local to a machine, and it lands wherever the CLI was
+# run from. The schema itself lives in /supabase/migrations at the repo root.
+**/supabase/.temp/
