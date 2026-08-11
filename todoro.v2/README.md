@@ -20,9 +20,9 @@ A modern **Progressive Web App (PWA)** that combines a **Pomodoro timer** with a
 - **Framework**: Next.js 16.1.6 with React 19.2.3
 - **Language**: TypeScript 5
 - **Styling**: Tailwind CSS v4 & PostCSS
-- **PWA**: next-pwa for service workers
+- **PWA**: Serwist (`@serwist/turbopack`) for the service worker
 - **Icons**: React Icons
-- **Font**: DM Sans (Google Fonts)
+- **Font**: Archivo, self-hosted from `public/fonts` (no build-time font fetch)
 
 ## 🛠️ Installation
 
@@ -50,13 +50,14 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ```
 todoro.v2/
 ├── app/                    # Next.js app directory
-│   ├── layout.tsx         # Root layout with metadata & PWA config
+│   ├── layout.tsx         # Root layout with metadata & SW registration
 │   ├── page.tsx           # Home page
+│   ├── sw.ts              # Service worker source (built by Serwist)
+│   ├── serwist/[path]/    # Route that builds & serves /serwist/sw.js
 │   └── globals.css        # Global styles
 ├── components/            # React components
 │   ├── AppShell.tsx       # Main app container
 │   ├── HomePage.tsx       # Home view
-│   ├── CalendarPage.tsx   # Calendar view
 │   ├── TasksPage.tsx      # Tasks view
 │   ├── TimerPage.tsx      # Timer view
 │   ├── SettingsPage.tsx   # Settings view
@@ -73,11 +74,10 @@ todoro.v2/
 │   ├── manifest.json      # PWA manifest
 │   ├── icon-192.png       # App icon (192x192)
 │   ├── icon-512.png       # App icon (512x512)
-│   ├── sw.js              # Service worker
+│   ├── offline.html       # Offline fallback document
 │   └── ...
 ├── next.config.ts         # Next.js configuration with PWA
 ├── tsconfig.json          # TypeScript configuration
-├── tailwind.config.js     # Tailwind CSS configuration
 └── package.json           # Project metadata & dependencies
 ```
 
@@ -194,7 +194,7 @@ The dev server supports fast refresh. Edit files and changes appear instantly wi
 | Package | Purpose |
 |---------|---------|
 | `next` | React framework with built-in optimizations |
-| `next-pwa` | PWA service worker & caching |
+| `@serwist/turbopack` | PWA service worker & caching (dev dep; built at build time) |
 | `react` / `react-dom` | UI library |
 | `react-icons` | Icon library (5.6.0+) |
 | `tailwindcss` | Utility-first CSS framework |

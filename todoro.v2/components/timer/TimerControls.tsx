@@ -12,58 +12,88 @@ interface TimerControlsProps {
   onReset:        () => void
   onSkip:         () => void
   onStopAndRest?: () => void
+  /** Focus view: icon-only, unfilled, no labels. Nothing to read while working. */
+  minimal?:       boolean
 }
 
-function skipLabel(phase: Phase) {
-  return phase === "focus" ? "Skip to break" : "Skip to focus"
-}
-
+/**
+ * Reset · primary · skip. The primary fills the row so it reads as the one
+ * thing to press; the two secondaries are square and quiet either side of it.
+ */
 export default function TimerControls({
   running, phase, reverseMode = false,
-  onToggle, onReset, onSkip, onStopAndRest,
+  onToggle, onReset, onSkip, onStopAndRest, minimal = false,
 }: TimerControlsProps) {
-  const isBreak = phase !== "focus"
   const showStopAndRest = reverseMode && phase === "focus" && running && onStopAndRest
 
-  return (
-    <div className="flex items-center justify-center gap-4">
-      <IconBtn onClick={onReset} label="Reset"><HiArrowPath size={16} /></IconBtn>
+  // The phase is already named above the ring, so the button only says what
+  // pressing it does — "Start long break" wrapped between its two neighbours.
+  const primaryLabel = running
+    ? "Pause"
+    : phase === "focus" ? (reverseMode ? "Begin focus" : "Start focus")
+    : phase === "longbreak" ? "Long break" : "Start break"
 
-      {showStopAndRest ? (
+  // Focus view strips the chrome: three quiet icon buttons, nothing filled and
+  // nothing to read. A big pink "Pause" is the loudest thing on a screen whose
+  // entire purpose is to stop demanding attention.
+  if (minimal) {
+    const ghost = `w-13 h-13 grid place-items-center rounded-pill text-sub
+      hover:text-tx hover:bg-surface2 active:scale-95 transition-all duration-150`
+    return (
+      <div className="flex items-center gap-3">
+        <button onClick={onReset} aria-label="Reset session" className={ghost}>
+          <HiArrowPath size={20} />
+        </button>
         <button
-          onClick={onStopAndRest}
-          className="flex items-center gap-2 px-8 py-3 rounded-full text-white text-sm font-black min-w-27.5 justify-center
-            bg-priority-low hover:bg-[#42c956] active:scale-95 transition-all duration-150">
-          <HiStop size={14} /> Stop &amp; Rest
+          onClick={showStopAndRest ? onStopAndRest : onToggle}
+          aria-label={showStopAndRest ? "Stop and rest" : primaryLabel}
+          className={`w-16 h-16 grid place-items-center rounded-pill border border-border
+            text-tx hover:border-accent hover:text-accent active:scale-95 transition-all duration-150`}>
+          {showStopAndRest ? <HiStop size={22} /> : running ? <HiPause size={22} /> : <HiPlay size={22} />}
+        </button>
+        <button onClick={onSkip}
+          aria-label={phase === "focus" ? "Skip to break" : "Skip to focus"}
+          className={ghost}>
+          <HiForward size={20} />
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-stretch gap-2">
+      <button onClick={onReset} aria-label="Reset session"
+        className="w-13 xs:w-15 min-h-14 xs:min-h-15 shrink-0 grid place-items-center rounded-control border border-border
+          text-tx hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150">
+        <HiArrowPath size={19} />
+      </button>
+
+      {/* nowrap over shrink: below 380px the type steps down instead. */}
+      {showStopAndRest ? (
+        <button onClick={onStopAndRest}
+          className="flex-1 min-w-0 min-h-14 xs:min-h-15 flex items-center justify-center gap-2 xs:gap-2.5 px-2 rounded-control
+            bg-priority-low text-white text-lead xs:text-heading font-extrabold whitespace-nowrap
+            hover:brightness-105 active:scale-[0.98] transition-all duration-150">
+          <HiStop size={18} className="shrink-0" /> Stop &amp; rest
         </button>
       ) : (
         <button onClick={onToggle}
-          className={`flex items-center gap-2 px-8 py-3 rounded-full text-white text-sm font-black min-w-27.5 justify-center
-            active:scale-95 transition-all duration-150
-            ${!isBreak
-              ? "bg-accent hover:bg-accent-hover"
-              : "bg-priority-low hover:bg-[#42c956]"}`}>
+          className="flex-1 min-w-0 min-h-14 xs:min-h-15 flex items-center justify-center gap-2 xs:gap-2.5 px-2 rounded-control
+            bg-accent text-white text-lead xs:text-heading font-extrabold whitespace-nowrap
+            hover:bg-accent-hover active:scale-[0.98] transition-all duration-150">
           {running
-            ? <><HiPause size={14} /> Pause</>
-            : <><HiPlay  size={14} /> {phase === "focus"
-                ? (reverseMode ? "Begin" : "Start")
-                : phase === "longbreak" ? "Long Rest" : "Rest"
-              }</>
-          }
+            ? <HiPause size={18} className="shrink-0" />
+            : <HiPlay size={18} className="shrink-0" />}
+          {primaryLabel}
         </button>
       )}
 
-      <IconBtn onClick={onSkip} label={skipLabel(phase)}><HiForward size={16} /></IconBtn>
+      <button onClick={onSkip}
+        aria-label={phase === "focus" ? "Skip to break" : "Skip to focus"}
+        className="w-13 xs:w-15 min-h-14 xs:min-h-15 shrink-0 grid place-items-center rounded-control border border-border
+          text-tx hover:border-accent/50 hover:text-accent active:scale-95 transition-all duration-150">
+        <HiForward size={19} />
+      </button>
     </div>
-  )
-}
-
-function IconBtn({ onClick, label, children }: { onClick: () => void; label: string; children: React.ReactNode }) {
-  return (
-    <button onClick={onClick} title={label}
-      className="w-10 h-10 rounded-full border border-border text-sub flex items-center justify-center
-        hover:border-accent/50 hover:text-tx active:scale-95 transition-all duration-150">
-      {children}
-    </button>
   )
 }

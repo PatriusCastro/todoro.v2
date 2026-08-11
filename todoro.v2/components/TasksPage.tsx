@@ -1,56 +1,96 @@
 "use client"
 
-import { useState, useCallback } from "react"
-import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder } from "react-icons/hi2"
+import { useState, useCallback, useEffect } from "react"
+import { HiPlus, HiMagnifyingGlass, HiXMark, HiChevronDown, HiFolderOpen, HiFolder, HiArrowsRightLeft, HiCalendarDays } from "react-icons/hi2"
 import TaskCard, { type Task } from "../components/tasks/TaskCard"
+import TasksCalendar, { FocusHistory } from "../components/tasks/TasksCalendar"
+import { type SessionRecord } from "../app/page"
 import TaskModal from "../components/tasks/TaskModal"
 import ProjectCard from "../components/tasks/ProjectCard"
 import ProjectModal from "../components/tasks/ProjectModal"
 import ProjectPage from "../components/tasks/ProjectPage"
+import TaskList from "../components/tasks/TaskList"
+import TaskBoard from "../components/tasks/TaskBoard"
+import ViewSwitch from "../components/tasks/ViewSwitch"
 import { type Project } from "../components/tasks/TaskModal"
-import { type Priority, getPriority } from "../lib/theme"
+import { type Stage, type TaskView } from "../lib/board"
+import { type Priority } from "../lib/theme"
+import PriorityChip from "../components/shared/PriorityChip"
+import Toast from "../components/shared/Toast"
 import { useUndo } from "../hooks/useUndo"
 import { usePinnedTasks } from "../hooks/usePinnedTasks"
 import { useSortedTasks } from "../hooks/useTaskSort"
 import { useToast } from "../hooks/useToast"
 
 interface TasksPageProps {
-  tasks: Task[]; activeTask: Task; running: boolean
+  tasks: Task[]; activeTask: Task
   projects: Project[]
   onSave: (t: Task) => void; onDelete: (id: string) => void
   onToggle: (id: string) => void; onToggleSub: (tId: string, sId: string) => void
-  onSetActive: (t: Task) => void; onNavToTimer: () => void
+  onStartFocus: (t: Task) => void
   onSaveProject: (p: Project) => void
   onDeleteProject: (id: string) => void
+  onRestoreProject: (p: Project, taskIds: string[]) => void
+  allHistory: SessionRecord[]
+  /** True while a project detail page is open — the shell hides its FAB. */
+  onProjectOpen?: (open: boolean) => void
+  /** Session length, so a task's estimate can be shown in minutes. */
+  focusMins: number
   dark: boolean
 }
 
+function localDate(ts: number = Date.now()) {
+  const d = new Date(ts)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
+// "None" is the absence of a ranking, not a rank — filtering to it asked people
+// to think about a bucket they never chose to put anything in. Unranked tasks
+// still show under All.
 const PRIORITIES: { key: Priority; label: string }[] = [
-  { key: "high", label: "High" }, { key: "mid", label: "Mid" },
-  { key: "low",  label: "Low"  }, { key: "none", label: "None" },
+  { key: "high", label: "High" }, { key: "mid", label: "Mid" }, { key: "low", label: "Low" },
 ]
 
 type Filter = Priority | "all" | "done"
 
 export default function TasksPage({
-  tasks, activeTask, running, projects,
+  tasks, activeTask, projects,
   onSave, onDelete, onToggle, onToggleSub,
-  onSetActive, onNavToTimer, onSaveProject, onDeleteProject, dark,
+  onStartFocus, onSaveProject, onDeleteProject, onRestoreProject,
+  allHistory, focusMins, onProjectOpen, dark,
 }: TasksPageProps) {
   const [search,    setSearch]    = useState("")
   const [filter,    setFilter]    = useState<Filter>("all")
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [modalTask, setModalTask] = useState<Task | undefined>()
   const [showModal, setShowModal] = useState(false)
   const [showDone,  setShowDone]  = useState(false)
-  const [showSessionToast, setShowSessionToast] = useState(false)
+  // "all" is the default: a task filed under a project must still be reachable
+  // from the main list, otherwise the only way to see it is to open its folder.
+  const [view,      setView]      = useState<TaskView>("all")
 
   // Project modal state
   const [projectModal, setProjectModal] = useState<{ open: boolean; project?: Project }>({ open: false })
 
-  const { toast, show: showToast, dismiss: dismissToast, EMOJI } = useToast()
+  const { toast, show: showToast, dismiss: dismissToast } = useToast()
   const { pinned, togglePin } = usePinnedTasks()
   const { pending: deletePending, stage: stageDelete, undo } = useUndo(onDelete)
   const [activeProject, setActiveProject] = useState<Project | null>(null)
+
+  // The shell's FAB opens the *global* new-task modal, which files nothing into
+  // this project — so inside a folder it would quietly create unfiled tasks
+  // right next to a button that does the right thing. Tell the shell to hide it
+  // and let the header's New own the action here.
+  useEffect(() => { onProjectOpen?.(activeProject !== null) }, [activeProject, onProjectOpen])
+
+  // One-time coaching for the swipe gestures (pin / delete) — read once on mount
+  const [showSwipeHint, setShowSwipeHint] = useState(() => {
+    try { return !localStorage.getItem("todoro:swipeHintSeen") } catch { return false }
+  })
+  const dismissSwipeHint = useCallback(() => {
+    setShowSwipeHint(false)
+    try { localStorage.setItem("todoro:swipeHintSeen", "1") } catch {}
+  }, [])
 
   const handleDelete = useCallback((task: Task) => {
     stageDelete(task)
@@ -66,14 +106,25 @@ export default function TasksPage({
   }, [tasks, onSave, showToast])
 
   const handleQuickStart = useCallback((task: Task) => {
-    if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
-    onSetActive(task); onNavToTimer()
-  }, [running, onSetActive, onNavToTimer])
+    onStartFocus(task)
+  }, [onStartFocus])
 
+  // Tapping a row opens it for editing — the pencil button came off the row so
+  // it could fit a 44px play target. Starting a session is the play button, and
+  // "make active without starting" still lives behind the Timer's Change picker.
   const handleTaskClick = useCallback((task: Task) => {
-    if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
-    onSetActive(task); onNavToTimer()
-  }, [running, onSetActive, onNavToTimer])
+    setModalTask(task); setShowModal(true)
+  }, [])
+
+  // Dropping into Done goes through onToggle, not done:true, so a recurring
+  // task still spawns its next occurrence.
+  const handleMoveStage = useCallback((task: Task, to: Stage) => {
+    if (to === "done") {
+      if (!task.done) onToggle(task.id)
+      return
+    }
+    onSave({ ...task, done: false, stage: to })
+  }, [onToggle, onSave])
 
   // Project handlers
   const handleSaveProject = useCallback((p: Project) => {
@@ -85,39 +136,77 @@ export default function TasksPage({
   }, [projects, onSaveProject, showToast])
 
   const handleDeleteProject = useCallback((id: string) => {
-    const proj = projects.find(p => p.id === id)
+    const proj    = projects.find(p => p.id === id)
+    // Snapshot before the delete — these are the tasks that lose their folder
+    const orphans = tasks.filter(t => t.projectId === id).map(t => t.id)
     onDeleteProject(id)
-    showToast("deleted", `"${proj?.name ?? "Project"}" deleted`, "Project removed")
+    showToast("deleted", `"${proj?.name ?? "Project"}" deleted`,
+      orphans.length > 0
+        ? `${orphans.length} task${orphans.length > 1 ? "s" : ""} moved to No project`
+        : "Project removed",
+      proj ? () => { onRestoreProject(proj, orphans); dismissToast() } : undefined)
     setProjectModal({ open: false })
-  }, [projects, onDeleteProject, showToast])
+  }, [projects, tasks, onDeleteProject, onRestoreProject, showToast, dismissToast])
 
-  // Base filtered set
+  // Base filtered set — a selected calendar day narrows to tasks due that day.
+  // Search reaches into subtasks and the project name so a task can be found by
+  // anything the user can actually see on its card.
+  const q = search.trim().toLowerCase()
+  const matchesSearch = (t: Task) => {
+    if (!q) return true
+    if (t.title.toLowerCase().includes(q)) return true
+    if (t.subtasks.some(s => s.title.toLowerCase().includes(q))) return true
+    const proj = t.projectId ? projects.find(p => p.id === t.projectId) : undefined
+    return !!proj?.name.toLowerCase().includes(q)
+  }
+
   const visible = tasks.filter(t => {
     if (t.id === deletePending?.id) return false
-    if (!t.title.toLowerCase().includes(search.toLowerCase())) return false
+    if (!matchesSearch(t)) return false
+    if (selectedDate) return t.dueDate === selectedDate
     if (filter === "done") return t.done
     if (filter === "all")  return true
     return t.priority === filter && !t.done
   })
 
+  const daySessions = selectedDate
+    ? allHistory.filter(s => localDate(s.at) === selectedDate).length
+    : 0
+
   const allPending = useSortedTasks(visible.filter(t => !t.done), activeTask.id, pinned)
   const done       = visible.filter(t => t.done)
 
-  // Group unassigned tasks
-  const assignedIds = new Set(projects.map(p => p.id))
-  const unassigned  = allPending.filter(t => !t.projectId || !assignedIds.has(t.projectId))
+  // With Done as the filter, the completed list is the page: it opens itself
+  // and drops the toggle rather than hiding the result behind a drawer.
+  const doneFilter = filter === "done"
+  const doneOpen   = doneFilter || showDone
 
-  const renderTask = (task: Task) => (
-    <TaskCard key={task.id} task={task}
-      onToggle={onToggle} onToggleSub={onToggleSub}
-      onEdit={t => { setModalTask(t); setShowModal(true) }}
-      onDelete={handleDelete}
-      onPin={togglePin}
-      onQuickStart={handleQuickStart}
-      isActive={task.id === activeTask.id}
-      isPinned={pinned.has(task.id)}
-      onClick={handleTaskClick} />
+  // Deleting the last project must not strand the page in "By project".
+  const effView   = view === "project" && projects.length === 0 ? "all" : view
+  const showBoard = effView === "board" && !selectedDate
+  const showList  = !showBoard && (selectedDate || (visible.length > 0 && !doneFilter))
+  const viewSwitch = (
+    <ViewSwitch value={effView} onChange={setView} showProject={projects.length > 0} />
   )
+
+  const projectOf = (t: Task) => t.projectId ? projects.find(p => p.id === t.projectId) : undefined
+
+  const renderTask = (task: Task) => {
+    const proj = projectOf(task)
+    return (
+      <TaskCard key={task.id} task={task}
+        onToggle={onToggle} onToggleSub={onToggleSub}
+        onDelete={handleDelete}
+        onPin={togglePin}
+        onQuickStart={handleQuickStart}
+        isActive={task.id === activeTask.id}
+        isPinned={pinned.has(task.id)}
+        projectName={proj?.name}
+        projectColor={proj?.color}
+        onProjectClick={proj ? () => setActiveProject(proj) : undefined}
+        onClick={handleTaskClick} />
+    )
+  }
 
   const pendingCount = tasks.filter(t => !t.done).length
   const doneCount    = tasks.filter(t => t.done).length
@@ -131,16 +220,15 @@ export default function TasksPage({
         project={liveProject}
         allTasks={tasks}
         activeTask={activeTask}
-        running={running}
         dark={dark}
+        focusMins={focusMins}
         projects={projects}
         onBack={() => setActiveProject(null)}
         onSave={onSave}
         onDelete={onDelete}
         onToggle={onToggle}
         onToggleSub={onToggleSub}
-        onSetActive={onSetActive}
-        onNavToTimer={onNavToTimer}
+        onStartFocus={onStartFocus}
         onSaveProject={onSaveProject}
         onDeleteProject={id => { handleDeleteProject(id); setActiveProject(null) }}
         onEditProject={p => setProjectModal({ open: true, project: p })}
@@ -153,90 +241,92 @@ export default function TasksPage({
     <div className="flex flex-col gap-4">
 
       {/* Task action toast */}
-      <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 transition-all duration-300
-        ${toast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
-        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-          <span className="text-base">{toast ? EMOJI[toast.type] : "✅"}</span>
-          <div className="flex flex-col">
-            <span className="text-sm font-black text-tx">{toast?.title}</span>
-            {toast?.sub && <span className="text-xs text-sub">{toast.sub}</span>}
-          </div>
-          {toast?.undoFn && (
-            <button onClick={toast.undoFn} className="ml-2 text-sm font-black text-accent hover:underline">
-              Undo
-            </button>
-          )}
-        </div>
-      </div>
+      <Toast open={!!toast} title={toast?.title} sub={toast?.sub} onAction={toast?.undoFn} />
 
-      {/* Session-in-progress toast */}
-      <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-200 transition-all duration-300
-        ${showSessionToast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-surface border border-border shadow-[0_8px_32px_rgba(0,0,0,0.3)] whitespace-nowrap">
-          <span className="w-2 h-2 rounded-full bg-priority-low animate-pulse shrink-0" />
-          <span className="text-sm font-semibold text-tx">Focus session in progress</span>
-          <span className="text-sm text-sub">— finish or pause first</span>
-        </div>
+      {/* Page header — phone only; the top bar carries it on large screens */}
+      <div className="md:hidden">
+        <h1 className="text-title font-extrabold text-tx leading-tight">Tasks</h1>
+        <p className="text-meta text-sub">{pendingCount} open · {doneCount} done</p>
       </div>
-
-      {/* Page header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-tx">Tasks</h1>
-          <p className="text-sm text-sub mt-0.5">{pendingCount} pending · {doneCount} done</p>
-        </div>
-        <button
-          onClick={() => { setModalTask(undefined); setShowModal(true) }}
-          className="hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover active:scale-95 transition-all">
-          <HiPlus size={14} /> New task
-        </button>
-      </div>
-
-      {/* Running banner */}
-      {running && (
-        <div className="flex items-center gap-3 rounded-xl bg-priority-low/5 border border-priority-low/20 px-4 py-3">
-          <span className="w-2 h-2 rounded-full bg-priority-low animate-pulse shrink-0" />
-          <p className="text-xs font-semibold text-tx flex-1">
-            Focus session active — task switching is disabled until you pause or finish.
-          </p>
-        </div>
-      )}
 
       {/* Search */}
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5">
-        <HiMagnifyingGlass size={14} className="text-sub shrink-0" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks…"
-          className="bg-transparent outline-none text-sm text-tx placeholder:text-sub flex-1" />
+      <div className="flex items-center gap-3 min-h-13 px-4 rounded-control border border-border bg-panel">
+        <HiMagnifyingGlass size={17} className="text-sub shrink-0" />
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          aria-label="Search tasks"
+          placeholder="Search tasks, subtasks, projects…"
+          className="flex-1 min-w-0 bg-transparent outline-none text-body text-tx placeholder:text-sub py-3" />
         {search && (
-          <button onClick={() => setSearch("")} className="text-sub hover:text-tx">
-            <HiXMark size={13} />
+          <button onClick={() => setSearch("")} aria-label="Clear search"
+            className="w-11 h-11 -mr-2 shrink-0 grid place-items-center text-sub hover:text-tx transition-colors">
+            <HiXMark size={16} />
           </button>
         )}
       </div>
 
+      {/* Calendar — tap a day to filter the list below */}
+      <TasksCalendar tasks={tasks} allHistory={allHistory} selected={selectedDate} onSelect={setSelectedDate} />
+
+      {selectedDate ? (
+        <div className="flex items-center gap-3 min-h-13 px-4 rounded-control border border-border bg-panel">
+          <HiCalendarDays size={15} className="text-accent shrink-0" />
+          <span className="flex-1 text-sm font-semibold text-tx truncate">
+            {new Date(selectedDate + "T00:00").toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}
+          </span>
+          {daySessions > 0 && (
+            <span className="text-xs text-sub shrink-0">{daySessions} session{daySessions > 1 ? "s" : ""}</span>
+          )}
+          <button onClick={() => setSelectedDate(null)}
+            aria-label="Clear day filter" title="Show all tasks"
+            className="w-11 h-11 -mr-2 shrink-0 grid place-items-center text-sub hover:text-tx transition-colors">
+            <HiXMark size={16} />
+          </button>
+        </div>
+      ) : (
+        <>
+
       {/* Filter pills */}
       <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-1 px-1">
         <button onClick={() => setFilter("all")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all shrink-0
-            ${filter === "all" ? "bg-accent text-white border-accent" : "border-border text-sub bg-surface"}`}>
+          aria-pressed={filter === "all"}
+          className={`min-h-11 px-4 rounded-pill text-meta font-bold border transition-all shrink-0
+            ${filter === "all" ? "bg-accent text-white border-accent" : "border-border text-tx bg-surface"}`}>
           All ({tasks.length})
         </button>
         {PRIORITIES.map(({ key, label }) => (
           <button key={key} onClick={() => setFilter(f => f === key ? "all" : key)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all shrink-0
-              ${filter === key ? "text-white border-transparent" : "border-border text-sub bg-surface"}`}
-            style={filter === key ? { background: getPriority(key), borderColor: getPriority(key) } : {}}>
-            <span className="w-1.5 h-1.5 rounded-full shrink-0"
-              style={{ background: filter === key ? "rgba(255,255,255,0.8)" : getPriority(key) }} />
+            aria-pressed={filter === key}
+            className={`flex items-center gap-2 min-h-11 px-4 rounded-pill text-meta font-bold border transition-all shrink-0
+              ${filter === key ? "bg-accent text-white border-accent" : "border-border text-tx bg-surface"}`}>
+            {/* The chip is the unselected pill's only ranking cue; once the pill
+                is filled the label carries it, and an accent chip on an accent
+                pill would vanish. */}
+            {filter !== key && <PriorityChip priority={key} />}
             {label}
           </button>
         ))}
         <button onClick={() => setFilter(f => f === "done" ? "all" : "done")}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all shrink-0
-            ${filter === "done" ? "bg-accent text-white border-accent" : "border-border text-sub bg-surface"}`}>
+          aria-pressed={filter === "done"}
+          className={`min-h-11 px-4 rounded-pill text-meta font-bold border transition-all shrink-0
+            ${filter === "done" ? "bg-accent text-white border-accent" : "border-border text-tx bg-surface"}`}>
           Done ({doneCount})
         </button>
       </div>
+
+      {/* Swipe coaching (first visit) */}
+      {showSwipeHint && tasks.length > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-2.5">
+          <HiArrowsRightLeft size={15} className="text-accent shrink-0" />
+          <p className="text-xs text-tx flex-1">
+            <span className="font-bold">Tip:</span> ✏️ or a tap on the row opens a task — priority, due date, subtasks.
+            ▶ starts a session now. Swipe right to pin it to the top as your next focus, left to delete.
+          </p>
+          <button onClick={dismissSwipeHint} aria-label="Dismiss tip"
+            className="w-11 h-11 -my-2 -mr-2 shrink-0 grid place-items-center text-sub hover:text-tx transition-colors">
+            <HiXMark size={14} />
+          </button>
+        </div>
+      )}
 
       {/* ── Projects section ───────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2">
@@ -245,23 +335,25 @@ export default function TasksPage({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <HiFolder size={13} className="text-sub" />
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
               Projects · {projects.length}
             </span>
           </div>
           <button
             onClick={() => setProjectModal({ open: true, project: undefined })}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border bg-surface2
-              text-xs font-bold text-sub hover:text-accent hover:border-accent/40 transition-colors">
-            <HiPlus size={12} /> New
+            className="flex items-center gap-1.5 min-h-11 px-3.5 rounded-control border border-border bg-surface
+              text-meta font-extrabold text-tx hover:text-accent hover:border-accent/40 transition-colors">
+            <HiPlus size={14} /> New
           </button>
         </div>
 
         {/* Project cards */}
         {projects.length > 0 ? (
-          <div className="flex gap-4 pb-1 -mx-1 px-1 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          // snap-proximity, not mandatory: with cards this narrow, mandatory
+          // snapping fights a flick meant to travel several projects at once.
+          <div className="flex gap-2 pb-1 -mx-1 px-1 overflow-x-auto snap-x snap-proximity [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {projects.map(proj => (
-              <div key={proj.id} className="relative group/proj shrink-0 snap-start">
+              <div key={proj.id} className="shrink-0 snap-start">
                 <ProjectCard
                   project={proj}
                   tasks={tasks.filter(t => t.projectId === proj.id)}
@@ -279,44 +371,64 @@ export default function TasksPage({
           </button>
         )}
       </div>
-
-      {/* ── Pending tasks ─────────────────────────────────────────────────── */}
-      {allPending.length > 0 && (
-        <div className="flex flex-col gap-2">
-
-          {/* Unassigned tasks */}
-          {unassigned.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between py-1">
-                <span className="text-xs font-bold text-sub uppercase tracking-wider">
-                  {projects.length > 0 ? "No project" : `Pending — ${allPending.length}`}
-                </span>
-              </div>
-              <div className="h-px bg-border mb-1" style={{ opacity: 0.5 }} />
-              {unassigned.map(task => renderTask(task))}
-            </div>
-          )}
-        </div>
+        </>
       )}
 
-      {/* Completed */}
-      {done.length > 0 && (
+      {/* ── Board ─────────────────────────────────────────────────────────── */}
+      {showBoard && (
+        <TaskBoard
+          tasks={[...allPending, ...done]}
+          projects={projects}
+          activeTaskId={activeTask.id}
+          pinnedIds={pinned}
+          onMove={handleMoveStage}
+          onOpen={handleTaskClick}
+          onToggleSub={onToggleSub}
+          onQuickStart={handleQuickStart}
+          onOpenProject={setActiveProject}
+          action={viewSwitch} />
+      )}
+
+      {/* ── Pending tasks ─────────────────────────────────────────────────── */}
+      {showList && (
+        <TaskList
+          pending={allPending}
+          projects={projects}
+          pinnedIds={pinned}
+          selectedDate={selectedDate}
+          view={effView}
+          action={selectedDate ? undefined : viewSwitch}
+          onOpenProject={setActiveProject}
+          renderTask={renderTask}
+          hasAnyPending={tasks.some(t => !t.done)} />
+      )}
+
+      {/* Completed — the board already has a Done column of its own */}
+      {!showBoard && done.length > 0 && (
         <div className="flex flex-col">
-          <button onClick={() => setShowDone(v => !v)}
-            className="flex items-center justify-between py-1.5 w-full">
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">
-              Completed — {done.length}
-            </span>
-            <HiChevronDown size={12} className="text-sub transition-transform duration-200"
-              style={{ transform: showDone ? "rotate(180deg)" : "none" }} />
-          </button>
+          {doneFilter ? (
+            <div className="flex items-center py-1.5 w-full">
+              <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
+                Completed — {done.length}
+              </span>
+            </div>
+          ) : (
+            <button onClick={() => setShowDone(v => !v)}
+              aria-expanded={showDone}
+              className="flex items-center justify-between py-1.5 w-full">
+              <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
+                Completed — {done.length}
+              </span>
+              <HiChevronDown size={12} className="text-sub transition-transform duration-200"
+                style={{ transform: showDone ? "rotate(180deg)" : "none" }} />
+            </button>
+          )}
           <div className="h-px bg-border mb-2" style={{ opacity: 0.5 }} />
-          {showDone && (
+          {doneOpen && (
             <div className="flex flex-col gap-2">
               {done.map(task => (
                 <TaskCard key={task.id} task={task}
                   onToggle={onToggle} onToggleSub={onToggleSub}
-                  onEdit={t => { setModalTask(t); setShowModal(true) }}
                   onDelete={handleDelete} />
               ))}
             </div>
@@ -324,11 +436,12 @@ export default function TasksPage({
         </div>
       )}
 
-      {/* Empty state */}
-      {visible.length === 0 && !deletePending && (
-        <div className="rounded-2xl border border-border bg-surface px-5 py-12 text-center">
+      {/* A filter that matches nothing is answered inside the list instead. */}
+      {visible.length === 0 && !deletePending && !showBoard
+        && (selectedDate || doneFilter || tasks.length === 0) && (
+        <div className="panel px-5 py-12 text-center">
           <HiFolderOpen size={28} className="text-sub mx-auto mb-3" />
-          <p className="text-sub text-sm">No tasks found</p>
+          <p className="text-sub text-sm">{selectedDate ? "No tasks due this day" : "No tasks found"}</p>
           <button onClick={() => { setModalTask(undefined); setShowModal(true) }}
             className="mt-3 text-sm text-accent font-semibold hover:underline">
             Create one →
@@ -336,15 +449,19 @@ export default function TasksPage({
         </div>
       )}
 
+      {/* Focus-session heatmap */}
+      <FocusHistory allHistory={allHistory} />
+
       {/* Task modal */}
       {showModal && (
         <TaskModal
           task={modalTask}
           projects={projects}
           onSave={handleSave}
-          onDelete={id => { onDelete(id); setShowModal(false) }}
+          onDelete={id => { const t = tasks.find(x => x.id === id); if (t) handleDelete(t) }}
           onClose={() => setShowModal(false)}
           onCreateProject={onSaveProject}
+          focusMins={focusMins}
           dark={dark} />
       )}
 
@@ -352,6 +469,9 @@ export default function TasksPage({
       {projectModal.open && (
         <ProjectModal
           project={projectModal.project}
+          taskCount={projectModal.project
+            ? tasks.filter(t => t.projectId === projectModal.project!.id).length
+            : 0}
           onSave={handleSaveProject}
           onDelete={handleDeleteProject}
           onClose={() => setProjectModal({ open: false })}

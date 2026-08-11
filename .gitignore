@@ -31,6 +31,15 @@ yarn-error.log*
 # vercel
 .vercel
 
+# supabase — migrations ARE committed (they contain the RLS policies, which is
+# a security control and belongs in review). Only local CLI scratch is ignored.
+supabase/.temp
+supabase/.branches
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Supabase CLI state — local to a machine, and it lands wherever the CLI was
+# run from. The schema itself lives in /supabase/migrations at the repo root.
+**/supabase/.temp/

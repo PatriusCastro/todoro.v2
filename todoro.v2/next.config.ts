@@ -1,33 +1,20 @@
-// @ts-ignore
-import withPWAInit from "next-pwa";
+import { withSerwist } from "@serwist/turbopack";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const withPWA = withPWAInit({
-  dest: "public",
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === "development",
-  fallbacks: {
-    document: "/offline.html",
-  },
-  runtimeCaching: [
-    {
-      urlPattern: /^https?.*/,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "https-calls",
-        networkTimeoutSeconds: 2,
-        expiration: {
-          maxEntries: 50,
-          maxAgeSeconds: 24 * 60 * 60,
-        },
-      },
-    },
-  ],
-});
-
+// next-pwa was replaced here. It hooks `nextConfig.webpack()`, and Next 16
+// builds with Turbopack, so it never ran — `public/sw.js` was a stale dev
+// artifact served as a static file, and the runtimeCaching block below it was
+// dead config. Serwist's Turbopack integration builds the worker through a
+// prerendered route handler instead (see app/serwist/[path]/route.ts).
 const nextConfig = {
   reactStrictMode: true,
-  turbopack: {},
+  // The repo root holds a stub package-lock.json, so Turbopack inferred the
+  // workspace root one level too high and warned on every build. The app is
+  // the root; Vercel is already configured with todoro.v2 as its Root Directory.
+  turbopack: {
+    root: path.dirname(fileURLToPath(import.meta.url)),
+  },
 };
 
-export default withPWA(nextConfig);
+export default withSerwist(nextConfig);

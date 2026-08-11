@@ -20,3 +20,5 @@ export function useMediaQuery(minWidth: number) {
 // Convenience shorthands
 export const useIsTablet  = () => useMediaQuery(breakpoints.md)
 export const useIsDesktop = () => useMediaQuery(breakpoints.lg)
+/** Under 380px — where fixed pixel sizes stop fitting the page inset. */
+export const useIsNarrow  = () => !useMediaQuery(breakpoints.xs)

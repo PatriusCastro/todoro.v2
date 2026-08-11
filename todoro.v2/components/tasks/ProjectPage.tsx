@@ -5,6 +5,10 @@ import { HiArrowLeft, HiPlus, HiChevronDown, HiFolder, HiPencil } from "react-ic
 import TaskCard, { type Task } from "./TaskCard"
 import TaskModal, { type Project } from "./TaskModal"
 import ProjectModal from "./ProjectModal"
+import TaskBoard from "./TaskBoard"
+import ViewSwitch from "./ViewSwitch"
+import { type Stage, type TaskView } from "../../lib/board"
+import Toast from "../shared/Toast"
 import { usePinnedTasks } from "../../hooks/usePinnedTasks"
 import { useSortedTasks } from "../../hooks/useTaskSort"
 import { useUndo } from "../../hooks/useUndo"
@@ -14,25 +18,24 @@ interface ProjectPageProps {
   project: Project
   allTasks: Task[]
   activeTask: Task
-  running: boolean
   dark: boolean
+  focusMins: number
   projects: Project[]
   onBack: () => void
   onSave: (t: Task) => void
   onDelete: (id: string) => void
   onToggle: (id: string) => void
   onToggleSub: (tId: string, sId: string) => void
-  onSetActive: (t: Task) => void
-  onNavToTimer: () => void
+  onStartFocus: (t: Task) => void
   onSaveProject: (p: Project) => void
   onDeleteProject: (id: string) => void
   onEditProject?: (p: Project) => void   // opens ProjectModal in parent
 }
 
 export default function ProjectPage({
-  project, allTasks, activeTask, running, dark, projects,
+  project, allTasks, activeTask, dark, focusMins, projects,
   onBack, onSave, onDelete, onToggle, onToggleSub,
-  onSetActive, onNavToTimer, onSaveProject, onDeleteProject, onEditProject,
+  onStartFocus, onSaveProject, onDeleteProject, onEditProject,
 }: ProjectPageProps) {
   const tasks    = allTasks.filter(t => t.projectId === project.id)
   const pending  = tasks.filter(t => !t.done)
@@ -42,10 +45,11 @@ export default function ProjectPage({
   const [modalTask,  setModalTask]  = useState<Task | undefined>()
   const [showModal,  setShowModal]  = useState(false)
   const [showDone,   setShowDone]   = useState(false)
-  const [showSessionToast, setShowSessionToast] = useState(false)
   const [projectModal, setProjectModal] = useState(false)
+  // Only two layouts here — every task on this page is already in one project.
+  const [view,       setView]       = useState<TaskView>("all")
 
-  const { toast, show: showToast, dismiss: dismissToast, EMOJI } = useToast()
+  const { toast, show: showToast, dismiss: dismissToast } = useToast()
   const { pinned, togglePin } = usePinnedTasks()
   const { pending: deletePending, stage: stageDelete, undo } = useUndo(onDelete)
 
@@ -57,20 +61,31 @@ export default function ProjectPage({
 
   const handleSave = useCallback((task: Task) => {
     const isNew = !allTasks.find(t => t.id === task.id)
-    onSave({ ...task, projectId: project.id })
+    // Take the modal's answer as final. This used to force projectId to this
+    // folder, which meant moving a task to another project — or out of one —
+    // silently snapped back the moment you saved. New tasks arrive already
+    // filed here via defaultProjectId, so the override bought nothing.
+    onSave(task)
     showToast(isNew ? "created" : "saved", isNew ? "Task created" : "Changes saved", task.title)
     setShowModal(false)
-  }, [allTasks, onSave, showToast, project.id])
+  }, [allTasks, onSave, showToast])
 
   const handleQuickStart = useCallback((task: Task) => {
-    if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
-    onSetActive(task); onNavToTimer()
-  }, [running, onSetActive, onNavToTimer])
+    onStartFocus(task)
+  }, [onStartFocus])
 
   const handleTaskClick = useCallback((task: Task) => {
-    if (running) { setShowSessionToast(true); setTimeout(() => setShowSessionToast(false), 3000); return }
-    onSetActive(task); onNavToTimer()
-  }, [running, onSetActive, onNavToTimer])
+    setModalTask(task); setShowModal(true)
+  }, [])
+
+  // onToggle, not done:true — see TasksPage.handleMoveStage.
+  const handleMoveStage = useCallback((task: Task, to: Stage) => {
+    if (to === "done") {
+      if (!task.done) onToggle(task.id)
+      return
+    }
+    onSave({ ...task, done: false, stage: to })
+  }, [onToggle, onSave])
 
   const sorted = useSortedTasks(
     pending.filter(t => t.id !== deletePending?.id),
@@ -80,7 +95,6 @@ export default function ProjectPage({
   const renderTask = (task: Task) => (
     <TaskCard key={task.id} task={task}
       onToggle={onToggle} onToggleSub={onToggleSub}
-      onEdit={t => { setModalTask(t); setShowModal(true) }}
       onDelete={handleDelete}
       onPin={togglePin}
       onQuickStart={handleQuickStart}
@@ -93,55 +107,35 @@ export default function ProjectPage({
     <div className="flex flex-col gap-4">
 
       {/* Task toast */}
-      <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-300 transition-all duration-300
-        ${toast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
-        <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap shadow-[0_8px_32px_rgba(0,0,0,0.2)]">
-          <span className="text-base">{toast ? EMOJI[toast.type] : "✅"}</span>
-          <div className="flex flex-col">
-            <span className="text-sm font-black text-tx">{toast?.title}</span>
-            {toast?.sub && <span className="text-xs text-sub">{toast.sub}</span>}
-          </div>
-          {toast?.undoFn && (
-            <button onClick={toast.undoFn} className="ml-2 text-sm font-black text-accent hover:underline">Undo</button>
-          )}
-        </div>
-      </div>
-
-      {/* Session toast */}
-      <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-200 transition-all duration-300
-        ${showSessionToast ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}>
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-surface border border-border whitespace-nowrap">
-          <span className="w-2 h-2 rounded-full bg-priority-low animate-pulse shrink-0" />
-          <span className="text-sm font-semibold text-tx">Focus session in progress</span>
-          <span className="text-sm text-sub">— finish or pause first</span>
-        </div>
-      </div>
+      <Toast open={!!toast} title={toast?.title} sub={toast?.sub} onAction={toast?.undoFn} />
 
       {/* Back + header */}
       <div className="flex items-center gap-3">
         <button
           onClick={onBack}
-          className="p-2 rounded-xl border border-border bg-surface2 text-sub hover:text-tx hover:border-accent/40 transition-colors">
+          aria-label="Back to all tasks"
+          className="w-11 h-11 shrink-0 grid place-items-center rounded-xl border border-border bg-surface2 text-sub hover:text-tx hover:border-accent/40 transition-colors">
           <HiArrowLeft size={15} />
         </button>
 
-        {/* Folder icon */}
+        {/* First thing to give up its width on a 320px screen. */}
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+          className="w-9 h-9 rounded-xl hidden xs:flex items-center justify-center shrink-0"
           style={{ backgroundColor: `${project.color}22` }}>
           <HiFolder size={17} style={{ color: project.color }} />
         </div>
 
         {/* Name + counts */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-black text-tx truncate">{project.name}</h1>
+          <h1 className="text-xl font-semibold text-tx truncate">{project.name}</h1>
           <p className="text-xs text-sub">{pending.length} pending · {done.length} done</p>
         </div>
 
         {/* Edit project button */}
         <button
           onClick={() => setProjectModal(true)}
-          className="p-2 rounded-xl border border-border bg-surface2 text-sub
+          aria-label="Edit project"
+          className="w-11 h-11 shrink-0 grid place-items-center rounded-xl border border-border bg-surface2 text-sub
             hover:text-accent hover:border-accent/40 transition-colors"
           title="Edit project">
           <HiPencil size={14} />
@@ -150,8 +144,10 @@ export default function ProjectPage({
         {/* New task */}
         <button
           onClick={() => { setModalTask(undefined); setShowModal(true) }}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent text-white text-xs font-black hover:bg-accent-hover transition-all">
-          <HiPlus size={13} /> New
+          aria-label="New task in this project"
+          className="min-h-11 shrink-0 grid xs:flex items-center justify-center gap-1.5 w-11 xs:w-auto xs:px-3.5
+            rounded-xl bg-accent text-white text-meta font-extrabold whitespace-nowrap hover:bg-accent-hover transition-all">
+          <HiPlus size={15} /> <span className="hidden xs:inline">New</span>
         </button>
       </div>
 
@@ -163,36 +159,48 @@ export default function ProjectPage({
               className="h-full rounded-full transition-all duration-500"
               style={{ width: `${progress * 100}%`, backgroundColor: project.color }} />
           </div>
-          <span className="text-[11px] text-sub tabular-nums shrink-0">
+          <span className="text-caption text-sub tabular-nums shrink-0">
             {done.length}/{tasks.length} done
           </span>
         </div>
       )}
 
-      {/* Running banner */}
-      {running && (
-        <div className="flex items-center gap-3 rounded-xl bg-priority-low/5 border border-priority-low/20 px-4 py-3">
-          <span className="w-2 h-2 rounded-full bg-priority-low animate-pulse shrink-0" />
-          <p className="text-xs font-semibold text-tx flex-1">
-            Focus session active — task switching is disabled.
-          </p>
-        </div>
+      {/* Board */}
+      {view === "board" ? (
+        <TaskBoard
+          tasks={[...sorted, ...done.filter(t => t.id !== deletePending?.id)]}
+          projects={projects}
+          activeTaskId={activeTask.id}
+          pinnedIds={pinned}
+          onMove={handleMoveStage}
+          onOpen={handleTaskClick}
+          onToggleSub={onToggleSub}
+          onQuickStart={handleQuickStart}
+          action={<ViewSwitch value={view} onChange={setView} showProject={false} />} />
+      ) : (
+        <>
+          {/* Pending tasks */}
+          <div className="flex items-center gap-3">
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
+              Open — {sorted.length}
+            </span>
+            <ViewSwitch value={view} onChange={setView} showProject={false} className="ml-auto" />
+          </div>
+          {sorted.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              {sorted.map(task => renderTask(task))}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Pending tasks */}
-      {sorted.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          {sorted.map(task => renderTask(task))}
-        </div>
-      )}
-
-      {/* Completed */}
-      {done.length > 0 && (
+      {/* Completed — the board carries its own Done column */}
+      {view !== "board" && done.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <button
             onClick={() => setShowDone(v => !v)}
             className="flex items-center justify-between py-1.5 w-full">
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">
               Completed — {done.length}
             </span>
             <HiChevronDown size={12} className="text-sub transition-transform duration-200"
@@ -204,7 +212,6 @@ export default function ProjectPage({
               {done.filter(t => t.id !== deletePending?.id).map(task => (
                 <TaskCard key={task.id} task={task}
                   onToggle={onToggle} onToggleSub={onToggleSub}
-                  onEdit={t => { setModalTask(t); setShowModal(true) }}
                   onDelete={handleDelete} />
               ))}
             </div>
@@ -231,9 +238,12 @@ export default function ProjectPage({
           task={modalTask}
           projects={projects}
           onSave={handleSave}
-          onDelete={id => { onDelete(id); setShowModal(false) }}
+          onDelete={id => { const t = allTasks.find(x => x.id === id); if (t) handleDelete(t) }}
           onClose={() => setShowModal(false)}
           onCreateProject={onSaveProject}
+          // Creating from inside a folder already answered "which project".
+          defaultProjectId={project.id}
+          focusMins={focusMins}
           dark={dark} />
       )}
 
@@ -241,6 +251,7 @@ export default function ProjectPage({
       {projectModal && (
         <ProjectModal
           project={project}
+          taskCount={tasks.length}
           onSave={p => { onSaveProject(p); setProjectModal(false) }}
           onDelete={id => { onDeleteProject(id); onBack() }}
           onClose={() => setProjectModal(false)}

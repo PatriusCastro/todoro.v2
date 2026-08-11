@@ -1,6 +1,55 @@
 @import "tailwindcss";
 
-@theme {
+/* ── Archivo (self-hosted) ─────────────────────────────────────────────────
+   Variable font: one file per unicode range covers the whole 100–900 weight
+   axis, so 400 body and 800 headings cost nothing extra. Served from
+   /public/fonts rather than next/font/google so the build never needs network
+   access — see the note in app/layout.tsx. */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/archivo-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1,
+    U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329,
+    U+1EA0-1EF9, U+20AB;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Design tokens — Todoro+ (redesign phase 1)
+
+   Three grounds, not two: page (--bg) → panel (--panel) → control (--surface),
+   with --surface2 for insets and tracks. Components still on --surface read as
+   panels today; they migrate to --panel in the per-screen phases.
+
+   Geometry and type live in @theme so Tailwind generates utilities for them
+   (rounded-panel, text-title, gap-gutter…). `static` is load-bearing: without
+   it Tailwind only emits the theme variables it sees referenced, which would
+   leave `var(--radius-control)` resolving to nothing in an inline style.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@theme static {
   --color-accent:        #5B8CFF;
   --color-accent-hover:  #4C7CF0;
   --color-accent-dim:    rgba(91,140,255,0.15);
@@ -11,8 +60,48 @@
   --color-priority-mid:  #FBBF24;
   --color-priority-low:  #34D399;
   --color-priority-none: #6B7280;
-  --font-sans:    var(--font-geist), 'Segoe UI', sans-serif;
-  --font-display: var(--font-display), serif;
+  --font-sans: 'Archivo', 'Segoe UI', system-ui, sans-serif;
+
+  /* ── Type ramp ──────────────────────────────────────────────────────────
+     32 / 24 / 20 / 16 / 15 / 13 / 11. Body floors at 15px; `caption` is for
+     true captions and unit labels only, never for a row's primary text. */
+  --text-display: 2rem;                 /* 32px */
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.03em;
+  --text-title: 1.5rem;                 /* 24px */
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.02em;
+  --text-heading: 1.25rem;              /* 20px */
+  --text-heading--line-height: 1.2;
+  --text-heading--letter-spacing: -0.015em;
+  --text-lead: 1rem;                    /* 16px */
+  --text-lead--line-height: 1.25;
+  --text-body: 0.9375rem;               /* 15px */
+  --text-body--line-height: 1.5;
+  --text-meta: 0.8125rem;               /* 13px */
+  --text-meta--line-height: 1.45;
+  --text-caption: 0.6875rem;            /* 11px */
+  --text-caption--line-height: 1.4;
+
+  /* ── Geometry ───────────────────────────────────────────────────────────
+     20px panels, 13px controls, pill toggles, 5px chips/tracks. Hairlines are
+     1px, which is already Tailwind's default `border` width. */
+  --radius-panel:   20px;
+  --radius-control: 13px;
+  --radius-chip:    5px;
+  --radius-pill:    999px;
+
+  --spacing-gutter: 12px;   /* gap between panels */
+  --spacing-inset:  14px;   /* page edge inset */
+
+  /* Tailwind's smallest default breakpoint is 640px, which treats a 320px
+     phone and a 600px one as the same screen. They are not: two-word button
+     labels wrap below ~380px. `xs` is where type and padding step down. */
+  --breakpoint-xs: 380px;
+
+  /* The single glow in the system — reserved for the Today hero. Everything
+     else is flat. --accent resolves at the use site, so this tracks the theme. */
+  --shadow-glow: 0 16px 38px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 /* ── Accent themes (data-theme on <html>) ── */
@@ -26,34 +115,40 @@
 [data-theme="orange"]  { --accent: #F97316; --accent-hover: #EA580C; --accent-dim: rgba(249,115,22,0.15); --accent-glow: rgba(249,115,22,0.45); }
 [data-theme="gray"]    { --accent: #6B7280; --accent-hover: #4B5563; --accent-dim: rgba(107,114,128,0.15); --accent-glow: rgba(107,114,128,0.45); }
 
+/* ── Grounds ── */
 :root {
-  --bg:      #F8F7F4;
+  --bg:      #F4F4F6;
+  --panel:   #FFFFFF;
   --surface: #FFFFFF;
-  --surface2:#F1EFEA;
-  --border:  #E5E1D8;
-  --tx:      #1C1917;
-  --sub:     #78716C;
-  --ring:    #e7e3dc;
+  --surface2:#F0F0F2;
+  --border:  rgba(24,24,27,0.11);
+  --tx:      #18181B;
+  --sub:     #6E6E75;
+  --ring:    rgba(24,24,27,0.11);
+
+  --hairline: 1px;
+
 }
- 
+
 .dark {
-  --bg:      #0F1115;
-  --surface: #0F0F0F;
-  --surface2:#111111;
-  --border:  #ffffff0f;
-  --tx:      #E6EAF2;
-  --sub:     #9AA4B2;
-  --ring: #ffffff14;
+  --bg:      #0C0C0F;
+  --panel:   #17171D;
+  --surface: #1F1F26;
+  --surface2:#27272A;
+  --border:  rgba(244,244,245,0.13);
+  --tx:      #F4F4F5;
+  --sub:     #9B9BA1;
+  --ring:    rgba(244,244,245,0.13);
+
 }
 
-.font-display { font-family: var(--font-display); }
-
-@theme inline {
+@theme static inline {
   --color-accent:       var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-dim:   var(--accent-dim);
   --color-accent-glow:  var(--accent-glow);
   --color-bg:       var(--bg);
+  --color-panel:    var(--panel);
   --color-surface:  var(--surface);
   --color-surface2: var(--surface2);
   --color-border:   var(--border);
@@ -62,24 +157,81 @@
   --color-ring:     var(--ring);
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(circle at 20% 20%, var(--accent-dim), transparent 40%);
-  pointer-events: none;
-  transition: background 0.4s;
-}
-
 *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { height: 100%; }
-body { margin: 0; min-height: 100dvh; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; overscroll-behavior: none; background: var(--bg); color: var(--tx); transition: background 0.3s, color 0.3s; }
+body {
+  margin: 0; min-height: 100dvh;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  color: var(--tx);
+  /* Flat ground — a single colour. The radial wash this replaced read as
+     uneven lighting once the panels stopped being translucent. */
+  background: var(--bg);
+  transition: background 0.3s, color 0.3s;
+}
+h1, h2, h3, h4, h5, h6 { font-weight: 800; letter-spacing: -0.015em; }
 ::-webkit-scrollbar { display: none; }
 * { scrollbar-width: none; }
 button { cursor: pointer; user-select: none; font-family: inherit; }
 input, textarea { font-family: inherit; }
 
+/* Keyboard focus is visible everywhere; mouse/touch focus stays quiet. Several
+   controls previously had no focus style at all, which made keyboard-only
+   navigation impossible to follow. */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Opt-out for fields that already turn their own border accent on focus — a
+   ring drawn around those is a second focus indicator for the same event.
+   It lives here rather than as a Tailwind utility because the rule above is
+   unlayered, and unlayered styles beat the utilities layer at any specificity. */
+.focus-no-ring:focus-visible {
+  outline: none;
+}
+
+::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+
+/* ── Panel ────────────────────────────────────────────────────────────────
+   The one surface in the system: single depth, hairline edge, no blur and no
+   shadow. Elevation is for things that float over a scrim, not for cards. */
+.panel {
+  background: var(--panel);
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+/* ── Small-screen type ────────────────────────────────────────────────────
+   Below 380px the 11px uppercase labels spend more width on letter-spacing
+   than on letters — "SESSIONS" needs ~62px of a 61px stat tile. Unlayered, so
+   it wins over Tailwind's utilities layer at equal specificity. */
+@media (max-width: 379px) {
+  .tracking-wider  { letter-spacing: 0.02em; }
+  .tracking-widest { letter-spacing: 0.04em; }
+}
+
 @keyframes tabenter {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Bottom-sheet slide-up (month calendar). Neutralized by the reduced-motion block below. */
+@keyframes sheetup {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Respect users who prefer reduced motion — neutralize animations & transitions */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

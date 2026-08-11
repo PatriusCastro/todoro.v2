@@ -1,0 +1,151 @@
+<!--
+  Todoro sign-in code.
+
+  Paste into BOTH Supabase → Authentication → Emails → "Magic Link" and
+  "Confirm signup". signInWithOtp sends the first to an existing user and the
+  second to a brand new one, so editing only one means the very first sign-in
+  ever arrives with no code in it.
+
+  Design follows the app: --bg #0C0C0F, --panel #17171D, --surface2 #27272A,
+  --tx #F4F4F5, --sub #9B9BA1, accent #5B8CFF, 20px panel / 13px control radii.
+
+  Written for mail clients, not browsers:
+  - Tables with bgcolor attributes, because Outlook drops background-color on divs.
+  - Inline styles only. No <style> block, no classes, no flexbox or grid.
+  - Every cell that sits on dark restates its own bgcolor, so a client that
+    ignores the outer table can't paint light text onto a white default.
+  - No images at all. Most clients block remote images by default, and a logo
+    that renders as a broken-image box is worse than a wordmark in text.
+  - Web fonts don't load in mail, so the stack falls through to the system UI
+    face, which is what the app uses anyway.
+-->
+
+<!--
+  Preheader: the grey line the inbox shows next to the subject. Without one,
+  clients scrape the first body text and show "Todoro Your sign-in code Enter
+  this…". Leading with the code means it's often readable from the notification
+  without opening the mail at all. The trailing entities are padding — they stop
+  Gmail from filling the rest of the preview with whatever follows.
+-->
+<div style="display:none;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;
+            font-size:1px;line-height:1px;color:#0C0C0F;">
+  {{ .Token }} is your Todoro sign-in code. It expires in 2 minutes.
+  &#8199;&#65279;&#8199;&#65279;&#8199;&#65279;&#8199;&#65279;&#8199;&#65279;&#8199;&#65279;
+  &#8199;&#65279;&#8199;&#65279;&#8199;&#65279;&#8199;&#65279;&#8199;&#65279;&#8199;&#65279;
+</div>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#0C0C0F"
+       style="background-color:#0C0C0F;margin:0;padding:32px 12px;width:100%;">
+  <tr>
+    <td align="center" style="padding:0;">
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="440" bgcolor="#17171D"
+             style="width:100%;max-width:440px;background-color:#17171D;border-radius:20px;
+                    border:1px solid #2E2E36;">
+
+        <!-- Wordmark -->
+        <tr>
+          <td bgcolor="#17171D" style="background-color:#17171D;padding:26px 32px 0 32px;border-radius:20px 20px 0 0;">
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                      font-size:16px;font-weight:800;letter-spacing:-0.015em;color:#F4F4F5;">
+              Todoro
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td bgcolor="#17171D" style="background-color:#17171D;padding:18px 32px 0 32px;">
+            <h1 style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                       font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-0.025em;color:#F4F4F5;">
+              Your sign-in code
+            </h1>
+          </td>
+        </tr>
+
+        <!--
+          The code. Phrased as "NNNNNN is your Todoro code" in the preheader and
+          labelled "code" right here, because that adjacency is what iOS and
+          Android look for when offering one-tap autofill from the keyboard.
+        -->
+        <tr>
+          <td bgcolor="#17171D" style="background-color:#17171D;padding:18px 32px 0 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#27272A"
+                   style="width:100%;background-color:#27272A;border:1px solid #5B8CFF;border-radius:13px;">
+              <tr>
+                <td align="center" bgcolor="#27272A"
+                    style="background-color:#27272A;padding:20px 12px 8px 12px;border-radius:13px 13px 0 0;">
+                  <span style="font-family:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Courier New',monospace;
+                               font-size:36px;font-weight:700;letter-spacing:0.2em;color:#F4F4F5;
+                               padding-left:0.2em;">
+                    {{ .Token }}
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td align="center" bgcolor="#27272A"
+                    style="background-color:#27272A;padding:0 12px 16px 12px;border-radius:0 0 13px 13px;">
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                               font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9B9BA1;">
+                    Expires in 2 minutes
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!--
+          A way back to the app. After copying a code on a phone the next move
+          is always "now where was I", and hunting for the tab is friction the
+          email can remove.
+        -->
+        <tr>
+          <td bgcolor="#17171D" style="background-color:#17171D;padding:16px 32px 0 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td align="center" bgcolor="#5B8CFF"
+                    style="background-color:#5B8CFF;border-radius:13px;">
+                  <a href="https://todo-ro.vercel.app"
+                     style="display:block;padding:14px 20px;text-decoration:none;
+                            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                            font-size:15px;font-weight:800;color:#0C0C0F;">
+                    Open Todoro
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td bgcolor="#17171D" style="background-color:#17171D;padding:16px 32px 0 32px;">
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                      font-size:14px;line-height:1.55;color:#9B9BA1;">
+              Enter the code to sync your tasks across devices. Need another one? You can
+              send a fresh code from the app.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td bgcolor="#17171D" style="background-color:#17171D;padding:18px 32px 26px 32px;border-radius:0 0 20px 20px;">
+            <div style="height:1px;background-color:#2E2E36;line-height:1px;font-size:0;margin-bottom:14px;">&nbsp;</div>
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                      font-size:12px;line-height:1.6;color:#8E8E96;">
+              <strong style="color:#F4F4F5;">Never share this code.</strong> Todoro will
+              never ask you for it. If you didn&rsquo;t try to sign in, ignore this email
+              &mdash; nobody can get in without it, and nothing has changed.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+
+      <p style="margin:14px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+                font-size:11px;line-height:1.5;color:#6E6E76;">
+        Todoro &middot; Focus &amp; tasks &middot; Works offline, no account required
+      </p>
+
+    </td>
+  </tr>
+</table>

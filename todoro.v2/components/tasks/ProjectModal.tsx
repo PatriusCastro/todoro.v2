@@ -13,13 +13,15 @@ const PRESET_COLORS = [
 
 interface ProjectModalProps {
   project?: Project
+  /** How many tasks are filed here — shown before deleting so the blast radius is explicit */
+  taskCount?: number
   onSave: (p: Project) => void
   onDelete?: (id: string) => void
   onClose: () => void
   dark?: boolean
 }
 
-export default function ProjectModal({ project, onSave, onDelete, onClose, dark }: ProjectModalProps) {
+export default function ProjectModal({ project, taskCount = 0, onSave, onDelete, onClose, dark }: ProjectModalProps) {
   const isEdit = !!project
 
   const [name,          setName]          = useState(project?.name  ?? "")
@@ -47,14 +49,14 @@ export default function ProjectModal({ project, onSave, onDelete, onClose, dark 
   return createPortal(
     <div className={dark ? "dark" : ""}>
       <div
-        className="fixed inset-0 z-9999 flex items-end md:items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+        className="fixed inset-0 z-9999 flex items-end md:items-center justify-center p-4 bg-black/70"
         onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-        <div className="w-full max-w-md bg-surface border border-border rounded-3xl flex flex-col gap-4 p-5 shadow-[0_24px_60px_rgba(0,0,0,0.5)] max-h-[90dvh] overflow-y-auto">
+        <div className="w-full max-w-md panel bg-panel shadow-lg flex flex-col gap-4 p-5 max-h-[90dvh] overflow-y-auto">
 
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h2 className="font-black text-lg text-tx">{isEdit ? "Edit Project" : "New Project"}</h2>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors">
+            <h2 className="font-semibold text-lg text-tx">{isEdit ? "Edit Project" : "New Project"}</h2>
+            <button onClick={onClose} aria-label="Close" className="w-8 h-8 rounded-xl bg-surface2 text-sub hover:text-tx flex items-center justify-center transition-colors">
               <HiXMark size={16} />
             </button>
           </div>
@@ -69,11 +71,11 @@ export default function ProjectModal({ project, onSave, onDelete, onClose, dark 
             className={`w-full bg-surface2 border rounded-2xl px-4 py-3 text-sm font-semibold text-tx
               placeholder:text-sub outline-none transition-colors
               ${nameError ? "border-red-500/70 focus:border-red-500" : "border-border focus:border-accent"}`} />
-          {nameError && <p className="text-[11px] text-red-400 -mt-2">Name is required</p>}
+          {nameError && <p className="text-caption text-red-400 -mt-2">Name is required</p>}
 
           {/* Color */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold text-sub uppercase tracking-wider">Color</span>
+            <span className="text-caption font-extrabold uppercase tracking-wider text-tx">Color</span>
             <div className="flex flex-wrap gap-2.5">
               {PRESET_COLORS.map(c => (
                 <button
@@ -97,31 +99,48 @@ export default function ProjectModal({ project, onSave, onDelete, onClose, dark 
               style={{ backgroundColor: `${color}22` }}>
               <HiFolder size={18} style={{ color }} />
             </div>
-            <span className="text-[13px] font-semibold text-tx truncate flex-1">
+            <span className="text-meta font-semibold text-tx truncate flex-1">
               {name.trim() || "Project name"}
             </span>
           </div>
+
+          {/* Delete consequences — spelled out, because "Sure?" never said what
+              would happen to the tasks filed in here. */}
+          {confirmDelete && (
+            <div className="flex flex-col gap-1 rounded-2xl border border-priority-high/40 bg-priority-high/5 px-4 py-3">
+              <p className="text-xs font-bold text-tx">
+                Delete &ldquo;{project?.name}&rdquo;?
+              </p>
+              <p className="text-caption text-sub leading-relaxed">
+                {taskCount > 0
+                  ? <>The folder is removed. Its <span className="font-bold text-tx">{taskCount} task{taskCount > 1 ? "s" : ""}</span> are kept and moved to <span className="font-bold text-tx">No project</span> — nothing is lost, and you can undo this.</>
+                  : <>The folder is removed. It has no tasks in it, and you can undo this.</>}
+              </p>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="flex gap-2 pt-1">
             {isEdit && onDelete && (
               <button
                 onClick={handleDelete}
-                className={`px-4 py-2.5 rounded-xl border text-sm font-bold transition-all
+                className={`px-4 py-2.5 rounded-xl border text-sm font-bold transition-all shrink-0
                   ${confirmDelete
                     ? "bg-priority-high border-priority-high text-white"
                     : "border-priority-high/40 text-priority-high hover:bg-priority-high/10"}`}>
                 <HiTrash size={14} className="inline mr-1.5 -mt-0.5" />
-                {confirmDelete ? "Sure?" : "Delete"}
+                Delete
               </button>
             )}
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-border text-sub text-sm font-semibold hover:text-tx transition-all">
-              Cancel
+            <button
+              onClick={() => confirmDelete ? setConfirmDelete(false) : onClose()}
+              className="flex-1 py-2.5 rounded-xl border border-border text-sub text-sm font-semibold hover:text-tx transition-all">
+              {confirmDelete ? "Keep it" : "Cancel"}
             </button>
             <button
               onClick={handleSave}
               disabled={!name.trim()}
-              className="flex-1 py-2.5 rounded-xl bg-accent text-white text-sm font-black hover:bg-accent-hover disabled:opacity-40 transition-all">
+              className="flex-1 py-2.5 rounded-xl bg-accent text-white text-sm font-semibold hover:bg-accent-hover disabled:opacity-40 transition-all">
               {isEdit ? "Save" : "Create"}
             </button>
           </div>

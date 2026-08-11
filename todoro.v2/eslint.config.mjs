@@ -12,7 +12,23 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Static assets only now — the service worker moved to app/sw.ts and is
+    // built into .next, so nothing generated lands in public/ any more.
+    "public/**",
   ]),
+  {
+    // The React Compiler purity rules flag idiomatic patterns this codebase
+    // uses intentionally (ref-sync effects, Date.now() helpers, mount-effect
+    // state). Keep them visible as warnings rather than build-blocking errors.
+    rules: {
+      "react-hooks/immutability": "warn",
+      "react-hooks/static-components": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;
