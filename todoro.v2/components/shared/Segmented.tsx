@@ -7,7 +7,8 @@ export interface SegmentedOption<T extends string> {
 
 interface SegmentedProps<T extends string> {
   options: SegmentedOption<T>[]
-  value: T
+  /** null selects nothing — for when none of the choices is currently in effect. */
+  value: T | null
   onChange: (v: T) => void
   /** Names the group for screen readers, e.g. "Theme". */
   label: string

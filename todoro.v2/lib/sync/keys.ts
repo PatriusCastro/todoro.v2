@@ -64,6 +64,8 @@ export const SYNC_KEYS: Readonly<Record<string, KeySpec & { readonly kind: SyncC
   "todoro:quickMode":    { kind: "setting", column: "quick_mode" },
   "todoro:reverseMode":  { kind: "setting", column: "reverse_mode" },
   "todoro:autoStart":    { kind: "setting", column: "auto_start" },
+  "todoro:leaderboard":  { kind: "setting", column: "leaderboard",
+    why: "Consent to publish a name and weekly hours — it belongs to the account, so joining on one device joins on all of them" },
   "todoro:pinned":       { kind: "setting", column: "pinned",
     why: "Lives outside React in usePinnedTasks, so it needs its own hydrate path" },
 
@@ -79,6 +81,8 @@ export const SYNC_KEYS: Readonly<Record<string, KeySpec & { readonly kind: SyncC
     why: "Mirrors a per-device OS permission; syncing it enables a toggle the device never granted" },
   "todoro:notifPrompted":  { kind: "device", why: "One-time nudge, per device" },
   "todoro:swipeHintSeen":  { kind: "device", why: "One-time coaching, per device. Stored raw, not JSON" },
+  "todoro:railCollapsed":  { kind: "device",
+    why: "A rail width belongs to a screen, not an account — the phone has no rail. Stored raw, not JSON" },
   "todoro:onboarded":      { kind: "device",
     why: "Already derived from userName, which does sync — syncing this would skip a new device's welcome" },
   "todoro:deviceId": { kind: "device", why: "Identifies this device to the outbox" },

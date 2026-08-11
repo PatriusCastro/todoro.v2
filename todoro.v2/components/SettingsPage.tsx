@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { HiUser, HiMoon, HiSun, HiComputerDesktop, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward, HiTrash, HiPlay, HiCloudArrowUp, HiArrowRightOnRectangle } from "react-icons/hi2"
+import { HiUser, HiMoon, HiSun, HiComputerDesktop, HiSpeakerWave, HiArrowUpTray, HiArrowDownTray, HiBell, HiForward, HiTrash, HiPlay, HiCloudArrowUp, HiArrowRightOnRectangle, HiTrophy } from "react-icons/hi2"
 import { MdColorLens } from "react-icons/md";
 import { FaBullseye } from "react-icons/fa"
 import Panel from "./shared/Panel"
@@ -40,6 +40,7 @@ interface SettingsPageProps {
   accentCustom: AccentSet | null; onAccentCustom: (rawHex: string) => void
   notifications: boolean; onNotifications: (v: boolean) => void
   autoStart: boolean; onAutoStart: (v: boolean) => void
+  leaderboard: boolean; onLeaderboard: (v: boolean) => void
   /** Owned by app/page.tsx — the engine has to outlive this tab. */
   auth: AuthApi
   sync: SyncApi
@@ -56,6 +57,7 @@ export default function SettingsPage({
   alertSound, onAlertSound, alertVolume, onAlertVolume, alertCustom, onAlertCustom,
   avatarUrl, onAvatarUrl, accentTheme, onAccentTheme, accentCustom, onAccentCustom,
   notifications, onNotifications, autoStart, onAutoStart,
+  leaderboard, onLeaderboard,
   auth, sync
 }: SettingsPageProps) {
   const fileRef   = useRef<HTMLInputElement>(null)
@@ -269,6 +271,16 @@ export default function SettingsPage({
                 Sync now
               </button>
             </div>
+            {/* The only switch in the app that makes data leave the account,
+                so it says what it publishes rather than just naming itself. */}
+            <ToggleRow
+              label="Weekly leaderboard"
+              sub={leaderboard
+                ? "Your name and weekly focus time are visible to others who joined"
+                : "Off — publishes your name and weekly focus time when on"}
+              icon={<HiTrophy size={18} className="text-sub shrink-0" />}
+              value={leaderboard}
+              onChange={onLeaderboard} />
             <button onClick={() => setConfirmSignOut(true)}
               className="flex items-center gap-3 px-4 py-4 w-full text-left hover:bg-surface2 transition-colors">
               <HiArrowRightOnRectangle size={18} className="text-sub shrink-0" />
@@ -474,7 +486,7 @@ export default function SettingsPage({
 
       <Section label="About">
         <InfoRow label="App"     value="Todoro" />
-        <InfoRow label="Version" value="2.25.1" />
+        <InfoRow label="Version" value="2.30.0" />
         <InfoRow label="Stack"   value="Next.js + PWA" />
       </Section>
 
@@ -557,13 +569,18 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   )
 }
 
-function ToggleRow({ label, icon, value, onChange }: {
+function ToggleRow({ label, sub, icon, value, onChange }: {
   label: string; icon: React.ReactNode; value: boolean; onChange: (v: boolean) => void
+  /** For a switch whose consequence isn't obvious from its label alone. */
+  sub?: string
 }) {
   return (
     <div className="flex items-center gap-3 px-4 py-4">
       {icon}
-      <span className="flex-1 text-sm font-medium text-tx">{label}</span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-sm font-medium text-tx">{label}</span>
+        {sub && <span className="block text-xs text-sub mt-0.5">{sub}</span>}
+      </span>
       <Toggle checked={value} onChange={onChange} label={label} />
     </div>
   )

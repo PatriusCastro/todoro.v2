@@ -174,6 +174,7 @@ export default function ProjectPage({
           pinnedIds={pinned}
           onMove={handleMoveStage}
           onOpen={handleTaskClick}
+          onToggleSub={onToggleSub}
           onQuickStart={handleQuickStart}
           action={<ViewSwitch value={view} onChange={setView} showProject={false} />} />
       ) : (

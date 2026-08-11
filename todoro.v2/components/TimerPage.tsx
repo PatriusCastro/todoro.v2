@@ -49,7 +49,6 @@ export default function TimerPage({
   autoStart, onAutoStart,
 }: TimerPageProps) {
   const [focused, setFocused] = useState(false)
-  const [pipActive,  setPipActive]  = useState(false)
   const [sheetOpen,  setSheetOpen]  = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const isDesktop = useIsDesktop()
@@ -94,13 +93,16 @@ export default function TimerPage({
     taskTitle: taskTitle ?? "",
     dark,
   }
-  const pip = usePiP(pipState, { onToggle, onSkip })
+  // `auto` lets the window follow the user out of the app and close on their
+  // return; open state lives in the hook now, since it is no longer only this
+  // button that opens it.
+  const pip = usePiP(pipState, { onToggle, onSkip, auto: true })
 
   const handlePiP = async () => {
-    if (pipActive) { pip.close(); setPipActive(false); return }
+    if (pip.isOpen) { pip.close(); return }
     if (pip.supportsPiP) {
-      const ok = await pip.open()
-      if (ok) { setPipActive(true); return }
+      if (await pip.open()) return
+      return   // the request was refused or dismissed — nothing to announce
     }
     alert("Picture-in-Picture is not supported in this browser.")
   }
@@ -162,10 +164,10 @@ export default function TimerPage({
       </button>
       <button onClick={handlePiP}
         className={`flex items-center gap-1.5 text-xs transition-colors
-          ${pipActive ? "text-accent" : "text-sub hover:text-tx"}`}>
+          ${pip.isOpen ? "text-accent" : "text-sub hover:text-tx"}`}>
         <HiArrowTopRightOnSquare size={14} />
         {pip.supportsPiP
-          ? (pipActive ? "Close PiP" : "Picture-in-Picture")
+          ? (pip.isOpen ? "Close PiP" : "Picture-in-Picture")
           : ("PiP not supported")}
       </button>
     </div>
@@ -185,10 +187,10 @@ export default function TimerPage({
         <div className="ml-auto flex items-center gap-2">
           <button onClick={handlePiP}
             aria-label="Picture-in-Picture"
-            aria-pressed={pipActive}
+            aria-pressed={pip.isOpen}
             title={pip.supportsPiP ? "Picture-in-Picture" : "Float window (not supported)"}
             className={`w-11 h-11 grid place-items-center rounded-control border transition-all
-              ${pipActive
+              ${pip.isOpen
                 ? "bg-accent/10 border-accent/40 text-accent"
                 : "bg-surface border-border text-sub hover:text-accent hover:border-accent/40"}`}>
             <HiArrowTopRightOnSquare size={17} />

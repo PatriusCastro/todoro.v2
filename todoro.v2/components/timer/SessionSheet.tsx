@@ -91,14 +91,25 @@ export default function SessionSheet({
 
       <div className="flex flex-col gap-2 pt-1">
         <span className="text-caption font-extrabold uppercase tracking-wider text-tx">Focus / break</span>
+        {/* Counting up, no fixed length is in effect, so nothing is selected —
+            this used to force "Custom", which made a tap on 25/5 or 50/10 fire
+            and then snap back to Custom, reading as a dead button. */}
         <Segmented
           options={MODE_OPTIONS}
-          value={reverseMode ? ("custom" as Mode) : mode}
+          value={reverseMode ? null : mode}
           onChange={m => {
+            // Clearing count-up is onModeChange's job — see handleModeChange.
+            // Asking the user to find the toggle below first would be asking
+            // them to say the same thing twice.
             if (m === "custom") onModeChange("custom", focusMins, breakMins)
             else onModeChange(m, PRESET_MODES[m].focusMins, PRESET_MODES[m].breakMins)
           }}
           label="Session length" />
+        {reverseMode && (
+          <p className="text-caption text-sub leading-relaxed">
+            Count up is on, so no fixed length applies. Pick one to switch back to a countdown.
+          </p>
+        )}
       </div>
 
       {mode === "custom" && !reverseMode && (

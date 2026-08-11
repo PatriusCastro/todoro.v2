@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import {
-  HiChevronLeft, HiChevronRight, HiPlay, HiMapPin, HiFolder,
+  HiChevronLeft, HiChevronRight, HiChevronDown, HiPlay, HiMapPin, HiFolder,
   HiCheck, HiArrowPath,
 } from "react-icons/hi2"
 import { type Task } from "./TaskCard"
@@ -19,6 +19,8 @@ interface TaskBoardProps {
   pinnedIds: ReadonlySet<string>
   onMove:    (task: Task, to: Stage) => void
   onOpen:    (task: Task) => void
+  /** Lets a card's checklist be ticked off without leaving the board. */
+  onToggleSub?: (taskId: string, subId: string) => void
   onQuickStart?: (task: Task) => void
   onOpenProject?: (p: Project) => void
   /** Header slot — the view switch lives here so it sits in the same place as the list's. */
@@ -32,7 +34,7 @@ interface TaskBoardProps {
  */
 export default function TaskBoard({
   tasks, projects, activeTaskId, pinnedIds,
-  onMove, onOpen, onQuickStart, onOpenProject, action,
+  onMove, onOpen, onToggleSub, onQuickStart, onOpenProject, action,
 }: TaskBoardProps) {
   const [dragId, setDragId] = useState<string | null>(null)
   const [overStage, setOverStage] = useState<Stage | null>(null)
@@ -108,6 +110,7 @@ export default function TaskBoard({
                       onDragEnd={() => { setDragId(null); setOverStage(null) }}
                       onMove={onMove}
                       onOpen={onOpen}
+                      onToggleSub={onToggleSub}
                       onQuickStart={onQuickStart}
                       onOpenProject={onOpenProject} />
                   ))
@@ -123,16 +126,18 @@ export default function TaskBoard({
 
 function BoardCard({
   task, stage, project, isActive, isPinned, dragging,
-  onDragStart, onDragEnd, onMove, onOpen, onQuickStart, onOpenProject,
+  onDragStart, onDragEnd, onMove, onOpen, onToggleSub, onQuickStart, onOpenProject,
 }: {
   task: Task; stage: Stage; project?: Project
   isActive: boolean; isPinned: boolean; dragging: boolean
   onDragStart: () => void; onDragEnd: () => void
   onMove: (t: Task, to: Stage) => void
   onOpen: (t: Task) => void
+  onToggleSub?: (taskId: string, subId: string) => void
   onQuickStart?: (t: Task) => void
   onOpenProject?: (p: Project) => void
 }) {
+  const [openSubs, setOpenSubs] = useState(false)
   const prev = stageStep(stage, -1)
   const next = stageStep(stage, 1)
   const doneSubs = task.subtasks.filter(s => s.done).length
@@ -196,8 +201,48 @@ function BoardCard({
             </span>
           )}
           {task.subtasks.length > 0 && (
-            <span className="text-caption text-sub">{doneSubs}/{task.subtasks.length} subtasks</span>
+            <button
+              onPointerDown={stop}
+              onClick={e => { stop(e); setOpenSubs(v => !v) }}
+              aria-expanded={openSubs}
+              aria-label={openSubs
+                ? `Hide subtasks of "${task.title}"`
+                : `Show ${task.subtasks.length} subtasks of "${task.title}"`}
+              className="inline-flex items-center gap-0.5 rounded-md border border-border px-1.5 py-0.5
+                text-caption font-semibold text-sub
+                hover:text-accent hover:border-accent/40 transition-colors duration-150">
+              {doneSubs}/{task.subtasks.length} subtasks
+              <HiChevronDown size={10}
+                className="transition-transform duration-200"
+                style={{ transform: openSubs ? "rotate(180deg)" : "none" }} />
+            </button>
           )}
+        </div>
+      )}
+
+      {/* Checklist — collapsed by default so a lane still reads as a lane, and
+          ticked off in place: a card is where the work is, not the modal. */}
+      {openSubs && task.subtasks.length > 0 && (
+        <div className="flex flex-col gap-1.5 pt-1.5 border-t border-border">
+          {task.subtasks.map(sub => (
+            <div key={sub.id} className="flex items-start gap-1.5">
+              <button
+                onPointerDown={stop}
+                onClick={e => { stop(e); onToggleSub?.(task.id, sub.id) }}
+                aria-pressed={sub.done}
+                aria-label={sub.done ? `Mark "${sub.title}" as not done` : `Complete "${sub.title}"`}
+                className="w-7 h-7 -m-1 shrink-0 grid place-items-center">
+                <span className={`w-4 h-4 rounded border-2 grid place-items-center transition-colors duration-150
+                  ${sub.done ? "bg-accent border-accent" : "border-border"}`}>
+                  {sub.done && <HiCheck size={8} color="white" />}
+                </span>
+              </button>
+              <span className={`text-caption leading-snug wrap-break-words min-w-0
+                ${sub.done ? "line-through text-sub" : "text-tx"}`}>
+                {sub.title}
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
