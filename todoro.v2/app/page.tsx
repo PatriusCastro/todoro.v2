@@ -655,10 +655,14 @@ export default function Home() {
   }, [time, cycleCount, activeTask, playChime, protectedDates])
   // ─────────────────────────────────────────────────────────────────
 
+  // A fixed length and an open-ended count-up are mutually exclusive, and this
+  // is where that invariant lives — not in the sheet that happens to offer both
+  // controls. Picking a length therefore *is* choosing a countdown.
   const handleModeChange = (m: Mode, fm: number, bm: number) => {
     setMode(m); setFocusMins(fm); setBreakMins(bm)
+    setReverseMode(false)
     setRunning(false); setPhase("focus")
-    setTime(reverseMode ? 0 : fm * 60)
+    setTime(fm * 60)
   }
 
   const handleReset = () => {
