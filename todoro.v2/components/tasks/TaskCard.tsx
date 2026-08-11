@@ -167,9 +167,38 @@ export default function TaskCard({
                   </span>
                 )}
                 {task.subtasks.length > 0 && (
-                  <span className="text-meta text-sub">
-                    {task.dueLabel && task.dueLabel !== "No due date" ? "·" : ""} {doneCount}/{task.subtasks.length} subtasks
-                  </span>
+                  <>
+                    {/* Only the plain-text form needs a separator — the chip's
+                        own border is one. */}
+                    {!expandable && task.dueLabel && task.dueLabel !== "No due date" && (
+                      <span className="text-meta text-sub">·</span>
+                    )}
+                    {/* The count is the only affordance the row can spare for
+                        subtasks: the chevron button hides itself whenever the
+                        row opens a modal, which is every list on the Tasks
+                        page, so reading a checklist meant opening the editor. */}
+                    {expandable ? (
+                      <button
+                        onPointerDown={e => e.stopPropagation()}
+                        onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}
+                        aria-expanded={expanded}
+                        aria-label={expanded
+                          ? `Hide subtasks of "${task.title}"`
+                          : `Show ${task.subtasks.length} subtasks of "${task.title}"`}
+                        className="inline-flex items-center gap-0.5 rounded-md border border-border px-1.5 py-0.5
+                          text-caption font-semibold text-sub
+                          hover:text-accent hover:border-accent/40 transition-colors duration-150">
+                        {doneCount}/{task.subtasks.length} subtasks
+                        <HiChevronDown size={11}
+                          className="transition-transform duration-200"
+                          style={{ transform: expanded ? "rotate(180deg)" : "none" }} />
+                      </button>
+                    ) : (
+                      <span className="text-meta text-sub">
+                        {doneCount}/{task.subtasks.length} subtasks
+                      </span>
+                    )}
+                  </>
                 )}
                 {task.estimatedSessions > 0 && (
                   <span className="text-meta text-sub">
@@ -227,7 +256,10 @@ export default function TaskCard({
                 <HiPlay size={16} />
               </button>
             )}
-            {expandable && !onClick && (
+            {/* Only for detail the meta row can't offer a toggle for — with
+                subtasks the count chip is the disclosure, and two controls for
+                one panel on the same row is one too many. */}
+            {expandable && !onClick && task.subtasks.length === 0 && (
               <button
                 onPointerDown={e => e.stopPropagation()}
                 onClick={e => { e.stopPropagation(); setExpanded(v => !v) }}

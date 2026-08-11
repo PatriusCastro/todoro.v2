@@ -383,6 +383,7 @@ export default function TasksPage({
           pinnedIds={pinned}
           onMove={handleMoveStage}
           onOpen={handleTaskClick}
+          onToggleSub={onToggleSub}
           onQuickStart={handleQuickStart}
           onOpenProject={setActiveProject}
           action={viewSwitch} />
