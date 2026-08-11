@@ -26,6 +26,8 @@ interface HomePageProps {
   allHistory: { taskId: string; taskTitle: string; focusMins: number; at: number }[]
   quickMode: boolean
   onOpenShop: () => void; canRestore: boolean; level: number
+  /** Slot, so the home screen never has to know about auth or the network. */
+  leaderboard?: React.ReactNode
 }
 
 function localDate(ts: number = Date.now()) {
@@ -41,6 +43,7 @@ export default function HomePage({
   tasks, activeTask, projects, onToggleTask, allHistory,
   onNavToTasks, onOpenTask, onStartFocus, streak, totalPoints, greeting, userName,
   avatarUrl, onNavToSettings, quickMode, onOpenShop, canRestore, level,
+  leaderboard,
 }: HomePageProps) {
   const minutes = Math.floor(time / 60)
   const seconds = time % 60
@@ -254,6 +257,9 @@ export default function HomePage({
             {weekMins >= 60 ? `${Math.floor(weekMins / 60)}h ${weekMins % 60}m` : `${weekMins}m`} focused
           </p>
         </Panel>
+
+        {/* Next to This week, which is the same number for one person. */}
+        {leaderboard}
 
         {/* ── Projects ─────────────────────────────────────────────────────── */}
         <Panel className="flex flex-col gap-1">

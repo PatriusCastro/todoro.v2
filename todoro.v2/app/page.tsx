@@ -9,6 +9,7 @@ import SettingsPage from "../components/SettingsPage"
 import Onboarding   from "../components/Onboarding"
 import NotifPrompt  from "../components/NotifPrompt"
 import ShopModal    from "../components/ShopModal"
+import Leaderboard  from "../components/Leaderboard"
 import Toast        from "../components/shared/Toast"
 import { type Mode } from "../components/timer/SessionSheet"
 import { type Task } from "../components/tasks/TaskCard"
@@ -187,6 +188,9 @@ export default function Home() {
   const [quickMode, setQuickMode] = useState(() => load("todoro:quickMode", false))
   const [reverseMode, setReverseMode] = useState(() => load("todoro:reverseMode", false))
   const [notifications, setNotifications] = useState(() => load("todoro:notifications", false))
+  // Consent to publish a name and weekly hours. Never inferred, never defaulted
+  // on, and cleared with the rest of the account's settings on a reset.
+  const [leaderboard,   setLeaderboard]   = useState(() => load("todoro:leaderboard", false))
   const [autoStart,     setAutoStart]     = useState(() => load("todoro:autoStart", false))
 
   const [mode,      setMode]      = useState<Mode>(()   => load("todoro:mode",      "25/5"))
@@ -398,6 +402,7 @@ export default function Home() {
       if (typeof s.alert_sound  === "string")  setAlertSound(s.alert_sound as AlertSound)
       if (typeof s.alert_volume === "number")  setAlertVolume(s.alert_volume)
       if (typeof s.auto_start   === "boolean") setAutoStart(s.auto_start)
+      if (typeof s.leaderboard  === "boolean") setLeaderboard(s.leaderboard)
 
       // These five reset the running timer through effects above, so applying a
       // remote change mid-session would wipe a focus run on this device. They
@@ -434,6 +439,7 @@ export default function Home() {
   useEffect(() => { save("todoro:accentCustom", accentCustom) }, [accentCustom])
   useEffect(() => { save("todoro:notifications", notifications) }, [notifications])
   useEffect(() => { save("todoro:autoStart",     autoStart)     }, [autoStart])
+  useEffect(() => { save("todoro:leaderboard",   leaderboard)   }, [leaderboard])
   useEffect(() => { save("todoro:onboarded",     onboarded)     }, [onboarded])
   useEffect(() => { save("todoro:tab",           tab)           }, [tab])
 
@@ -828,7 +834,13 @@ export default function Home() {
           streak={streak} totalPoints={totalPoints} allHistory={allHistory}
           onOpenShop={() => setShowShop(true)} canRestore={!!restoreGap} level={lvl.level}
           avatarUrl={avatarUrl} onNavToSettings={() => setTab("settings")}
-          greeting={getGreeting()} userName={userName} quickMode={quickMode} />
+          greeting={getGreeting()} userName={userName} quickMode={quickMode}
+          leaderboard={
+            <Leaderboard
+              signedIn={auth.status === "signed-in"}
+              optedIn={leaderboard}
+              onOptIn={setLeaderboard} />
+          } />
       )}
 
       {tab === "timer" && (
@@ -874,6 +886,7 @@ export default function Home() {
           }}
           notifications={notifications} onNotifications={setNotifications}
           autoStart={autoStart} onAutoStart={setAutoStart}
+          leaderboard={leaderboard} onLeaderboard={setLeaderboard}
           auth={auth} sync={sync} />
       )}
 
