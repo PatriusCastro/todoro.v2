@@ -64,6 +64,8 @@ export const SYNC_KEYS: Readonly<Record<string, KeySpec & { readonly kind: SyncC
   "todoro:quickMode":    { kind: "setting", column: "quick_mode" },
   "todoro:reverseMode":  { kind: "setting", column: "reverse_mode" },
   "todoro:autoStart":    { kind: "setting", column: "auto_start" },
+  "todoro:leaderboard":  { kind: "setting", column: "leaderboard",
+    why: "Consent to publish a name and weekly hours — it belongs to the account, so joining on one device joins on all of them" },
   "todoro:pinned":       { kind: "setting", column: "pinned",
     why: "Lives outside React in usePinnedTasks, so it needs its own hydrate path" },
 
